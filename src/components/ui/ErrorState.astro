@@ -1,0 +1,18 @@
+---
+import Icon from './Icon.astro';
+import type { IconName } from './lucide';
+
+interface Props { title?: string; text?: string; detail?: string; icon?: IconName; compact?: boolean; class?: string }
+const {
+  title = 'Impossible de charger les données',
+  text = 'Réessayez dans un instant. Si le problème persiste, consultez les journaux.',
+  detail, icon = 'circleAlert', compact = false, class: className = '',
+} = Astro.props;
+---
+<div class:list={['ui-state', 'ui-state--error', compact && 'ui-state--compact', className]} role="alert">
+  <span class="ui-state__icon"><Icon name={icon} size={20} /></span>
+  <p class="ui-state__title">{title}</p>
+  {text && <p class="ui-state__text">{text}</p>}
+  {detail && <pre class="ui-state__detail">{detail}</pre>}
+  {Astro.slots.has('actions') && <div class="ui-state__actions"><slot name="actions" /></div>}
+</div>

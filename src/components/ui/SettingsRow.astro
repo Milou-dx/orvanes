@@ -1,0 +1,32 @@
+---
+import Icon from './Icon.astro';
+import type { IconName } from './lucide';
+
+interface Props {
+  title: string;
+  desc?: string;
+  icon?: IconName;
+  tint?: string;
+  href?: string;
+  class?: string;
+}
+const { title, desc, icon, tint, href, class: className = '' } = Astro.props;
+const Tag = href ? 'a' : 'div';
+const TINT: Partial<Record<IconName, string>> = {
+  check: '--mac-green', circleCheck: '--mac-green', info: '--mac-blue', warning: '--mac-orange', circleAlert: '--mac-orange', circleX: '--mac-red',
+  server: '--mac-teal', network: '--mac-indigo', globe: '--mac-indigo', terminal: '--mac-gray', console: '--mac-gray', clock: '--mac-orange',
+  users: '--mac-green', user: '--mac-blue', key: '--mac-purple', shield: '--mac-purple', settings: '--mac-gray', folder: '--mac-blue',
+  hardDrive: '--mac-gray', cpu: '--mac-indigo', memory: '--mac-pink', mail: '--mac-blue', store: '--mac-orange', moon: '--mac-indigo',
+  sun: '--mac-orange', palette: '--mac-pink', power: '--mac-red', trash: '--mac-red', download: '--mac-blue', upload: '--mac-blue',
+};
+const color = tint ?? (icon && TINT[icon]) ?? '--mac-gray';
+---
+<Tag class:list={['srow', href && 'srow--link', !icon && 'srow--plain', className]} href={href} data-astro-prefetch={href ? 'hover' : undefined}>
+  {icon && <span class="srow__tile" style={`background: var(${color})`} aria-hidden="true"><Icon name={icon} size={16} /></span>}
+  <span class="srow__txt">
+    <span class="srow__title">{title}</span>
+    {desc && <span class="srow__desc">{desc}</span>}
+  </span>
+  {Astro.slots.has('default') && <span class="srow__end"><slot /></span>}
+  {href && <span class="srow__chev" aria-hidden="true"><Icon name="chevronRight" size={16} /></span>}
+</Tag>

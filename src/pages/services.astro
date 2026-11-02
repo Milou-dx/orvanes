@@ -1,0 +1,208 @@
+---
+import PanelLayout from '../layouts/PanelLayout.astro';
+import SettingsGroup from '../components/ui/SettingsGroup.astro';
+import SettingsRow from '../components/ui/SettingsRow.astro';
+import Card from '../components/ui/Card.astro';
+import DataTable from '../components/ui/DataTable.astro';
+import Toolbar from '../components/ui/Toolbar.astro';
+import StatusBadge from '../components/ui/StatusBadge.astro';
+import ActionButton from '../components/ui/ActionButton.astro';
+import ErrorState from '../components/ui/ErrorState.astro';
+import Segmented from '../components/ui/Segmented.astro';
+import type { IconName } from '../components/ui/lucide';
+import { toStatus } from '../components/ui/status';
+import * as svc from '../server/system/services.js';
+
+export const prerender = false;
+
+let all: any[] = [];
+let failure = '';
+try { all = await svc.listServices(); } catch (e: any) { failure = e?.message ?? 'Lecture impossible'; }
+
+const running = all.filter((s) => s.active === 'active');
+
+const PROTECTED = svc.protectedUnits().map((p) => p.unit);
+
+const rows = all.map((s) => ({
+  name: s.name,
+  description: s.description ?? '',
+  active: s.active,
+  sub: s.sub ?? '',
+  enabled: s.enabled ?? 'unknown',
+  pid: s.pid ?? null,
+  state: toStatus(s.active),
+}));
+const data = JSON.stringify({ rows, protectedUnits: PROTECTED }).replace(/</g, '\\u003c');
+
+const KEY: { unit: string; label: string; desc: string; icon: IconName }[] = [
+  { unit: 'ssh',        label: 'Accès SSH',          desc: 'Connexion à distance au serveur', icon: 'terminal' },
+  { unit: 'tailscaled', label: 'Tailscale',          desc: 'Réseau privé entre vos appareils', icon: 'waypoints' },
+  { unit: 'cron',       label: 'Tâches planifiées',  desc: 'Exécution périodique (cron)', icon: 'clock' },
+];
+const keyServices = KEY.map((k) => ({ ...k, s: all.find((x) => x.name === k.unit) })).filter((k) => k.s);
+const isProtected = (u: string) => PROTECTED.includes(u);
+---
+<PanelLayout title="Services" subtitle={failure ? undefined : `${running.length} actifs sur ${all.length}`}>
+  {failure ? (
+    <ErrorState title="Impossible de lire les services" text="systemd n’a pas répondu. Réessayez dans un instant." detail={failure} />
+  ) : (
+    <div id="svc-root">
+      {keyServices.length > 0 && (
+        <SettingsGroup title="Services importants">
+          {keyServices.map((k) => (
+            <SettingsRow icon={k.icon} title={k.label} desc={k.desc}>
+              <StatusBadge raw={k.s.active} />
+              {!isProtected(k.unit) && (k.s.active === 'active'
+                ? <ActionButton action="restart" data-unit={k.unit} data-action="restart" />
+                : <ActionButton action="start" data-unit={k.unit} data-action="start" />)}
+            </SettingsRow>
+          ))}
+        </SettingsGroup>
+      )}
+
+      <Toolbar controls="svc" search="Rechercher un service" topSearch count label="Filtres des services">
+        <Segmented id="svc-states" label="Filtrer par état" attr="state" options={[
+          { value: 'all', label: 'Tous', count: all.length },
+          { value: 'running', label: 'En cours', count: running.length },
+          { value: 'stopped', label: 'Arrêtés', count: 0 },
+          { value: 'error', label: 'En échec', count: 0 },
+        ]} />
+      </Toolbar>
+
+      <Card flush>
+        <DataTable id="svc" client caption="Services systemd" noun={['service', 'services']}
+          columns={[{ key: 'name', label: 'Nom' }]} />
+      </Card>
+      <script is:inline type="application/json" id="svc-data" set:html={data}></script>
+    </div>
+  )}
+</PanelLayout>
+
+<script>
+  import { mountTable } from '../scripts/ui/table';
+  import { esc, iconSVG, statusBadgeHTML } from '../scripts/ui/html';
+  import { confirmDialog, toast } from '../scripts/ui/dialog';
+  import { registerCommands } from '../scripts/ui/commands';
+
+  type Row = { name: string; description: string; active: string; sub: string; enabled: string; pid: number | null; state: string };
+  const VERB: Record<string, string> = { start: 'Démarrer', stop: 'Arrêter', restart: 'Redémarrer' };
+  const ICON: Record<string, 'play' | 'stop' | 'restart'> = { start: 'play', stop: 'stop', restart: 'restart' };
+  const FILTER_KEY = 'svc-state';
+
+  const bootLabel = (e: string) => (e === 'enabled' || e === 'enabled-runtime' ? 'Oui' : e === 'disabled' ? 'Non' : e === 'unknown' ? '—' : e);
+
+  const actBtn = (r: Row, action: string) =>
+    `<button type="button" class="svc-act svc-act--${action}" data-unit="${esc(r.name)}" data-action="${action}" aria-label="${VERB[action]} ${esc(r.name)}" title="${VERB[action]}"><span class="svc-act__i">${iconSVG(ICON[action], 16)}</span></button>`;
+
+  document.addEventListener('astro:page-load', () => {
+    const dataEl = document.getElementById('svc-data');
+    if (!dataEl) return;
+    const { rows, protectedUnits } = JSON.parse(dataEl.textContent || '{}') as { rows: Row[]; protectedUnits: string[] };
+    const locked = new Set(protectedUnits);
+
+    const table = mountTable('svc', {
+      rowKey: 'name',
+      noun: ['service', 'services'],
+      empty: { icon: 'server', title: 'Aucun service', text: 'systemd ne signale aucun service.' },
+      emptyFiltered: { icon: 'search', title: 'Aucun service ne correspond', text: 'Changez le filtre d’état ou la recherche.' },
+      sort: { key: 'name' },
+      filterKeys: ['name', 'description'],
+      caption: 'Services systemd',
+      columns: [
+        { key: 'name', label: 'Nom', sortable: true, mono: true },
+        { key: 'description', label: 'Description', muted: true, hideBelow: 'lg' },
+        { key: 'state', label: 'État', sortable: true, nowrap: true,
+          value: (r: Row) => r.active,
+          render: (r: Row) => ({ html: statusBadgeHTML(r.state, r.active === 'active' ? 'Actif' : r.active === 'failed' ? 'Échec' : r.active === 'inactive' ? 'Inactif' : r.active) }) },
+        { key: 'enabled', label: 'Au démarrage', sortable: true, hideBelow: 'lg', nowrap: true, render: (r: Row) => bootLabel(r.enabled) },
+        { key: 'pid', label: 'PID', type: 'number', align: 'right', sortable: true, mono: true, muted: true, hideBelow: 'lg', render: (r: Row) => r.pid ?? '—' },
+        { key: 'actions', label: 'Actions', actions: true, hideLabel: true,
+          render: (r: Row) => {
+            if (locked.has(r.name)) return { html: '<span class="t-meta text-tertiary" title="Service protégé : l’arrêter couperait l’accès">protégé</span>' };
+            const acts = r.active === 'active' ? ['restart', 'stop'] : ['start'];
+            return { html: `<span class="dt__actions">${acts.map((a) => actBtn(r, a)).join('')}</span>` };
+          } },
+      ],
+    });
+
+    const group = document.getElementById('svc-states')!;
+    let current = 'all';
+    try { current = sessionStorage.getItem(FILTER_KEY) || 'all'; } catch {}
+    const match = (r: Row, st: string) => st === 'all' || (st === 'stopped' ? r.state === 'stopped' : r.state === st);
+    const apply = () => {
+      for (const b of group.querySelectorAll<HTMLButtonElement>('[data-state]')) {
+        b.setAttribute('aria-pressed', String(b.dataset.state === current));
+        const n = b.querySelector('[data-n]');
+        if (n) n.textContent = String(rows.filter((r) => match(r, b.dataset.state!)).length);
+      }
+      table.setRows(rows.filter((r) => match(r, current)));
+    };
+    const pick = (st: string) => () => { current = st; try { sessionStorage.setItem(FILTER_KEY, st); } catch {} apply(); };
+    group.addEventListener('click', (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-state]');
+      if (b) pick(b.dataset.state!)();
+    });
+    apply();
+
+    const onClick = async (e: Event) => {
+      const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-unit]');
+      if (!btn || btn.disabled) return;
+      const unit = btn.dataset.unit!;
+      const action = btn.dataset.action!;
+      const verb = VERB[action] ?? action;
+      if (!(await confirmDialog({
+        title: `${verb} le service « ${unit} » ?`,
+        message: action === 'stop' ? 'Les applications qui en dépendent seront interrompues.' : undefined,
+        confirmLabel: verb, danger: action !== 'start',
+      }))) return;
+
+      btn.disabled = true;
+      btn.setAttribute('aria-busy', 'true');
+      const done = () => { btn.removeAttribute('aria-busy'); btn.disabled = false; };
+      try {
+        const res = await fetch('/api/service', {
+          method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ unit, action }),
+        });
+        const out = await res.json().catch(() => ({}));
+        if (!res.ok) { toast(out.error ?? 'Échec', 'error'); done(); return; }
+        toast(`${verb} : « ${unit} » demandé.`, 'success');
+        location.reload();
+      } catch {
+        toast('Le panel n’a pas pu joindre le service.', 'error');
+        done();
+      }
+    };
+    document.getElementById('svc-root')!.addEventListener('click', onClick);
+
+    registerCommands([
+      { id: 'svc-all', title: 'Services : tout afficher', icon: 'list', run: pick('all') },
+      { id: 'svc-running', title: 'Services : en cours', icon: 'play', run: pick('running') },
+      { id: 'svc-stopped', title: 'Services : arrêtés', icon: 'stop', run: pick('stopped') },
+      { id: 'svc-error', title: 'Services : en échec', icon: 'circleAlert', keywords: ['failed', 'erreur'], run: pick('error') },
+      { id: 'svc-reload', title: 'Services : actualiser la liste', icon: 'refresh', run: () => location.reload() },
+    ]);
+  });
+</script>
+
+<style>
+  #svc-root { display: flex; flex-direction: column; gap: var(--space-4); }
+  :global(.svc-act) {
+    display: inline-grid; place-items: center; width: var(--control-h-sm); height: var(--control-h-sm); padding: 0;
+    border: var(--border-width) solid var(--control-stroke); border-radius: var(--radius-sm);
+    background: var(--bg-surface); box-shadow: var(--shadow-xs); cursor: pointer;
+    transition: background-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+  }
+  :global(.svc-act:active:not(:disabled)) { transform: scale(var(--press-scale)); }
+  :global(.svc-act:disabled) { cursor: not-allowed; }
+  :global(.svc-act__i) { display: inline-grid; place-items: center; color: var(--fg); }
+  :global(.svc-act--start) { --fg: var(--tone-green-fg); --bg: var(--tone-green-bg); }
+  :global(.svc-act--restart) { --fg: var(--tone-blue-fg); --bg: var(--tone-blue-bg); }
+  :global(.svc-act--stop) { --fg: var(--tone-red-fg); --bg: var(--tone-red-bg); }
+  :global(.svc-act:hover:not(:disabled)) { background: var(--bg); }
+  :global(.svc-act[aria-busy='true'] svg) { display: none; }
+  :global(.svc-act[aria-busy='true'] .svc-act__i::before) {
+    content: ''; width: var(--space-3); height: var(--space-3); border-radius: var(--radius-full);
+    border: 2px solid currentColor; border-right-color: transparent; animation: n-spin 0.7s linear infinite;
+  }
+  @media (pointer: coarse) { :global(.svc-act) { width: 44px; height: 44px; } }
+</style>

@@ -1,0 +1,25 @@
+---
+interface Props {
+  width?: string;
+  height?: string;
+  radius?: string;
+  class?: string;
+}
+const {
+  width = '100%', height = '14px',
+  radius = 'var(--radius-control)', class: className = '',
+} = Astro.props;
+---
+<span
+  class:list={['skeleton', className]}
+  style={`--w:${width}; --h:${height}; --r:${radius}`}
+  aria-hidden="true"
+/>
+
+<style>
+  .skeleton {
+    display: block;
+    width: var(--w); height: var(--h);
+    border-radius: var(--r);
+  }
+</style>

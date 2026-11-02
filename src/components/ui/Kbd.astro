@@ -1,0 +1,9 @@
+---
+interface Props { keys: string; class?: string }
+const { keys, class: className = '' } = Astro.props;
+const parts = keys.split('+').map((k) => k.trim()).filter(Boolean);
+const label = (k: string) => (k === 'Mod' ? 'Ctrl' : k === 'Shift' ? 'Maj' : k === 'Enter' ? 'Entrée' : k === 'Escape' ? 'Échap' : k);
+---
+<span class:list={['keys-combo', className]}>
+  {parts.map((k) => <kbd class="kbd" data-mod={k === 'Mod' ? '' : undefined}>{label(k)}</kbd>)}
+</span>

@@ -1,0 +1,101 @@
+---
+import Icon from './Icon.astro';
+import Spinner from './Spinner.astro';
+import type { IconName } from './lucide';
+
+interface Props {
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
+  size?: 'sm' | 'md' | 'lg';
+  href?: string;
+  target?: '_blank';
+  rel?: string;
+  type?: 'button' | 'submit';
+  disabled?: boolean;
+  loading?: boolean;
+  icon?: IconName;
+  iconRight?: IconName;
+  iconOnly?: boolean;
+  label?: string;
+  class?: string;
+  id?: string;
+  title?: string;
+  hidden?: boolean;
+  pressed?: boolean;
+  'aria-label'?: string;
+  'aria-haspopup'?: 'menu' | 'dialog' | 'listbox' | boolean;
+  'aria-expanded'?: boolean | 'true' | 'false';
+  [key: `data-${string}`]: string | number | boolean | undefined;
+}
+const {
+  variant = 'secondary', size = 'md', href, type = 'button', disabled = false, loading = false,
+  icon, iconRight, iconOnly = false, label, title, pressed, class: className = '', ...rest
+} = Astro.props;
+
+const Tag = href ? 'a' : 'button';
+const glyph = size === 'lg' ? 20 : 16;
+---
+<Tag
+  class:list={['btn', `btn--${variant}`, `btn--${size}`, iconOnly && 'btn--icon', loading && 'btn--loading', className]}
+  href={href}
+  type={href ? undefined : type}
+  disabled={href ? undefined : disabled || loading}
+  aria-disabled={href && disabled ? 'true' : undefined}
+  aria-busy={loading ? 'true' : undefined}
+  aria-label={iconOnly ? label : undefined}
+  title={title ?? (iconOnly ? label : undefined)}
+  aria-pressed={href ? undefined : pressed}
+  {...rest}
+>
+  {loading ? <Spinner size={glyph - 2} /> : icon && <Icon name={icon} size={glyph} />}
+  <slot />
+  {iconRight && !loading && <Icon name={iconRight} size={glyph} />}
+</Tag>
+
+<style is:global>
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+    border: var(--border-width) solid transparent; border-radius: var(--radius-control);
+    font-family: var(--font-ui); font-weight: 500;
+    text-decoration: none; cursor: pointer; white-space: nowrap;
+    transition:
+      background-color var(--dur-fast) var(--ease-out),
+      border-color var(--dur-fast) var(--ease-out),
+      color var(--dur-fast) var(--ease-out),
+      box-shadow var(--dur-fast) var(--ease-out),
+      transform var(--dur-fast) var(--ease-out);
+  }
+  .btn:active:not(:disabled):not([aria-disabled='true']) { transform: scale(var(--press-scale)); }
+  .btn:disabled, .btn[aria-disabled='true'] { color: var(--text-disabled); cursor: not-allowed; pointer-events: none; box-shadow: none; }
+  .btn--loading { cursor: progress; }
+
+  .btn--sm { height: var(--control-h-sm); padding-inline: 10px; font-size: var(--dense-size); line-height: var(--dense-lh); }
+  .btn--md { height: var(--control-h); padding-inline: var(--space-3); font-size: var(--dense-size); line-height: var(--dense-lh); }
+  .btn--lg { height: var(--control-h-lg); padding-inline: var(--space-4); font-size: var(--body-size); line-height: var(--body-lh); }
+  .btn--icon { padding: 0; }
+  .btn--icon.btn--sm { width: var(--control-h-sm); }
+  .btn--icon.btn--md { width: var(--control-h); }
+  .btn--icon.btn--lg { width: var(--control-h-lg); }
+
+  .btn--primary { background: var(--accent); color: var(--accent-fg); box-shadow: var(--shadow-xs); }
+  .btn--primary:hover { background: var(--accent-hover); }
+  .btn--primary:active { background: var(--accent-active); }
+  .btn--primary:disabled, .btn--primary[aria-disabled='true'] { background: var(--bg-hover); }
+
+  .btn--secondary, .btn--danger {
+    background: var(--bg-surface); color: var(--text-primary);
+    border-color: var(--control-stroke); box-shadow: var(--shadow-xs);
+  }
+  .btn--secondary:hover { background: var(--bg-hover); border-color: var(--border-strong); }
+
+  .btn--ghost { background: transparent; color: var(--text-primary); }
+  .btn--ghost:hover { background: var(--bg-hover); }
+
+  .btn--danger { color: var(--danger); }
+  .btn[aria-pressed='true'] { background: var(--accent-subtle); border-color: var(--accent-border); color: var(--accent); }
+  .btn[hidden] { display: none; }
+
+  .btn--danger:hover { background: var(--danger-subtle); border-color: var(--danger-border); }
+
+  @media (pointer: coarse) { .btn { min-height: 44px; min-width: 44px; } }
+  @media (prefers-reduced-motion: reduce) { .btn:active:not(:disabled):not([aria-disabled='true']) { transform: none; } }
+</style>

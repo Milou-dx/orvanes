@@ -1,0 +1,14 @@
+node_modules/
+/dist
+.astro/
+.cache/
+.env
+.env.*
+!.env.example
+*.log
+data/
+/releases/
+/.runtime/
+
+/modules/
+__pycache__/

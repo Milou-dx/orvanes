@@ -1,0 +1,59 @@
+---
+import { resolve } from 'node:path';
+import PanelLayout from '../layouts/PanelLayout.astro';
+import SettingsGroup from '../components/ui/SettingsGroup.astro';
+import SettingsRow from '../components/ui/SettingsRow.astro';
+import Segmented from '../components/ui/Segmented.astro';
+import { PANEL_NAME } from '../server/core/panel';
+import pkg from '../../package.json';
+
+export const prerender = false;
+
+const publicUrl = String(process.env.PANEL_PUBLIC_URL ?? '').split(',')[0].trim().replace(/\/+$/, '') || Astro.url.origin;
+const dataDir = process.env.PANEL_DATA_DIR ?? resolve('data');
+const build = import.meta.env.BUILD_ID;
+---
+<PanelLayout title="Paramètres" subtitle="Apparence et informations sur cette instance du panel" refreshMs={null}>
+  <div class="settings">
+    <SettingsGroup title="Apparence">
+      <SettingsRow icon="theme" title="Thème" desc="Système : suit le réglage clair ou sombre de l’appareil.">
+        <Segmented label="Thème" attr="theme-set" selected="system" options={[
+          { value: 'light', label: 'Clair', icon: 'sun' },
+          { value: 'dark', label: 'Sombre', icon: 'moon' },
+          { value: 'system', label: 'Système', icon: 'monitor' },
+        ]} />
+      </SettingsRow>
+      <SettingsRow icon="panelLeft" title="Menu" desc="Automatique : réduit aux icônes sous 1000 px de large. Mémorisé sur cet appareil.">
+        <Segmented label="Largeur du menu" attr="nav-set" selected="auto" options={[
+          { value: 'expanded', label: 'Complet' },
+          { value: 'compact', label: 'Compact' },
+          { value: 'auto', label: 'Automatique' },
+        ]} />
+      </SettingsRow>
+    </SettingsGroup>
+
+    <SettingsGroup title="Instance">
+      <SettingsRow icon="server" title="Nom du panel" desc="Variable PANEL_NAME.">{PANEL_NAME}</SettingsRow>
+      <SettingsRow icon="box" title="Version"><span class="mono">{pkg.version}{build ? ` · build ${build}` : ''}</span></SettingsRow>
+      <SettingsRow icon="globe" title="Adresse" desc="Variable PANEL_PUBLIC_URL, sinon l’adresse de cette page."><span class="mono wrap">{publicUrl}</span></SettingsRow>
+      <SettingsRow icon="database" title="Dossier de données" desc="Variable PANEL_DATA_DIR : comptes, modules installés, réglages."><span class="mono wrap">{dataDir}</span></SettingsRow>
+    </SettingsGroup>
+
+    <SettingsGroup title="Administration">
+      <SettingsRow icon="store" title="Magasin" desc="Installer ou désinstaller les intégrations du panel." href="/modules" />
+      <SettingsRow icon="users" title="Utilisateurs" desc="Comptes, droits par onglet et protection par connexion." href="/acces" />
+    </SettingsGroup>
+  </div>
+</PanelLayout>
+
+<style>
+  .settings { display: flex; flex-direction: column; gap: var(--space-6); max-width: 52rem; }
+  .mono { font-family: var(--font-mono); font-size: var(--meta-size); color: var(--text-primary); }
+  .wrap { overflow-wrap: anywhere; text-align: right; }
+  @media (max-width: 640px) {
+    .wrap { text-align: left; }
+    .settings :global(.srow__end) { padding-left: 0; }
+    .settings :global(.seg) { width: 100%; }
+    .settings :global(.seg__btn) { flex: 1; justify-content: center; }
+  }
+</style>

@@ -1,0 +1,48 @@
+---
+import { readFileSync } from 'node:fs';
+import { getModule, logoFile } from '../../server/modules/registry.js';
+
+interface Props { id: string; size?: number; class?: string }
+const { id, size = 16, class: className = '' } = Astro.props;
+
+const isInk = (hex: string) => {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return false;
+  const [r, g, b] = [0, 2, 4].map((i) => {
+    const c = parseInt(m[1].slice(i, i + 2), 16) / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b < 0.05;
+};
+
+const widthFor = (svgText: string) => {
+  const vb = /viewBox="[-\d.]+[\s,]+[-\d.]+[\s,]+([\d.]+)[\s,]+([\d.]+)"/.exec(svgText);
+  const ratio = vb ? Number(vb[1]) / Number(vb[2]) : 1;
+  return ratio > 1.5 ? Math.round(size * ratio) : size;
+};
+
+let svg = '';
+const m = getModule(id);
+const file = m ? logoFile(id, m.logo) : null;
+try {
+  if (file) {
+    svg = readFileSync(file, 'utf8')
+      .replace(/<!--[\s\S]*?-->/g, '').replace(/<title>[\s\S]*?<\/title>/g, '').replace(/<\?xml[^>]*>/g, '').trim();
+    if (/<script|\son[a-z]+=|javascript:/i.test(svg)) svg = '';
+    svg = svg
+      .replace(/(fill|stroke)="(#[0-9a-f]{6})"/gi, (all, attr, hex) => (isInk(hex) ? `${attr}="currentColor"` : all))
+      .replace(/<svg\b([^>]*)>/, (_, attrs: string) =>
+        `<svg${attrs.replace(/\s(width|height|role|class|aria-hidden|focusable)="[^"]*"/g, '')} width="${widthFor(svg)}" height="${size}" class="mlogo ${className}" aria-hidden="true" focusable="false">`);
+  }
+} catch { svg = ''; }
+---
+{svg ? <Fragment set:html={svg} /> : <span class:list={['mlogo mlogo--none', className]} style={`--mlogo:${size}px`} aria-hidden="true">{(m?.name ?? id).slice(0, 1).toUpperCase()}</span>}
+
+<style is:global>
+  .mlogo { flex-shrink: 0; display: block; }
+  .mlogo--none {
+    display: inline-grid; place-items: center; width: var(--mlogo); height: var(--mlogo);
+    border-radius: var(--radius-xs); background: var(--bg-hover); color: var(--text-secondary);
+    font-size: calc(var(--mlogo) * 0.6); font-weight: var(--weight-semibold); line-height: 1;
+  }
+</style>

@@ -1,0 +1,517 @@
+---
+import { ClientRouter } from 'astro:transitions';
+import Icon from '../components/ui/Icon.astro';
+import Sym from '../components/ui/Sym.astro';
+import Kbd from '../components/ui/Kbd.astro';
+import ModuleLogo from '../components/ui/ModuleLogo.astro';
+import PageHeader from '../components/ui/PageHeader.astro';
+import { LUCIDE, type IconName } from '../components/ui/lucide';
+import { PANEL_MARK } from '../components/ui/icons';
+import { PANEL_NAME } from '../server/core/panel';
+import { SECTIONS, buildNav, currentItem, visibleTabs, type NavItem } from './nav';
+import '../styles/inter-latin.css';
+import '../styles/global.css';
+import '../styles/ui.css';
+
+interface Props {
+  title: string;
+  subtitle?: string;
+  refreshMs?: number | null;
+  favicon?: string;
+  bare?: boolean;
+}
+const { title, subtitle, refreshMs = 3_000, favicon: faviconProp, bare = false } = Astro.props;
+
+const SPRITE: IconName[] = ['chevronDown', 'chevronRight'];
+
+const user = Astro.locals.user;
+const authOn = Astro.locals.authEnabled;
+const NAV = await buildNav(visibleTabs(authOn, user));
+
+const path = Astro.url.pathname;
+const page = currentItem(NAV, path);
+const isCurrent = (item: NavItem) => item === page;
+const section = SECTIONS.find((s) => s.id === page?.sec && s.label !== page?.label);
+const logoKey = 'panel';
+const ICON_V = 6;
+const favicon = faviconProp ?? `/icons/${logoKey}.svg?v=${ICON_V}`;
+---
+<!doctype html>
+<html lang="fr" transition:animate="none" data-ui={bare ? 'classic' : 'notion'}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href={favicon} />
+    <link rel="icon" type="image/png" sizes="32x32" href={`/icons/${logoKey}.png?size=32&v=${ICON_V}`} />
+    <link rel="apple-touch-icon" href={`/icons/${logoKey}.png?size=180&bg=white&v=${ICON_V}`} />
+    <title>{title} · {PANEL_NAME}</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <script is:inline>
+      (function () {
+        function pref(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
+        function apply() {
+          var root = document.documentElement;
+          var t = pref('panel-theme');
+          if (t !== 'light' && t !== 'dark') {
+            t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          }
+          root.setAttribute('data-theme', t);
+          var n = pref('panel-nav');
+          if (n === 'compact' || n === 'expanded') root.setAttribute('data-nav', n);
+          else root.removeAttribute('data-nav');
+          var s = pref('panel-navsec');
+          if (s) root.setAttribute('data-navsec', s); else root.removeAttribute('data-navsec');
+          var subClosed = (pref('panel-navsub') || '').split(' ');
+          var tg = document.querySelectorAll('[data-navsub]');
+          for (var j = 0; j < tg.length; j++) {
+            var id = tg[j].getAttribute('data-navsub');
+            var kids = document.querySelectorAll('li[data-subof="' + id + '"]');
+            var cur = false;
+            for (var k = 0; k < kids.length; k++) if (kids[k].querySelector('.navlink--on')) cur = true;
+            var open = subClosed.indexOf(id) < 0 || cur;
+            tg[j].setAttribute('aria-expanded', String(open));
+            for (var k2 = 0; k2 < kids.length; k2++) kids[k2].hidden = !open;
+          }
+          var closed = (s || '').split(' ');
+          var secs = document.querySelectorAll('.navsec[data-sec]');
+          for (var i = 0; i < secs.length; i++) {
+            if (closed.indexOf(secs[i].getAttribute('data-sec')) >= 0) secs[i].setAttribute('data-collapsed', '');
+            else secs[i].removeAttribute('data-collapsed');
+          }
+          root.style.setProperty('--pulse-phase', -(Date.now() % 2000) + 'ms');
+        }
+        apply();
+        document.addEventListener('astro:after-swap', apply);
+        window.__applyPanelPrefs = apply;
+        var root = document.documentElement;
+        if (root.getAttribute('data-ui') === 'notion' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          root.setAttribute('data-enter', '');
+          setTimeout(function () { root.removeAttribute('data-enter'); }, 900);
+        }
+      })();
+    </script>
+    <meta name="orvane-build" content={import.meta.env.BUILD_ID} />
+    <ClientRouter />
+  </head>
+  <body data-refresh={refreshMs ?? undefined}>
+    <a class="skip-link" href="#main">Aller au contenu</a>
+    <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
+      {SPRITE.map((n) => <symbol id={`ic-${n}`} viewBox="0 0 24 24" set:html={LUCIDE[n]} />)}
+    </svg>
+
+    <div class="window">
+      <nav class="pane" id="nav-pane" aria-label="Navigation principale" transition:name="navpane">
+        <div class="pane__head">
+          <a class="brand" href="/" title="Accueil" aria-label={`${PANEL_NAME}, accueil`} data-astro-prefetch="hover">
+            <span class="brand__mark"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true" set:html={PANEL_MARK} /></span>
+            <span class="brand__name">{PANEL_NAME}</span>
+          </a>
+          <button type="button" class="iconbtn pane__toggle" data-nav-toggle aria-controls="nav-pane" aria-expanded="true"
+                  aria-label="Réduire ou afficher le menu de navigation" title="Réduire le menu">
+            <Icon name="panelLeft" size={16} />
+          </button>
+        </div>
+
+        <div class="pane__scroll">
+          {SECTIONS.map((s) => {
+            const items = NAV.filter((i) => i.sec === s.id);
+            return items.length > 0 && (
+              <section class:list={['navsec', items.some(isCurrent) && 'navsec--current']} data-sec={s.id} aria-label={s.label}>
+                <button type="button" class="navsec__head" data-navsec={s.id} aria-expanded="true" aria-controls={`navsec-${s.id}`}>
+                  <span>{s.label}</span>
+                  <Sym name="chevronDown" size={16} class="navsec__chev" />
+                </button>
+                <div class="navsec__body" id={`navsec-${s.id}`}>
+                  <ul class="navsec__list">
+                    {items.map((item, i) => (
+                      <li class="navitem" data-subof={item.parent}>
+                        <a
+                          href={item.href}
+                          class:list={['navlink', isCurrent(item) && 'navlink--on', item.parent && 'navlink--sub']}
+                          aria-current={isCurrent(item) ? 'page' : undefined}
+                          title={item.label}
+                          data-astro-prefetch="hover"
+                        >
+                          <span class="navlink__glyph">{item.module ? <ModuleLogo id={item.module} size={16} /> : <Icon name={item.icon!} size={16} />}</span>
+                          <span class="navlink__label">{item.label}</span>
+                          {(item.badge || item.badgeId) && <span class="navlink__badge" data-badge={item.badgeId} aria-label={`${item.badge ?? 0} non lus`} hidden={!item.badge}>{item.badge ?? 0}</span>}
+                        </a>
+                        {items[i + 1]?.parent === item.tab && (
+                          <button type="button" class="navsub-toggle" data-navsub={item.tab} aria-expanded="true"
+                                  aria-label={`Afficher ou masquer les sous-onglets de ${item.label}`} title="Replier">
+                            <Sym name="chevronDown" size={14} />
+                          </button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </section>
+            );
+          })}
+        </div>
+        <script is:inline>window.__applyPanelPrefs && window.__applyPanelPrefs();</script>
+
+        {authOn && user && (
+          <div class="pane__foot">
+            <span class="account" title={user.email && user.email !== user.name ? user.email : user.name}>
+              <span class="account__avatar" aria-hidden="true">{(user.name ?? '?').trim().slice(0, 1).toUpperCase()}</span>
+              <span class="account__name">{user.name}</span>
+            </span>
+            <button type="button" class="iconbtn" data-logout aria-label="Se déconnecter" title="Se déconnecter">
+              <Icon name="logout" size={16} />
+            </button>
+          </div>
+        )}
+      </nav>
+      <div class="scrim" data-nav-close aria-hidden="true"></div>
+
+      <header class="topbar" transition:name="titlebar">
+        <button type="button" class="iconbtn topbar__menu" data-nav-toggle aria-controls="nav-pane" aria-expanded="true"
+                aria-label="Afficher ou masquer le menu de navigation" title="Menu">
+          <Icon name="menu" size={16} />
+        </button>
+        <nav class="crumbs" aria-label="Fil d’Ariane">
+          {section && <span class="crumbs__sec">{section.label}</span>}
+          {section && <Sym name="chevronRight" size={16} class="crumbs__sep" />}
+          {page && path !== page.href ? (
+            <>
+              <a class="crumbs__link" href={page.href} data-astro-prefetch="hover">{page.label}</a>
+              <Sym name="chevronRight" size={16} class="crumbs__sep" />
+              <span class="crumbs__page" aria-current="page">{title === page.label && subtitle ? subtitle : title}</span>
+            </>
+          ) : (
+            <span class="crumbs__page" aria-current="page">{page?.label ?? title}</span>
+          )}
+        </nav>
+
+        <div class="topbar__right">
+          {refreshMs && (
+            <p class="refresh" id="refresh-state" data-idle={`Actualisation · ${Math.round(refreshMs / 1000)} s`}>
+              <span class="refresh__dot" aria-hidden="true"></span>
+              <span class="refresh__txt">Actualisation · {Math.round(refreshMs / 1000)} s</span>
+            </p>
+          )}
+          <button type="button" class="cmdk-btn" data-cmdk-open aria-haspopup="dialog" aria-keyshortcuts="Control+K Meta+K"
+                  title="Palette de commandes">
+            <Icon name="command" size={16} />
+            <span class="cmdk-btn__txt">Aller à…</span>
+            <Kbd keys="Mod+K" class="cmdk-btn__keys" />
+          </button>
+          <form class="tsearch" role="search" data-tsearch data-processus={NAV.some((i) => i.tab === 'processus') ? '' : undefined}>
+            <Icon name="search" size={16} />
+            <label class="visually-hidden" for="tsearch-input">Rechercher</label>
+            <input id="tsearch-input" type="search" autocomplete="off" spellcheck="false"
+                   placeholder="Chercher un processus ou un PID" />
+          </form>
+        </div>
+      </header>
+
+      <div class="content">
+        {bare ? (
+          <h1 class="visually-hidden">{title}</h1>
+        ) : (
+          <PageHeader title={title} description={subtitle}>
+            {Astro.slots.has('actions') && <Fragment slot="actions"><slot name="actions" /></Fragment>}
+          </PageHeader>
+        )}
+        <main id="main" class:list={['main', bare && 'main--bare']}><slot /></main>
+      </div>
+    </div>
+
+    <script>
+      import '../scripts/layout/index';
+    </script>
+
+    <style>
+      .window {
+        display: grid;
+        grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+        grid-template-rows: var(--titlebar-height) minmax(0, 1fr);
+        grid-template-areas: 'pane top' 'pane content';
+        height: 100dvh;
+        background: var(--bg-mica);
+        color: var(--text-primary);
+        font-family: var(--font-ui); font-size: var(--body-size); line-height: var(--body-lh);
+      }
+
+      .pane {
+        grid-area: pane;
+        display: flex; flex-direction: column; min-height: 0; min-width: 0;
+        background: var(--bg-mica);
+        position: relative; z-index: 5;
+      }
+      .pane__head {
+        display: flex; align-items: center; gap: var(--space-1); flex: none;
+        height: var(--titlebar-height); padding: 0 var(--space-2) 0 var(--space-3);
+      }
+      .brand {
+        display: inline-flex; align-items: center; gap: var(--space-2); flex: 1; min-width: 0;
+        margin-left: -6px; padding: 4px 6px; border-radius: var(--radius-control);
+        color: inherit; text-decoration: none;
+        transition: background-color var(--dur-fast) var(--ease-out);
+      }
+      .brand:hover { background: var(--nav-hover); }
+      .brand__mark { display: inline-grid; place-items: center; flex: none; width: 24px; height: 24px; }
+      .brand__name {
+        font-size: var(--dense-size); line-height: var(--dense-lh); font-weight: 600;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+
+      .iconbtn {
+        display: inline-grid; place-items: center; flex: none; width: 28px; height: 28px;
+        border: 0; border-radius: var(--radius-control); background: transparent; color: var(--text-secondary);
+        cursor: pointer;
+        transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out),
+                    transform var(--dur-fast) var(--ease-out);
+      }
+      .iconbtn:hover { background: var(--nav-hover); color: var(--text-primary); }
+      .iconbtn:active { transform: scale(var(--press-scale)); }
+
+      .pane__scroll {
+        flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+        display: flex; flex-direction: column; gap: var(--space-3);
+        padding: var(--space-1) var(--space-2) var(--space-3);
+      }
+
+      .navsec__head {
+        display: flex; align-items: center; justify-content: space-between; gap: var(--space-2);
+        width: 100%; height: 24px; padding: 0 var(--space-2);
+        border: 0; border-radius: var(--radius-control); background: transparent;
+        color: var(--text-secondary); font-size: var(--micro-size); line-height: var(--micro-lh); font-weight: 600;
+        letter-spacing: 0.02em; cursor: pointer; text-align: left;
+        transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+      }
+      .navsec__head:hover { background: var(--nav-hover); color: var(--text-primary); }
+      .navsec__head[aria-disabled='true'] { cursor: default; }
+      .navsec__head[aria-disabled='true']:hover { background: transparent; color: var(--text-secondary); }
+      .navsec__head[aria-disabled='true'] :global(.navsec__chev) { visibility: hidden; }
+      .navsec__head :global(.navsec__chev) { opacity: 0; transition: transform var(--dur-base) var(--ease-out), opacity var(--dur-fast) var(--ease-out); }
+      .navsec__head:hover :global(.navsec__chev), .navsec__head:focus-visible :global(.navsec__chev) { opacity: 1; }
+      .navsec__body { display: grid; grid-template-rows: 1fr; transition: grid-template-rows var(--dur-base) var(--ease-out); }
+      .navsec__list {
+        list-style: none; margin: 0; padding: 2px 0 0; min-height: 0; overflow: hidden;
+        display: flex; flex-direction: column; gap: 1px;
+        visibility: visible; transition: visibility 0s linear 0s;
+      }
+      .navsec[data-collapsed]:not(.navsec--current) .navsec__body { grid-template-rows: 0fr; }
+      .navsec[data-collapsed]:not(.navsec--current) .navsec__list {
+        visibility: hidden; transition: visibility 0s linear var(--dur-base);
+      }
+      .navsec__head[aria-expanded='false'] :global(.navsec__chev) { transform: rotate(-90deg); opacity: 1; }
+
+      .navlink {
+        position: relative;
+        display: flex; align-items: center; gap: var(--space-2);
+        width: 100%; height: 30px; padding: 0 var(--space-2);
+        border: 0; border-radius: var(--radius-control); background: transparent;
+        color: var(--text-primary); text-decoration: none; text-align: left; cursor: pointer;
+        font-size: var(--dense-size); line-height: var(--dense-lh); font-weight: 500;
+        transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+      }
+      .navlink:hover { background: var(--nav-hover); color: var(--text-primary); }
+      .navlink:active { background: var(--nav-selected); }
+      .navlink--on { background: var(--nav-selected); color: var(--text-primary); font-weight: 600; }
+      .navlink:focus-visible { outline-offset: -2px; }
+      .navlink__label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .navlink__badge { margin-left: auto; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px; background: var(--accent); color: var(--accent-fg); font-size: var(--micro-size); font-weight: 600; font-variant-numeric: tabular-nums; display: inline-grid; place-items: center; }
+      .navlink__glyph { display: inline-grid; place-items: center; width: 20px; height: 20px; flex: none; color: var(--text-primary); transition: transform var(--dur-base) var(--ease-out); }
+      .navlink:active .navlink__glyph { transform: scale(0.9); }
+      .navlink--sub { margin-left: 18px; width: calc(100% - 18px); border-radius: 0 var(--radius-control) var(--radius-control) 0; box-shadow: inset 1px 0 0 var(--border-strong); }
+      .navitem { position: relative; }
+      .navitem[hidden] { display: none; }
+      .navitem:has(.navsub-toggle) .navlink { padding-right: 32px; }
+      .navsub-toggle {
+        position: absolute; top: 50%; right: 4px; translate: 0 -50%;
+        display: inline-grid; place-items: center; width: 22px; height: 22px;
+        border: 0; border-radius: var(--radius-xs); background: transparent; color: var(--text-tertiary); cursor: pointer;
+        transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+      }
+      .navsub-toggle:hover { background: var(--nav-selected); color: var(--text-primary); }
+      .navsub-toggle :global(svg) { transition: transform var(--dur-base) var(--ease-out); }
+      .navsub-toggle[aria-expanded='false'] :global(svg) { transform: rotate(-90deg); }
+      .navitem:has(.navsub-toggle) .navlink__badge { margin-right: 2px; }
+      :global(:root[data-nav='compact']) .navlink--sub { margin-left: 0; width: 100%; box-shadow: none; }
+      :global(:root[data-nav='compact']) .navsub-toggle { display: none; }
+      :global(:root[data-nav='compact']) .navitem[hidden] { display: list-item; }
+      @media (max-width: 1000px) {
+        :global(:root:not([data-nav])) .navlink--sub { margin-left: 0; width: 100%; box-shadow: none; }
+        :global(:root:not([data-nav])) .navsub-toggle { display: none; }
+        :global(:root:not([data-nav])) .navitem[hidden] { display: list-item; }
+      }
+      @media (max-width: 640px) {
+        :global(:root[data-nav]) .navsub-toggle, :global(:root:not([data-nav])) .navsub-toggle { display: inline-grid; }
+        :global(:root[data-nav]) .navitem[hidden], :global(:root:not([data-nav])) .navitem[hidden] { display: none; }
+        :global(:root[data-nav]) .navlink--sub, :global(:root:not([data-nav])) .navlink--sub { margin-left: 18px; width: calc(100% - 18px); box-shadow: inset 1px 0 0 var(--border-strong); }
+      }
+
+      .pane__foot {
+        flex: none; display: flex; align-items: center; gap: var(--space-2);
+        padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3); border-top: var(--border-width) solid var(--border);
+      }
+      .account { display: flex; align-items: center; gap: var(--space-2); flex: 1; min-width: 0; font-size: var(--dense-size); }
+      .account__avatar {
+        display: inline-grid; place-items: center; flex: none; width: 20px; height: 20px; border-radius: var(--radius-full);
+        background: var(--bg-hover); color: var(--text-secondary); font-size: var(--micro-size); font-weight: 600;
+      }
+      .account__name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-secondary); }
+
+      .scrim { display: none; }
+
+      .topbar {
+        grid-area: top;
+        display: flex; align-items: center; gap: var(--space-3); min-width: 0;
+        padding: 0 var(--space-4) 0 var(--space-5);
+        background: var(--bg-app);
+        box-shadow: inset var(--border-width) 0 0 var(--border);
+      }
+      .topbar__menu { display: none; }
+      .crumbs { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: var(--dense-size); line-height: var(--dense-lh); color: var(--text-secondary); }
+      .crumbs__sec { white-space: nowrap; }
+      .crumbs :global(.crumbs__sep) { color: var(--text-tertiary); }
+      .crumbs__page { color: var(--text-primary); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .crumbs__link {
+        color: inherit; text-decoration: none; white-space: nowrap; padding: 2px 4px; margin: -2px -4px; border-radius: var(--radius-control);
+        transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+      }
+      .crumbs__link:hover { background: var(--bg-hover); color: var(--text-primary); }
+      .topbar__right { margin-left: auto; display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
+
+      .refresh {
+        display: flex; align-items: center; gap: var(--space-2);
+        font-size: var(--meta-size); line-height: var(--meta-lh); color: var(--text-tertiary); white-space: nowrap;
+      }
+      .refresh__dot { position: relative; width: 7px; height: 7px; border-radius: 50%; background: var(--status-online); flex: none; }
+      .refresh__dot::after {
+        content: ''; position: absolute; inset: 0; border-radius: 50%; background: inherit;
+        animation: n-pulse 2s var(--ease-out) infinite; animation-delay: var(--pulse-phase, 0ms);
+      }
+      .refresh--paused .refresh__dot { background: var(--status-offline); }
+      .refresh--paused .refresh__dot::after { animation: none; opacity: 0; }
+
+      .cmdk-btn {
+        display: inline-flex; align-items: center; gap: var(--space-2); flex: none;
+        height: var(--control-h); padding: 0 var(--space-1) 0 var(--space-3);
+        border: var(--border-width) solid var(--border); border-radius: var(--radius-control);
+        background: var(--bg-surface); color: var(--text-secondary);
+        font-size: var(--dense-size); cursor: pointer;
+        transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+      }
+      .cmdk-btn:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--border-strong); }
+      .cmdk-btn :global(.kbd) { height: 22px; }
+
+      .tsearch {
+        display: flex; align-items: center; gap: var(--space-2);
+        width: clamp(200px, 24vw, 320px); min-width: 0; height: 32px; padding-inline: var(--space-3);
+        background: var(--control-fill); color: var(--text-secondary);
+        border: var(--border-width) solid var(--field-stroke); border-radius: var(--radius-control);
+        transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out),
+                    box-shadow var(--dur-fast) var(--ease-out);
+      }
+      .tsearch:hover { border-color: var(--text-tertiary); }
+      .tsearch:focus-within {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+        outline: 2px solid transparent;
+      }
+      .tsearch input {
+        flex: 1; min-width: 0; height: 100%; border: 0; outline: none; background: transparent;
+        color: var(--text-primary); font-size: var(--dense-size);
+      }
+      .tsearch input::placeholder { color: var(--text-secondary); }
+      .tsearch input::-webkit-search-cancel-button { cursor: pointer; }
+
+      .content {
+        grid-area: content;
+        display: flex; flex-direction: column;
+        min-width: 0; min-height: 0;
+        overflow-y: auto;
+        background: var(--bg-app);
+        border-top: var(--border-width) solid var(--border);
+        border-left: var(--border-width) solid var(--border);
+        view-transition-name: page;
+      }
+      .main {
+        width: 100%; max-width: var(--content-max); margin-inline: auto;
+        padding: var(--space-4) var(--page-gutter) var(--space-8);
+        display: flex; flex-direction: column; gap: var(--space-4);
+      }
+      .main--bare { padding: 0; gap: 0; max-width: none; margin: 0; flex: 1; min-height: 0; }
+
+      :global(:root[data-nav='compact']) .window { grid-template-columns: var(--sidebar-width-collapsed) minmax(0, 1fr); }
+      :global(:root[data-nav='compact']) .brand,
+      :global(:root[data-nav='compact']) .navsec__head,
+      :global(:root[data-nav='compact']) .navlink__label, :global(:root[data-nav='compact']) .navlink__badge,
+      :global(:root[data-nav='compact']) .account { display: none; }
+      :global(:root[data-nav='compact']) .pane__foot { justify-content: center; padding-inline: 0; }
+      :global(:root[data-nav='compact']) .pane__head { justify-content: center; padding: 0; }
+      :global(:root[data-nav='compact']) .pane__scroll { padding-inline: var(--space-2); gap: var(--space-2); }
+      :global(:root[data-nav='compact']) .navsec + .navsec { border-top: var(--border-width) solid var(--border); padding-top: var(--space-2); }
+      :global(:root[data-nav='compact']) .navsec__body { grid-template-rows: 1fr !important; }
+      :global(:root[data-nav='compact']) .navsec__list { visibility: visible !important; }
+      :global(:root[data-nav='compact']) .navlink { justify-content: center; padding: 0; }
+      @media (max-width: 1000px) {
+        :global(:root:not([data-nav])) .window { grid-template-columns: var(--sidebar-width-collapsed) minmax(0, 1fr); }
+        :global(:root:not([data-nav])) .brand,
+        :global(:root:not([data-nav])) .navsec__head,
+        :global(:root:not([data-nav])) .navlink__label, :global(:root:not([data-nav])) .navlink__badge,
+        :global(:root:not([data-nav])) .account { display: none; }
+        :global(:root:not([data-nav])) .pane__foot { justify-content: center; padding-inline: 0; }
+        :global(:root:not([data-nav])) .pane__head { justify-content: center; padding: 0; }
+        :global(:root:not([data-nav])) .pane__scroll { padding-inline: var(--space-2); gap: var(--space-2); }
+        :global(:root:not([data-nav])) .navsec + .navsec { border-top: var(--border-width) solid var(--border); padding-top: var(--space-2); }
+        :global(:root:not([data-nav])) .navsec__body { grid-template-rows: 1fr !important; }
+        :global(:root:not([data-nav])) .navsec__list { visibility: visible !important; }
+        :global(:root:not([data-nav])) .navlink { justify-content: center; padding: 0; }
+      }
+
+      @media (max-width: 640px) {
+        :global(:root[data-nav]) .window,
+        :global(:root:not([data-nav])) .window {
+          grid-template-columns: minmax(0, 1fr);
+          grid-template-areas: 'top' 'content';
+        }
+        .pane {
+          position: fixed; z-index: 40; inset: 0 auto 0 0;
+          width: min(280px, 85vw);
+          border-right: var(--border-width) solid var(--border);
+          box-shadow: var(--shadow-overlay);
+          transform: translateX(-100%);
+          visibility: hidden;
+          transition: transform var(--dur-base) var(--ease-out), visibility 0s linear var(--dur-base);
+        }
+        :global(body.nav-open) .pane {
+          transform: none; visibility: visible;
+          transition: transform var(--dur-base) var(--ease-out);
+        }
+        :global(:root[data-nav]) .brand, :global(:root:not([data-nav])) .brand { display: inline-flex; }
+        :global(:root[data-nav]) .navsec__head, :global(:root:not([data-nav])) .navsec__head { display: flex; }
+        :global(:root[data-nav]) .navlink__label, :global(:root:not([data-nav])) .navlink__label { display: block; }
+        :global(:root[data-nav]) .navlink__badge:not([hidden]), :global(:root:not([data-nav])) .navlink__badge:not([hidden]) { display: inline-grid; }
+        :global(:root[data-nav]) .account, :global(:root:not([data-nav])) .account { display: flex; }
+        :global(:root[data-nav]) .pane__foot, :global(:root:not([data-nav])) .pane__foot { justify-content: flex-start; padding-inline: var(--space-3) var(--space-2); }
+        :global(:root[data-nav]) .pane__head, :global(:root:not([data-nav])) .pane__head { justify-content: flex-start; padding: 0 var(--space-2) 0 var(--space-3); }
+        :global(:root[data-nav]) .navsec + .navsec, :global(:root:not([data-nav])) .navsec + .navsec { border-top: 0; padding-top: 0; }
+        :global(:root[data-nav]) .navlink, :global(:root:not([data-nav])) .navlink { justify-content: flex-start; padding: 0 var(--space-2); height: 36px; }
+        .topbar__menu { display: inline-grid; width: 36px; height: 36px; }
+        .topbar { gap: var(--space-2); padding-inline: var(--space-1) var(--space-2); box-shadow: none; }
+        .crumbs__sec, .crumbs__link, .crumbs :global(.crumbs__sep) { display: none; }
+        .tsearch { display: none; }
+        .cmdk-btn { width: 36px; height: 36px; padding: 0; justify-content: center; }
+        .cmdk-btn :global(.cmdk-btn__keys) { display: none; }
+        .refresh__txt { display: none; }
+
+        .scrim { position: fixed; inset: 0; z-index: 30; background: var(--scrim); }
+        :global(body.nav-open) .scrim { display: block; animation: n-fade var(--dur-base) var(--ease-out); }
+
+        .content { border-left: 0; }
+      }
+      @media (pointer: coarse) { .iconbtn { width: 44px; height: 44px; } .navlink { height: 44px; } }
+      @media (prefers-reduced-motion: reduce) {
+        .iconbtn:active { transform: none; }
+        .refresh__dot::after { display: none; }
+      }
+    </style>
+
+  </body>
+</html>

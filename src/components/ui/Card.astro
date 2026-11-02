@@ -1,0 +1,65 @@
+---
+import type { IconName } from './lucide';
+
+interface Props {
+  title?: string;
+  description?: string;
+  eyebrow?: string;
+  flush?: boolean;
+  icon?: IconName;
+  interactive?: boolean;
+  class?: string;
+  id?: string;
+}
+const { title, description, eyebrow, flush = false, interactive = false, class: className = '', id } = Astro.props;
+const heading = title ?? eyebrow;
+const hasHeader = Boolean(heading || description || Astro.slots.has('actions'));
+---
+<section id={id} class:list={['card', flush && 'card--flush', interactive && 'card--interactive', className]}>
+  {hasHeader && (
+    <header class="card__head">
+      <div class="card__titles">
+        {heading && <h2 class="t-card card__title">{heading}</h2>}
+        {description && <p class="card__desc">{description}</p>}
+      </div>
+      {Astro.slots.has('actions') && (
+        <div class="card__actions"><slot name="actions" /></div>
+      )}
+    </header>
+  )}
+  <div class="card__body"><slot /></div>
+</section>
+
+<style>
+  .card {
+    background: var(--bg-surface);
+    border: var(--border-width) solid transparent;
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card, var(--shadow-xs));
+    overflow: hidden;
+    transition: box-shadow var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
+  }
+  .card--interactive { cursor: pointer; }
+  .card--interactive:hover { box-shadow: var(--shadow-sm); transform: translateY(var(--lift)); }
+  .card__head {
+    display: flex; align-items: center; gap: var(--space-2);
+    padding: var(--space-4) var(--space-5) 0;
+  }
+  .card--flush .card__head { padding-bottom: var(--space-3); }
+  .card__titles { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .card__title {
+    font-family: var(--font-display); font-size: var(--card-size); line-height: var(--card-lh);
+    font-weight: 600; letter-spacing: var(--card-ls); color: var(--text-primary); text-wrap: balance;
+  }
+  .card__desc { font-size: var(--meta-size); line-height: var(--meta-lh); color: var(--text-secondary); text-wrap: pretty; }
+  .card__actions { display: flex; align-items: center; gap: var(--space-2); flex-shrink: 0; margin-left: auto; }
+  .card__body { padding: var(--space-4) var(--space-5) var(--space-5); }
+  .card--flush .card__body { padding: 0; }
+  @media (max-width: 640px) {
+    .card__head { padding-inline: var(--space-4); flex-wrap: wrap; row-gap: var(--space-2); }
+    .card__titles { flex: 1 1 10rem; }
+    .card__actions { flex-wrap: wrap; flex-shrink: 1; min-width: 0; }
+    .card__body { padding: var(--space-3) var(--space-4) var(--space-4); }
+    .card--flush .card__body { padding: 0; }
+  }
+</style>

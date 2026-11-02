@@ -1,0 +1,261 @@
+---
+import PanelLayout from '../layouts/PanelLayout.astro';
+import Button from '../components/ui/Button.astro';
+import Icon from '../components/ui/Icon.astro';
+import Kbd from '../components/ui/Kbd.astro';
+import * as sys from '../server/system/system.js';
+import { safe } from '../server/core/safe';
+import { bytes, percent } from '../server/core/format';
+
+export const prerender = false;
+
+const disks = await safe(() => sys.getDisks(), [] as any[]);
+const cwd = Astro.url.searchParams.get('path') ?? '/';
+---
+<PanelLayout title="Fichiers" refreshMs={null}>
+  <div id="fx" class="fx" data-cwd={cwd}>
+    <div class="fx-cmdbar" id="fx-cmdbar" role="toolbar" aria-label="Commandes">
+      <Button variant="primary" size="sm" icon="add" data-act="new" aria-haspopup="menu">Nouveau</Button>
+      <Button variant="ghost" size="sm" icon="upload" data-act="upload" title="Téléverser des fichiers"><span class="fx-lbl">Téléverser</span></Button>
+      <span class="fx-sepv" aria-hidden="true"></span>
+      <Button variant="ghost" size="sm" icon="scissors" data-act="cut" title="Couper (Ctrl+X)" disabled aria-label="Couper"><span class="fx-lbl">Couper</span></Button>
+      <Button variant="ghost" size="sm" icon="copy" data-act="copy" title="Copier (Ctrl+C)" disabled aria-label="Copier"><span class="fx-lbl">Copier</span></Button>
+      <Button variant="ghost" size="sm" icon="clipboard" data-act="paste" title="Coller (Ctrl+V)" disabled aria-label="Coller"><span class="fx-lbl">Coller</span></Button>
+      <Button variant="ghost" size="sm" icon="pencil" data-act="rename" title="Renommer (F2)" disabled aria-label="Renommer"><span class="fx-lbl">Renommer</span></Button>
+      <Button variant="ghost" size="sm" icon="download" data-act="download" title="Télécharger" disabled aria-label="Télécharger"><span class="fx-lbl">Télécharger</span></Button>
+      <Button variant="danger" size="sm" icon="trash" data-act="delete" title="Supprimer (Suppr)" disabled aria-label="Supprimer"><span class="fx-lbl">Supprimer</span></Button>
+      <span class="fx-grow"></span>
+      <Button variant="ghost" size="sm" icon="panelLeft" data-act="preview" title="Volet d’aperçu (P)" pressed aria-label="Volet d’aperçu"><span class="fx-lbl">Aperçu</span></Button>
+      <input type="file" id="fx-file-input" class="visually-hidden" multiple tabindex="-1" aria-hidden="true" />
+    </div>
+
+    <div class="fx-addrbar" id="fx-nav-bar">
+      <Button variant="ghost" size="sm" iconOnly icon="chevronLeft" data-act="back" title="Précédent (Alt+←)" label="Précédent (Alt+←)"></Button>
+      <Button variant="ghost" size="sm" iconOnly icon="chevronRight" data-act="forward" title="Suivant (Alt+→)" label="Suivant (Alt+→)"></Button>
+      <Button variant="ghost" size="sm" iconOnly icon="arrowUp" data-act="up" title="Dossier parent (Alt+↑)" disabled label="Dossier parent (Alt+↑)"></Button>
+      <Button variant="ghost" size="sm" iconOnly icon="refresh" data-act="refresh" title="Actualiser (F5)" label="Actualiser (F5)"></Button>
+      <div class="fx-address" id="fx-address">
+        <nav class="fx-crumbs" id="fx-crumbs" aria-label="Fil d’Ariane"></nav>
+        <input type="text" id="fx-addr" class="fx-addr" hidden spellcheck="false" autocomplete="off" aria-label="Chemin du dossier" />
+      </div>
+      <div class="fx-search" role="search">
+        <Icon name="search" size={16} />
+        <input class="filter" type="search" id="fx-filter" placeholder="Filtrer ce dossier" aria-label="Filtrer ce dossier" autocomplete="off" spellcheck="false" data-search-target />
+      </div>
+    </div>
+
+    <div id="fx-upload" class="fx-upload" role="status" hidden>
+      <div class="fx-upload__bar" role="progressbar" aria-label="Progression du téléversement" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="fx-upload-fill" class="fx-upload__fill"></div></div>
+      <p id="fx-upload-msg" class="fx-upload__msg"></p>
+      <Button size="sm" id="fx-upload-close">Fermer</Button>
+    </div>
+
+    <div class="fx-body">
+      <nav class="fx-nav" id="fx-nav" aria-label="Volet de navigation">
+        <p class="fx-nav__h">Ce PC</p>
+        {disks.map((d: any) => (
+          <>
+            <button class="fx-disk" type="button" data-path={d.path}>
+              <Icon name="hardDrive" size={20} />
+              <span class="fx-disk__body">
+                <span class="fx-disk__label">{d.label}</span>
+                <span class="fx-disk__track"><span class="fx-disk__fill" style={`width:${percent(d.usedBytes, d.totalBytes)}%`}></span></span>
+                <span class="fx-disk__meta">{bytes(d.freeBytes)} libres sur {bytes(d.totalBytes)}</span>
+              </span>
+            </button>
+            <div class="fx-branch"></div>
+          </>
+        ))}
+        {!disks.length && <button class="fx-disk" type="button" data-path="/"><Icon name="hardDrive" size={20} /><span class="fx-disk__body"><span class="fx-disk__label">Racine /</span></span></button>}
+      </nav>
+
+      <section class="fx-main" aria-label="Contenu du dossier">
+        <h2 class="visually-hidden" id="fx-title">Dossier</h2>
+        <div class="fx-list" id="fx-list" tabindex="0" aria-describedby="fx-hint">
+          <table class="tbl fx-table" id="fx-table" role="grid" aria-labelledby="fx-title" aria-multiselectable="true">
+            <thead>
+              <tr>
+                <th class="fx-chk"><input type="checkbox" id="fx-sel-all" aria-label="Tout sélectionner" tabindex="-1" /></th>
+                <th data-sort="name" aria-sort="ascending"><button type="button" class="fx-th">Nom <span class="fx-arrow" aria-hidden="true"><Icon name="chevronUp" size={16} /></span></button></th>
+                <th data-sort="mtime" aria-sort="none" class="fx-hide-sm"><button type="button" class="fx-th">Modifié le <span class="fx-arrow" aria-hidden="true"></span></button></th>
+                <th data-sort="type" aria-sort="none" class="fx-hide-md"><button type="button" class="fx-th">Type <span class="fx-arrow" aria-hidden="true"></span></button></th>
+                <th data-sort="size" aria-sort="none" class="al-right"><button type="button" class="fx-th">Taille <span class="fx-arrow" aria-hidden="true"></span></button></th>
+                <th class="fx-hide-md">Droits</th>
+              </tr>
+            </thead>
+            <tbody id="fx-tbody"></tbody>
+          </table>
+          <div id="fx-state" hidden></div>
+          <div id="fx-drop" class="fx-drop" hidden><Icon name="upload" size={20} /><p>Déposer pour téléverser dans ce dossier</p></div>
+        </div>
+        <p id="fx-hint" class="visually-hidden">Flèches pour naviguer, Maj pour étendre la sélection, Entrée pour ouvrir.</p>
+        <div class="fx-status">
+          <span id="fx-status" aria-live="polite">Chargement…</span>
+          <span id="fx-clip" class="fx-clip"></span>
+          <span class="fx-status__keys"><Kbd keys="Mod+C" /> <Kbd keys="Mod+X" /> <Kbd keys="Mod+V" /></span>
+        </div>
+      </section>
+
+      <aside class="fx-pv" id="fx-preview" aria-label="Aperçu">
+        <div class="fx-pv__head">
+          <h2 class="fx-pv__title" id="fx-pv-title">Aperçu</h2>
+          <Button variant="ghost" size="sm" iconOnly icon="dismiss" data-act="close-preview" title="Fermer l’aperçu" label="Fermer l’aperçu"></Button>
+        </div>
+        <div class="fx-pv__body" id="fx-pv-body"></div>
+      </aside>
+    </div>
+
+  </div>
+</PanelLayout>
+
+<script>
+  import '../scripts/pages/fichiers';
+</script>
+
+<style is:global>
+  .fx { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+
+  .fx-cmdbar, .fx-addrbar {
+    display: flex; align-items: center; gap: var(--space-1);
+    padding: var(--space-1) var(--space-2);
+    background: var(--bg-surface); border: var(--border-width) solid var(--border); border-radius: var(--radius-md);
+  }
+  .fx-cmdbar { overflow-x: auto; scrollbar-width: none; }
+  .fx-cmdbar > * { flex-shrink: 0; }
+  .fx-grow { flex: 1; }
+  .fx-sepv { width: var(--border-width); height: var(--space-5); background: var(--border); margin-inline: var(--space-1); }
+
+  .fx-address {
+    flex: 1; min-width: 0; height: var(--control-h-sm);
+    display: flex; align-items: center;
+    background: var(--control-fill); border: var(--border-width) solid var(--field-stroke); border-radius: var(--radius-sm);
+    cursor: text;
+  }
+  .fx-address:focus-within { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .fx-crumbs { display: flex; align-items: center; gap: var(--space-0-5); padding-inline: var(--space-2); overflow-x: auto; scrollbar-width: none; white-space: nowrap; width: 100%; }
+  .fx-crumbs[hidden] { display: none; }
+  .fx-crumb { display: inline-flex; align-items: center; padding: var(--space-0-5) var(--space-1-5, var(--space-1)); border-radius: var(--radius-xs); color: var(--text-primary); text-decoration: none; font-size: var(--dense-size); }
+  @media (pointer: coarse) { .fx-crumb { min-height: 44px; padding-inline: var(--space-2); } }
+  .fx-crumb:hover { background: var(--bg-hover); }
+  .fx-crumb:focus-visible { outline: 2px solid var(--focus-ring); }
+  .fx-crumb[aria-current] { font-weight: var(--weight-semibold); }
+  .fx-crumb.is-over, .fx-disk.is-over, .fx-node.is-over { background: var(--accent-subtle); outline: 2px solid var(--accent); outline-offset: -2px; }
+  .fx-sep { display: inline-flex; color: var(--text-tertiary); }
+  .fx-addr { width: 100%; height: 100%; border: 0; background: transparent; color: var(--text-primary); font-family: var(--font-mono); font-size: var(--dense-size); padding-inline: var(--space-3); outline: none; }
+  .fx-search { position: relative; display: flex; align-items: center; width: 15rem; flex-shrink: 0; }
+  .fx-search > svg { position: absolute; left: var(--space-2); color: var(--text-tertiary); pointer-events: none; }
+  .fx-search .filter { width: 100%; height: var(--control-h-sm); padding-left: var(--space-7, 1.75rem); }
+
+  .fx-upload { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-3); background: var(--bg-surface); border: var(--border-width) solid var(--border); border-radius: var(--radius-md); }
+  .fx-upload[hidden] { display: none; }
+  .fx-upload__bar { flex: 0 0 12rem; height: var(--space-1); border-radius: var(--radius-full); background: var(--accent-subtle); overflow: hidden; }
+  .fx-upload__fill { height: 100%; width: 0; background: var(--accent); transition: width var(--dur-base) linear; }
+  .fx-upload__msg { flex: 1; margin: 0; font-size: var(--meta-size); color: var(--text-secondary); min-width: 0; overflow-wrap: anywhere; }
+  .fx-upload[data-state='ok'] .fx-upload__msg { color: var(--success); }
+  .fx-upload[data-state='error'] .fx-upload__msg { color: var(--danger); }
+  .fx-upload[data-state='error'] .fx-upload__fill { background: var(--danger); }
+
+  .fx-body { display: grid; grid-template-columns: 14rem minmax(0, 1fr); gap: var(--space-2); align-items: start; min-width: 0; }
+  .fx--preview .fx-body { grid-template-columns: 14rem minmax(0, 1fr) 22rem; }
+  .fx-pv { display: none; }
+  .fx--preview .fx-pv { display: flex; }
+
+  .fx-nav, .fx-main, .fx-pv { background: var(--bg-surface); border: var(--border-width) solid var(--border); border-radius: var(--radius-md); min-width: 0; }
+  .fx-nav { padding: var(--space-2); display: flex; flex-direction: column; gap: var(--space-1); }
+  .fx-nav__h { margin: var(--space-1) var(--space-2); font-size: var(--micro-size); font-weight: var(--weight-semibold); text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-tertiary); }
+  .fx-disk {
+    display: flex; align-items: flex-start; gap: var(--space-2); width: 100%; text-align: left;
+    padding: var(--space-2); background: transparent; color: var(--text-primary); font-family: inherit;
+    border: var(--border-width) solid transparent; border-radius: var(--radius-sm); cursor: pointer;
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
+  .fx-disk > svg { color: var(--accent); flex-shrink: 0; margin-top: var(--space-0-5); }
+  .fx-disk:hover { background: var(--bg-hover); }
+  .fx-disk.is-active { background: var(--accent-subtle); border-color: var(--accent-border); }
+  .fx-disk:focus-visible, .fx-node:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
+  .fx-disk__body { display: flex; flex-direction: column; gap: var(--space-1); flex: 1; min-width: 0; }
+  .fx-disk__label { font-size: var(--dense-size); font-weight: var(--weight-medium); }
+  .fx-disk__track { height: var(--space-1); border-radius: var(--radius-full); background: var(--bg-surface-2); overflow: hidden; }
+  .fx-disk__fill { display: block; height: 100%; background: var(--accent); }
+  .fx-disk__meta { font-size: var(--micro-size); color: var(--text-tertiary); }
+  .fx-branch { display: flex; flex-direction: column; }
+  .fx-node {
+    display: flex; align-items: center; gap: var(--space-2); width: 100%; text-align: left;
+    padding: var(--space-1) var(--space-2); padding-left: calc(var(--space-2) + var(--depth, 1) * var(--space-3));
+    background: transparent; color: var(--text-secondary); font-family: inherit; font-size: var(--dense-size);
+    border: 0; border-radius: var(--radius-sm); cursor: pointer;
+  }
+  .fx-node > svg { color: var(--text-secondary); flex-shrink: 0; }
+  .fx-node span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fx-node:hover { background: var(--bg-hover); }
+  .fx-node.is-active { color: var(--text-primary); font-weight: var(--weight-medium); background: var(--bg-surface-2); }
+
+  .fx-main { display: flex; flex-direction: column; overflow: hidden; }
+  .fx-list { position: relative; overflow: auto; max-height: calc(100dvh - 17rem); min-height: 18rem; outline: none; }
+  .fx-list:focus-visible { box-shadow: inset 0 0 0 2px var(--focus-ring); }
+  .fx-list[aria-busy='true'] .fx-row { opacity: 0.6; }
+  .fx-table { table-layout: auto; }
+  .fx-table thead th { position: sticky; top: 0; z-index: var(--z-sticky); background: var(--bg-surface); }
+  .fx-th { all: unset; box-sizing: border-box; cursor: pointer; width: 100%; min-height: 24px; display: inline-flex; gap: var(--space-1); align-items: center; }
+  .fx-th:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+  .fx-table th.al-right .fx-th { justify-content: flex-end; }
+  .fx-arrow { display: inline-flex; color: var(--text-secondary); }
+  .fx-table th:hover { background: var(--bg-hover); }
+  .fx-table .fx-chk { width: 2.25rem; text-align: center; padding-inline: var(--space-2); }
+  .fx-chk input { margin: 0; accent-color: var(--accent); cursor: pointer; }
+  .fx-row { cursor: default; user-select: none; }
+  .fx-row.is-selected, .fx-row.is-selected:hover { background: var(--accent-subtle); }
+  .fx-row.is-cursor { box-shadow: inset 0 0 0 1px var(--accent-border); }
+  .fx-row.is-cut .fx-name { opacity: 0.5; }
+  .fx-row.is-over { background: var(--accent-subtle); outline: 2px solid var(--accent); outline-offset: -2px; }
+  .fx-row--up .fx-name { color: var(--text-secondary); }
+  .fx-name { display: inline-flex; align-items: center; gap: var(--space-2); min-width: 0; color: var(--text-primary); }
+  .fx-name > svg { flex-shrink: 0; color: var(--text-tertiary); }
+  .fx-name.is-dir > svg { color: var(--text-secondary); }
+  .fx-name__t { overflow-wrap: break-word; word-break: normal; }
+  .fx-table th:nth-child(2), .fx-table td:nth-child(2) { min-width: 12rem; }
+  .fx-edit { height: var(--control-h-sm); padding-inline: var(--space-2); width: 16rem; max-width: 100%; background: var(--control-fill); color: var(--text-primary); border: var(--border-width) solid var(--accent); border-radius: var(--radius-sm); font: inherit; font-size: var(--dense-size); }
+  .fx-edit:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .fx-retry { display: flex; justify-content: center; gap: var(--space-2); padding-bottom: var(--space-4); }
+  .fx-drop { position: absolute; inset: var(--space-2); z-index: var(--z-pane); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-2); color: var(--accent); background: color-mix(in srgb, var(--bg-surface) 88%, transparent); border: 2px dashed var(--accent); border-radius: var(--radius-md); pointer-events: none; }
+  .fx-drop[hidden] { display: none; }
+  .fx-status { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-4); border-top: var(--border-width) solid var(--border); font-size: var(--meta-size); color: var(--text-secondary); }
+  .fx-clip { color: var(--accent); }
+  .fx-status__keys { margin-left: auto; display: inline-flex; gap: var(--space-1); opacity: 0.8; }
+
+  .fx-pv { flex-direction: column; overflow: hidden; max-height: calc(100dvh - 14rem); }
+  .fx-pv__head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); padding: var(--space-2) var(--space-3); border-bottom: var(--border-width) solid var(--border); }
+  .fx-pv__title { margin: 0; font-size: var(--card-size); font-weight: var(--weight-semibold); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fx-pv__body { overflow: auto; padding: var(--space-3); display: flex; flex-direction: column; gap: var(--space-3); }
+  .fx-kv { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: var(--space-1) var(--space-3); font-size: var(--meta-size); }
+  .fx-kv dt { color: var(--text-tertiary); }
+  .fx-kv dd { margin: 0; color: var(--text-primary); overflow-wrap: anywhere; }
+  .fx-pv-actions { display: flex; gap: var(--space-2); }
+  .fx-pv-img { display: flex; justify-content: center; padding: var(--space-2); background: var(--bg-surface-2); border-radius: var(--radius-sm); }
+  .fx-pv-img img { max-width: 100%; max-height: 14rem; object-fit: contain; }
+  .fx-pv-load { display: flex; flex-direction: column; gap: var(--space-2); }
+  .fx-code { margin: 0; padding: var(--space-3); max-height: 24rem; overflow: auto; background: var(--bg-app); border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: var(--meta-size); line-height: var(--meta-lh); color: var(--text-secondary); white-space: pre; tab-size: 2; }
+  .fx-note { margin: 0; font-size: var(--meta-size); color: var(--text-tertiary); }
+
+  @media (max-width: 1200px) {
+    .fx-cmdbar { flex-wrap: wrap; overflow-x: visible; }
+    .fx--preview .fx-body { grid-template-columns: 14rem minmax(0, 1fr); }
+    .fx--preview .fx-pv { grid-column: 1 / -1; max-height: none; }
+    .fx-hide-md { display: none; }
+  }
+  @media (max-width: 640px) {
+    .fx-body, .fx--preview .fx-body { grid-template-columns: minmax(0, 1fr); }
+    .fx-nav { flex-direction: row; overflow-x: auto; }
+    .fx-nav__h, .fx-branch, .fx-disk__track { display: none; }
+    .fx-disk { width: auto; flex-shrink: 0; }
+    .fx-lbl, .fx-hide-sm, .fx-status__keys { display: none; }
+    .fx-addrbar, .fx-cmdbar { flex-wrap: wrap; overflow-x: visible; }
+    .fx-address { flex-basis: 100%; order: 5; }
+    .fx-search { flex: 1; width: auto; }
+    .fx-list { max-height: 60dvh; }
+    .fx-upload { flex-wrap: wrap; }
+    .fx-upload__bar { flex-basis: 100%; }
+    .fx-table td { padding-block: var(--space-3); }
+  }
+  @media (prefers-reduced-motion: reduce) { .fx-upload__fill, .fx-disk { transition: none; } }
+</style>

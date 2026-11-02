@@ -1,0 +1,31 @@
+---
+import Icon from './Icon.astro';
+
+interface Props { id?: string; name?: string; label?: string; class?: string; disabled?: boolean }
+const { id, name, label, class: className = '', disabled = false, ...rest } = Astro.props;
+---
+<span class:list={['select', className]}>
+  <select id={id} name={name} aria-label={label} disabled={disabled} {...rest}><slot /></select>
+  <Icon name="chevronDown" size={16} class="select__chev" />
+</span>
+
+<style>
+  .select { position: relative; display: inline-flex; align-items: center; min-width: 0; }
+  .select select {
+    appearance: none; -webkit-appearance: none;
+    height: var(--control-h); min-width: 0; width: 100%; padding: 0 var(--control-h) 0 var(--space-3);
+    border: var(--border-width) solid var(--field-stroke); border-radius: var(--radius-control);
+    background: var(--control-fill); color: var(--text-primary);
+    font-family: var(--font-ui); font-size: var(--dense-size); cursor: pointer;
+    box-shadow: var(--shadow-xs);
+    transition: border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+  }
+  .select select:hover { border-color: var(--text-tertiary); }
+  .select select:focus-visible {
+    outline: 2px solid transparent;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+  }
+  .select select:disabled { color: var(--text-disabled); cursor: not-allowed; background: var(--bg-surface-2); }
+  .select :global(.select__chev) { position: absolute; right: 10px; pointer-events: none; color: var(--text-tertiary); }
+</style>

@@ -1,0 +1,71 @@
+---
+import Icon from './Icon.astro';
+import type { IconName } from './lucide';
+
+interface Tab { id: string; label: string; icon?: IconName; count?: number | string }
+interface Props { id: string; tabs: Tab[]; label: string; selected?: string; class?: string }
+const { id, tabs, label, selected = tabs[0]?.id, class: className = '' } = Astro.props;
+const panels = await Promise.all(tabs.map(async (t) => (Astro.slots.has(t.id) ? Astro.slots.render(t.id) : '')));
+---
+<div class:list={['ui-tabs', className]} data-tabs={id}>
+  <div class="ui-tabs__list" role="tablist" aria-label={label}>
+    {tabs.map((t) => (
+      <button type="button" role="tab" class="ui-tabs__tab" id={`${id}-tab-${t.id}`} data-tab={t.id}
+              aria-selected={t.id === selected ? 'true' : 'false'} aria-controls={`${id}-panel-${t.id}`}
+              tabindex={t.id === selected ? 0 : -1}>
+        {t.icon && <Icon name={t.icon} size={16} />}
+        <span>{t.label}</span>
+        {t.count !== undefined && <span class="ui-tabs__count">{t.count}</span>}
+      </button>
+    ))}
+  </div>
+  {tabs.map((t, i) => (
+    <div class="ui-tabs__panel" role="tabpanel" id={`${id}-panel-${t.id}`} aria-labelledby={`${id}-tab-${t.id}`}
+         tabindex="0" hidden={t.id !== selected} set:html={panels[i]} />
+  ))}
+</div>
+
+<script>
+  const KEY = (id: string) => `tabs:${location.pathname}:${id}`;
+  function select(root: HTMLElement, tabId: string, focus = false) {
+    const tabs = [...root.querySelectorAll<HTMLElement>(':scope > .ui-tabs__list > [role="tab"]')];
+    const target = tabs.find((t) => t.dataset.tab === tabId);
+    if (!target) return;
+    for (const t of tabs) {
+      const on = t === target;
+      t.setAttribute('aria-selected', String(on));
+      t.tabIndex = on ? 0 : -1;
+      const panel = document.getElementById(t.getAttribute('aria-controls')!);
+      if (panel) panel.hidden = !on;
+    }
+    if (focus) target.focus();
+    try { sessionStorage.setItem(KEY(root.dataset.tabs!), tabId); } catch {}
+    root.dispatchEvent(new CustomEvent('tabs:change', { bubbles: true, detail: { id: root.dataset.tabs, tab: tabId } }));
+  }
+  if (!(window as any).__uiTabs) {
+    (window as any).__uiTabs = true;
+    document.addEventListener('click', (e) => {
+      const tab = (e.target as Element | null)?.closest<HTMLElement>('.ui-tabs__tab');
+      if (tab) select(tab.closest<HTMLElement>('[data-tabs]')!, tab.dataset.tab!);
+    });
+    document.addEventListener('keydown', (e) => {
+      const tab = (e.target as Element | null)?.closest<HTMLElement>('.ui-tabs__tab');
+      if (!tab) return;
+      const list = [...tab.parentElement!.querySelectorAll<HTMLElement>('[role="tab"]')];
+      const i = list.indexOf(tab);
+      const next = e.key === 'ArrowRight' ? list[(i + 1) % list.length]
+        : e.key === 'ArrowLeft' ? list[(i - 1 + list.length) % list.length]
+        : e.key === 'Home' ? list[0] : e.key === 'End' ? list[list.length - 1] : null;
+      if (!next) return;
+      e.preventDefault();
+      select(tab.closest<HTMLElement>('[data-tabs]')!, next.dataset.tab!, true);
+    });
+    document.addEventListener('astro:page-load', () => {
+      document.querySelectorAll<HTMLElement>('[data-tabs]').forEach((root) => {
+        let saved: string | null = null;
+        try { saved = sessionStorage.getItem(KEY(root.dataset.tabs!)); } catch {}
+        if (saved) select(root, saved);
+      });
+    });
+  }
+</script>

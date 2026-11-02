@@ -1,0 +1,11 @@
+---
+import Stat from './Stat.astro';
+
+type StatItem = { label: string; value: string; unit?: string; delta?: string; deltaPeriod?: string; upIsGood?: boolean; hero?: boolean };
+interface Props { items?: StatItem[]; min?: string; cols?: number; class?: string }
+const { items, min, cols, class: className = '' } = Astro.props;
+const style = [min && `--statgrid-min:${min}`, cols && `--statgrid-cols:${cols}`].filter(Boolean).join(';') || undefined;
+---
+<div class:list={['statgrid', cols && 'statgrid--fixed', className]} style={style}>
+  {items ? items.map((s) => <Stat {...s} />) : <slot />}
+</div>

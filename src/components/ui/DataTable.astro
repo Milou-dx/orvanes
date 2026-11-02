@@ -1,0 +1,99 @@
+---
+import { cellClass, type Column } from '../../scripts/ui/table';
+import type { IconName } from './lucide';
+import Icon from './Icon.astro';
+import EmptyState from './EmptyState.astro';
+
+type DtColumn = Omit<Column, 'render'> & { format?: (row: any) => string };
+
+interface Props {
+  id: string;
+  columns: DtColumn[];
+  rows?: Record<string, any>[];
+  caption?: string;
+  empty?: { icon?: IconName; title: string; text?: string };
+  noun?: [string, string];
+  sort?: { key: string; dir?: 'asc' | 'desc' };
+  density?: 'comfortable' | 'compact';
+  sticky?: boolean;
+  maxHeight?: string;
+  client?: boolean;
+  loading?: boolean;
+  skeletonRows?: number;
+  footer?: boolean;
+  class?: string;
+}
+const {
+  id, columns, rows, caption, empty, noun, sort, density = 'comfortable', sticky = true, maxHeight,
+  client = false, loading = client, skeletonRows = 5, footer = true, class: className = '',
+} = Astro.props;
+
+const cls = (c: DtColumn) => cellClass(c) || undefined;
+const cellText = (c: DtColumn, r: any) => (c.format ? c.format(r) : String(r[c.key] ?? ''));
+const cellValue = (c: DtColumn, r: any) => (c.value ? c.value(r) : undefined);
+const hasSlot = Astro.slots.has('default');
+const isEmpty = !loading && !hasSlot && !(rows && rows.length);
+const widths = [40, 62, 48, 70, 55];
+---
+<div
+  id={id}
+  class:list={['dt', density === 'compact' && 'dt--compact', !sticky && 'dt--static', className]}
+  data-dt={id}
+  data-dt-client={client ? '' : undefined}
+  data-loading={loading && !client ? '' : undefined}
+  data-noun={noun?.join('|')}
+  data-empty-title={empty?.title}
+  data-empty-text={empty?.text}
+  data-empty-icon={empty?.icon}
+  data-sort-key={sort?.key}
+  data-sort-dir={sort?.dir}
+  data-skeleton={skeletonRows}
+  style={maxHeight ? `--dt-max-h:${maxHeight}` : undefined}
+>
+  <div class="dt__scroll">
+    <table class="tbl" id={`${id}-table`} aria-busy={loading ? 'true' : undefined}>
+      {caption && <caption class="visually-hidden">{caption}</caption>}
+      <thead>
+        <tr>
+          {columns.map((c) => (
+            <th scope="col" data-key={c.key} data-type={c.type ?? 'text'} data-sortable={c.sortable ? '' : undefined}
+                class={cls(c)} style={c.width ? `width:${c.width}` : undefined}>
+              {c.sortable && !c.actions ? (
+                <button type="button" class="dt__sort" data-sort={c.key}>
+                  {c.hideLabel ? <span class="visually-hidden">{c.label}</span> : c.label}
+                  <Icon name="arrowUp" size={16} class="dt__arrow" />
+                </button>
+              ) : c.hideLabel ? <span class="visually-hidden">{c.label}</span> : c.label}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {loading ? (
+          Array.from({ length: skeletonRows }, (_, i) => (
+            <tr class="dt__skel" aria-hidden="true">
+              {columns.map((_, j) => <td><span class="skeleton" style={`width:${widths[(i + j) % widths.length]}%`} /></td>)}
+            </tr>
+          ))
+        ) : hasSlot ? (
+          <slot />
+        ) : isEmpty ? (
+          <tr class="dt__state"><td colspan={columns.length}>
+            <EmptyState icon={empty?.icon ?? 'inbox'} title={empty?.title ?? 'Aucun élément'} text={empty?.text} />
+          </td></tr>
+        ) : (
+          rows!.map((r) => (
+            <tr>
+              {columns.map((c) => <td class={cls(c)} data-value={cellValue(c, r)}>{cellText(c, r)}</td>)}
+            </tr>
+          ))
+        )}
+      </tbody>
+    </table>
+  </div>
+  {footer && <p class="dt__foot" data-table-count={id} aria-live="polite"></p>}
+</div>
+
+<script>
+  import '../../scripts/ui/table';
+</script>

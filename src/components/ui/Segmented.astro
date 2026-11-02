@@ -1,0 +1,24 @@
+---
+import Icon from './Icon.astro';
+import type { IconName } from './lucide';
+
+interface Option { value: string; label: string; icon?: IconName; iconOnly?: boolean; count?: number | string }
+interface Props { options: Option[]; label: string; selected?: string; attr?: string; id?: string; class?: string }
+const { options, label, selected = options[0]?.value, attr = 'value', id, class: className = '' } = Astro.props;
+---
+<div class:list={['seg', className]} role="group" aria-label={label} id={id}>
+  {options.map((o) => (
+    <button
+      type="button"
+      class:list={['seg__btn', o.iconOnly && 'seg__btn--icon']}
+      aria-pressed={o.value === selected}
+      aria-label={o.iconOnly ? o.label : undefined}
+      title={o.iconOnly ? o.label : undefined}
+      {...{ [`data-${attr}`]: o.value }}
+    >
+      {o.icon && <Icon name={o.icon} size={16} />}
+      {!o.iconOnly && o.label}
+      {o.count !== undefined && <span class="seg__n" data-n={o.value}>{o.count}</span>}
+    </button>
+  ))}
+</div>

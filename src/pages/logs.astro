@@ -1,0 +1,262 @@
+---
+import PanelLayout from '../layouts/PanelLayout.astro';
+import Card from '../components/ui/Card.astro';
+import Button from '../components/ui/Button.astro';
+import SettingsGroup from '../components/ui/SettingsGroup.astro';
+import SettingsRow from '../components/ui/SettingsRow.astro';
+import Select from '../components/ui/Select.astro';
+import Icon from '../components/ui/Icon.astro';
+import * as logs from '../server/system/logs.js';
+import { safe } from '../server/core/safe';
+
+export const prerender = false;
+
+const sources = await safe(() => logs.listLogSources(), [] as any[]);
+const url = Astro.url;
+const requested = url.searchParams.get('source');
+const current = sources.some((s: any) => s.id === requested) ? requested : (sources[0]?.id ?? null);
+
+if (url.searchParams.get('format') === 'json') {
+  const headers = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' };
+  if (!current) return new Response(JSON.stringify({ error: 'Aucune source de journal' }), { status: 404, headers });
+  const n = Math.min(Math.max(parseInt(url.searchParams.get('lines') ?? '300', 10) || 300, 1), 2000);
+  try {
+    const text = await logs.readLog(current, n);
+    const lines = String(text ?? '').split('\n').filter((l) => l !== '');
+    return new Response(JSON.stringify({ source: current, lines, at: Date.now() }), { headers });
+  } catch (e: any) {
+    return new Response(JSON.stringify({ error: e?.message ?? 'Lecture impossible' }), { status: 500, headers });
+  }
+}
+
+const srcLabel = (l: string) => String(l ?? '').replace(/\s*\(journald\)/i, '');
+---
+<PanelLayout title="Journaux" refreshMs={null}>
+  {sources.length === 0 ? (
+    <Card flush><div class="empty"><p>Aucune source de journal disponible.</p></div></Card>
+  ) : (
+    <div id="lg-root" data-source={current}>
+      <SettingsGroup title="Affichage">
+        <SettingsRow title="Source" desc="Journal à afficher.">
+          <Select id="lg-source" label="Source du journal">
+            {sources.map((s: any) => <option value={s.id} selected={s.id === current}>{srcLabel(s.label)}</option>)}
+          </Select>
+        </SettingsRow>
+        <SettingsRow title="Niveau">
+          <Select id="lg-level" label="Niveau">
+            <option value="all">Tous les niveaux</option>
+            <option value="error">Erreurs</option>
+            <option value="warn">Avertissements</option>
+            <option value="info">Infos</option>
+            <option value="debug">Debug</option>
+          </Select>
+        </SettingsRow>
+        <SettingsRow title="Nombre de lignes">
+          <Select id="lg-lines" label="Nombre de lignes">
+            <option value="100">100 lignes</option>
+            <option value="300" selected>300 lignes</option>
+            <option value="1000">1 000 lignes</option>
+            <option value="2000">2 000 lignes</option>
+          </Select>
+        </SettingsRow>
+      </SettingsGroup>
+
+      <div class="lg-bar" role="group" aria-label="Options du journal">
+        <div class="ui-toolbar__search lg-search" role="search">
+          <Icon name="search" size={16} />
+          <input class="filter" type="search" id="lg-search" placeholder="Rechercher dans le journal" aria-label="Rechercher dans le journal" autocomplete="off" spellcheck="false" data-search-target />
+        </div>
+        <div class="lg-actions">
+          <Button id="lg-live" size="md" icon="pause" aria-pressed="true">Pause</Button>
+          <Button id="lg-refresh" size="md" icon="refresh" iconOnly label="Actualiser maintenant" />
+          <Button id="lg-follow" size="md" icon="arrowDown" aria-pressed="true">Suivre</Button>
+          <Button id="lg-download" size="md" icon="download" iconOnly label="Télécharger les lignes affichées" />
+        </div>
+      </div>
+
+      <Card flush>
+        <p slot="actions" class="lg-stat" id="lg-stat" role="status" aria-live="polite"></p>
+        <div id="lg-viewer" class="viewer" tabindex="0" role="log" aria-label="Contenu du journal" aria-live="off">
+          <p class="lg-msg">Chargement…</p>
+        </div>
+      </Card>
+    </div>
+  )}
+</PanelLayout>
+
+<script>
+  import { toast } from '../scripts/ui/dialog';
+  import { registerCommands } from '../scripts/ui/commands';
+  import { esc, iconSVG } from '../scripts/ui/html';
+
+  type Level = 'error' | 'warn' | 'info' | 'debug' | 'ok' | 'none';
+  const POLL_MS = 3000;
+  const PREF = 'logs-live';
+
+  function levelOf(l: string): Level {
+    if (/\b(FATAL|CRITICAL|SEVERE|ERROR|ERR|Exception|Traceback|failed|failure|panic)\b/i.test(l)) return 'error';
+    if (/\b(WARN|WARNING)\b|Can't keep up/i.test(l)) return 'warn';
+    if (/\bDone \(/.test(l)) return 'ok';
+    if (/\b(INFO)\b/.test(l)) return 'info';
+    if (/\b(DEBUG|TRACE)\b/i.test(l)) return 'debug';
+    return 'none';
+  }
+  const TAG: Record<string, string> = { error: 'Erreur : ', warn: 'Avertissement : ' };
+
+  document.addEventListener('astro:page-load', () => {
+    const root = document.getElementById('lg-root');
+    if (!root) return;
+    const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+    const sourceSel = $<HTMLSelectElement>('lg-source'), levelSel = $<HTMLSelectElement>('lg-level'), linesSel = $<HTMLSelectElement>('lg-lines');
+    const search = $<HTMLInputElement>('lg-search'), viewer = $('lg-viewer'), stat = $('lg-stat');
+    const liveBtn = $<HTMLButtonElement>('lg-live'), followBtn = $<HTMLButtonElement>('lg-follow');
+
+    let all: { text: string; level: Level }[] = [];
+    let live = true;
+    try { live = localStorage.getItem(PREF) !== 'off'; } catch {}
+    let follow = true;
+    let shown: string[] = [];
+    let timer: number | undefined;
+    let busy = false;
+    let failed = false;
+
+    const setBtn = (b: HTMLElement, icon: 'play' | 'pause' | 'arrowDown', text: string, on: boolean) => {
+      b.innerHTML = `${iconSVG(icon, 16)}${esc(text)}`;
+      b.setAttribute('aria-pressed', String(on));
+    };
+    const paintButtons = () => {
+      setBtn(liveBtn, live ? 'pause' : 'play', live ? 'Pause' : 'Reprendre', live);
+      liveBtn.title = live ? 'Mise à jour en direct active : mettre en pause' : 'En pause : reprendre le direct';
+      setBtn(followBtn, 'arrowDown', 'Suivre', follow);
+      followBtn.title = 'Défilement automatique en bas';
+    };
+
+    const toBottom = () => { viewer.scrollTop = viewer.scrollHeight; };
+
+    function render() {
+      const q = search.value.trim().toLowerCase();
+      const lv = levelSel.value;
+      const keep = all.filter((l) => (lv === 'all' || l.level === lv) && (!q || l.text.toLowerCase().includes(q)));
+      shown = keep.map((l) => l.text);
+      const counts = { error: 0, warn: 0 };
+      for (const l of all) if (l.level === 'error' || l.level === 'warn') counts[l.level]++;
+      stat.textContent = `${keep.length} sur ${all.length} lignes · ${counts.error} erreurs · ${counts.warn} avertissements`;
+
+      if (failed) return;
+      if (!keep.length) {
+        viewer.innerHTML = `<p class="lg-msg">${all.length ? 'Aucune ligne ne correspond aux filtres.' : 'Aucune ligne à afficher.'}</p>`;
+        return;
+      }
+      const re = q ? new RegExp(esc(q).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi') : null;
+      viewer.innerHTML = keep.map((l) => {
+        const body = re ? esc(l.text).replace(re, (m) => `<mark>${m}</mark>`) : esc(l.text);
+        const tag = TAG[l.level] ? `<span class="visually-hidden">${TAG[l.level]}</span>` : '';
+        return `<div class="line l-${l.level}">${tag}${body}</div>`;
+      }).join('');
+      if (follow) toBottom();
+    }
+
+    async function load(manual = false) {
+      if (busy) return;
+      busy = true;
+      try {
+        const res = await fetch(`/logs?format=json&source=${encodeURIComponent(sourceSel.value)}&lines=${linesSel.value}`, { headers: { accept: 'application/json' } });
+        const out = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(out.error || `Erreur ${res.status}`);
+        failed = false;
+        all = (out.lines as string[]).map((text) => ({ text, level: levelOf(text) }));
+        render();
+        if (manual) toast('Journal actualisé.', 'success', 1500);
+      } catch (e: any) {
+        failed = true;
+        viewer.innerHTML = `<div class="ui-state ui-state--error" role="alert"><span class="ui-state__icon">${iconSVG('circleAlert', 20)}</span>`
+          + `<p class="ui-state__title">Impossible de lire ce journal</p>`
+          + `<p class="ui-state__text">Réessayez ou choisissez une autre source.</p><pre class="ui-state__detail">${esc(e?.message ?? e)}</pre></div>`;
+      } finally { busy = false; }
+    }
+
+    function schedule() {
+      clearInterval(timer);
+      if (live) timer = window.setInterval(() => { if (document.visibilityState === 'visible') load(); }, POLL_MS);
+    }
+    const setLive = (v: boolean) => {
+      live = v;
+      try { localStorage.setItem(PREF, v ? 'on' : 'off'); } catch {}
+      paintButtons(); schedule();
+      if (v) load();
+    };
+    const setFollow = (v: boolean) => { follow = v; paintButtons(); if (v) toBottom(); };
+
+    sourceSel.addEventListener('change', () => {
+      const u = new URL(location.href); u.searchParams.set('source', sourceSel.value);
+      history.replaceState(history.state, '', u);
+      viewer.innerHTML = '<p class="lg-msg">Chargement…</p>';
+      load();
+    });
+    linesSel.addEventListener('change', () => load());
+    levelSel.addEventListener('change', render);
+    search.addEventListener('input', render);
+    liveBtn.addEventListener('click', () => setLive(!live));
+    followBtn.addEventListener('click', () => setFollow(!follow));
+    $('lg-refresh').addEventListener('click', () => load(true));
+    $('lg-download').addEventListener('click', () => {
+      if (!shown.length) { toast('Rien à télécharger.', 'warning'); return; }
+      const blob = new Blob([shown.join('\n') + '\n'], { type: 'text/plain;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `orvane-${sourceSel.value}-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.log`;
+      document.body.append(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    });
+    viewer.addEventListener('scroll', () => {
+      const atBottom = viewer.scrollHeight - viewer.scrollTop - viewer.clientHeight < 24;
+      if (atBottom !== follow) { follow = atBottom; paintButtons(); }
+    }, { passive: true });
+
+    paintButtons(); schedule(); load();
+    document.addEventListener('astro:before-swap', () => clearInterval(timer), { once: true });
+
+    const lvlCmd = (title: string, v: string) => ({ id: `logs-lvl-${v}`, title, icon: 'filter' as const, run: () => { levelSel.value = v; render(); } });
+    registerCommands([
+      { id: 'logs-live', title: 'Journaux : pause / reprise du direct', icon: 'pause', run: () => setLive(!live) },
+      { id: 'logs-refresh', title: 'Journaux : actualiser', icon: 'refresh', run: () => load(true) },
+      { id: 'logs-download', title: 'Journaux : télécharger les lignes affichées', icon: 'download', run: () => $('lg-download').click() },
+      lvlCmd('Journaux : erreurs seulement', 'error'),
+      lvlCmd('Journaux : avertissements seulement', 'warn'),
+      lvlCmd('Journaux : tous les niveaux', 'all'),
+    ]);
+  });
+</script>
+
+<style>
+  #lg-root { display: flex; flex-direction: column; gap: var(--space-3); }
+  .lg-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+  .lg-search { position: relative; display: flex; align-items: center; flex: 1 1 220px; min-width: 0; max-width: 360px; }
+  .lg-search > :global(svg) { position: absolute; left: var(--space-3); color: var(--text-tertiary); pointer-events: none; }
+  .lg-search .filter { width: 100%; padding-left: calc(var(--space-3) + 14px + var(--space-2)); }
+  .lg-actions { display: flex; gap: var(--space-2); margin-left: auto; }
+  .lg-actions :global(button[aria-pressed='true']#lg-follow) { border-color: var(--accent-border); background: var(--accent-subtle); color: var(--accent); }
+  .lg-stat { font-size: var(--meta-size); line-height: var(--meta-lh); color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+  @media (max-width: 640px) {
+    .lg-search { flex-basis: 100%; max-width: none; }
+    .lg-actions { margin-left: 0; width: 100%; }
+  }
+
+  .viewer {
+    background: var(--console-bg); color: var(--console-fg);
+    height: min(70vh, 40rem); overflow: auto;
+    padding: var(--space-3) var(--space-4);
+    font-family: var(--font-mono); font-size: var(--meta-size); line-height: var(--space-5);
+  }
+  .viewer:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .viewer ::selection { background: var(--console-select); color: var(--console-strong); }
+  .viewer :global(.line) { white-space: pre; color: var(--console-fg); padding-left: var(--space-2); border-left: 2px solid transparent; }
+  @media (max-width: 640px) { .viewer :global(.line) { white-space: pre-wrap; overflow-wrap: anywhere; } }
+  .viewer :global(.l-error) { color: var(--console-red); border-left-color: var(--console-red); }
+  .viewer :global(.l-warn) { color: var(--console-yellow); border-left-color: var(--console-yellow); }
+  .viewer :global(.l-ok) { color: var(--console-green); }
+  .viewer :global(.l-debug) { color: var(--console-muted); }
+  .viewer :global(mark) { background: var(--console-select); color: var(--console-strong); border-radius: var(--radius-xs); }
+  .viewer :global(.lg-msg) { color: var(--console-muted); font-family: var(--font-ui); font-size: var(--dense-size); }
+  .viewer :global(.ui-state__title), .viewer :global(.ui-state__text) { color: var(--console-fg); }
+</style>

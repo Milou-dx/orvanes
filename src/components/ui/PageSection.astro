@@ -1,0 +1,19 @@
+---
+interface Props { title?: string; description?: string; level?: 2 | 3; id?: string; class?: string }
+const { title, description, level = 2, id, class: className = '' } = Astro.props;
+const H = level === 3 ? 'h3' : 'h2';
+const headId = id ? `${id}-title` : undefined;
+const hasHead = Boolean(title || description || Astro.slots.has('actions'));
+---
+<section class:list={['psec', level === 3 && 'psec--sub', className]} id={id} aria-labelledby={title ? headId : undefined}>
+  {hasHead && (
+    <div class="psec__head">
+      <div class="psec__titles">
+        {title && <H class="psec__title" id={headId}>{title}</H>}
+        {description && <p class="psec__desc">{description}</p>}
+      </div>
+      {Astro.slots.has('actions') && <div class="psec__actions"><slot name="actions" /></div>}
+    </div>
+  )}
+  <slot />
+</section>

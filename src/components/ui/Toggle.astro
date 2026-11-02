@@ -1,0 +1,14 @@
+---
+interface Props { checked?: boolean; label: string; disabled?: boolean; id?: string; class?: string }
+const { checked = false, label, disabled = false, id, class: className = '', ...rest } = Astro.props;
+---
+<button
+  type="button"
+  role="switch"
+  class:list={['tgl', className]}
+  id={id}
+  aria-checked={checked ? 'true' : 'false'}
+  aria-label={label}
+  disabled={disabled}
+  {...rest}
+></button>

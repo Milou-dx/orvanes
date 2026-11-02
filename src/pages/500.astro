@@ -1,0 +1,26 @@
+---
+import AuthLayout from '../layouts/AuthLayout.astro';
+import Button from '../components/ui/Button.astro';
+
+export const prerender = false;
+interface Props { error?: unknown }
+const { error } = Astro.props;
+console.error('[500]', Astro.url.pathname, error);
+Astro.response.status = 500;
+---
+<AuthLayout title="Erreur">
+  <h1 class="auth__title">Une erreur est survenue</h1>
+  <p class="auth__lead">Cette page n’a pas pu s’afficher. Réessayez dans quelques secondes : si le panel vient d’être mis à jour, il est peut-être en train de redémarrer.</p>
+  <div class="err__actions">
+    <Button variant="primary" id="err-retry">Réessayer</Button>
+    <Button variant="secondary" href="/">Retour à l’accueil</Button>
+  </div>
+</AuthLayout>
+
+<script>
+  document.getElementById('err-retry')?.addEventListener('click', () => location.reload());
+</script>
+
+<style>
+  .err__actions { display: flex; gap: var(--space-2); justify-content: center; flex-wrap: wrap; }
+</style>

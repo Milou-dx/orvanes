@@ -1,0 +1,32 @@
+---
+interface Props { title: string; description?: string }
+const { title, description } = Astro.props;
+---
+<header class="phead">
+  <div class="phead__titles">
+    <h1 class="phead__title">{title}</h1>
+    {description && <p class="phead__desc">{description}</p>}
+  </div>
+  {Astro.slots.has('actions') && <div class="phead__actions"><slot name="actions" /></div>}
+</header>
+
+<style>
+  .phead {
+    display: flex; align-items: flex-end; gap: var(--space-4); flex-shrink: 0;
+    width: 100%; max-width: var(--content-max); margin-inline: auto;
+    padding: var(--space-6) var(--page-gutter) var(--space-1);
+  }
+  .phead__titles { display: flex; flex-direction: column; gap: var(--space-0-5); min-width: 0; margin-right: auto; }
+  .phead__title {
+    font-family: var(--font-display); font-size: var(--page-size); line-height: var(--page-lh);
+    font-weight: var(--weight-bold); letter-spacing: var(--page-ls); color: var(--text-primary); text-wrap: balance;
+  }
+  .phead__desc { font-size: var(--dense-size); line-height: var(--dense-lh); color: var(--text-secondary); text-wrap: pretty; }
+  .phead__actions { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); flex-shrink: 0; }
+  @media (max-width: 640px) {
+    .phead { flex-wrap: wrap; align-items: flex-start; row-gap: var(--space-3); padding-top: var(--space-5); }
+    .phead__title { font-size: var(--section-size); line-height: var(--section-lh); }
+    .phead__actions { flex-shrink: 1; min-width: 0; max-width: 100%; }
+    .phead__actions > :global(*) { flex-wrap: wrap; max-width: 100%; }
+  }
+</style>

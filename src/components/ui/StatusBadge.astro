@@ -1,0 +1,10 @@
+---
+import { STATUS_LABEL, toStatus, type Status } from './status';
+
+interface Props { status?: Status; raw?: string; label?: string; pulse?: boolean; size?: 'sm' | 'md'; class?: string; id?: string }
+const { raw, label, pulse = false, size = 'md', class: className = '', id } = Astro.props;
+const status: Status = Astro.props.status ?? toStatus(raw);
+---
+<span class:list={['sbadge', `sbadge--${status}`, size === 'sm' && 'sbadge--sm', pulse && 'sbadge--pulse', className]} id={id}>
+  <span class="sbadge__dot" aria-hidden="true"></span>{label ?? STATUS_LABEL[status]}
+</span>

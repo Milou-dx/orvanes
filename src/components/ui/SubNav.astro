@@ -1,0 +1,27 @@
+---
+import Icon from './Icon.astro';
+import type { IconName } from './lucide';
+
+interface Item { href: string; label: string; icon?: IconName; count?: number | string; prefix?: boolean }
+interface Props { items: Item[]; label: string; current?: string; class?: string }
+const { items, label, current, class: className = '' } = Astro.props;
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+const isOn = (it: Item) => {
+  if (current) return current === it.href;
+  const h = it.href.replace(/\/$/, '') || '/';
+  return path === h || (Boolean(it.prefix) && path.startsWith(`${h}/`));
+};
+---
+<nav class:list={['subnav', className]} aria-label={label}>
+  <ul>
+    {items.map((it) => (
+      <li>
+        <a class="subnav__link" href={it.href} aria-current={isOn(it) ? 'page' : undefined} data-astro-prefetch="hover">
+          {it.icon && <Icon name={it.icon} size={16} />}
+          <span>{it.label}</span>
+          {it.count !== undefined && <span class="subnav__count">{it.count}</span>}
+        </a>
+      </li>
+    ))}
+  </ul>
+</nav>

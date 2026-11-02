@@ -1,0 +1,63 @@
+---
+interface Props {
+  label: string;
+  value: string;
+  percent: number;
+  warnAt?: number;
+  dangerAt?: number;
+  class?: string;
+}
+const { label, value, percent, warnAt = 70, dangerAt = 90, class: className = '' } = Astro.props;
+
+const pct = Math.max(0, Math.min(100, percent));
+const level = pct >= dangerAt ? 'danger' : pct >= warnAt ? 'warning' : 'ok';
+const stateWord = { ok: null, warning: 'Élevé', danger: 'Critique' }[level];
+---
+<div class:list={['meter', `meter--${level}`, className]}>
+  <div class="meter__head">
+    <span class="meter__label t-meta text-secondary">{label}</span>
+    <span class="meter__value t-meta tabular">{value}</span>
+  </div>
+  <div
+    class="meter__track"
+    role="progressbar"
+    aria-valuenow={Math.round(pct)}
+    aria-valuemin="0"
+    aria-valuemax="100"
+    aria-label={label}
+    aria-valuetext={`${value}${stateWord ? `, ${stateWord}` : ''}`}
+  >
+    <div class="meter__fill" style={`--pct:${pct}%`} />
+  </div>
+  <p class="meter__foot t-micro">
+    <span class="tabular">{Math.round(pct)} %</span>
+    {stateWord && <span class="meter__state">{stateWord}</span>}
+  </p>
+</div>
+
+<style>
+  .meter { display: flex; flex-direction: column; gap: 6px; }
+  .meter__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); }
+  .meter__label { font-size: var(--dense-size) !important; color: var(--text-primary) !important; font-weight: 500; }
+  .meter__value { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+
+  .meter__track {
+    height: 6px; border-radius: var(--radius-pill);
+    background: var(--bg-hover); overflow: hidden;
+  }
+  .meter__fill {
+    height: 100%; width: var(--pct);
+    background: var(--fill);
+    border-radius: var(--radius-pill);
+    transition: width var(--dur-base) var(--ease-out), background-color var(--dur-base) var(--ease-out);
+  }
+  .meter__foot {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: var(--space-2); font-variant-numeric: tabular-nums;
+  }
+  .meter__state { color: var(--fill-text); font-weight: 600; }
+
+  .meter--ok      { --fill: var(--accent); --fill-text: var(--accent); }
+  .meter--warning { --fill: var(--status-warning); --fill-text: var(--warning); }
+  .meter--danger  { --fill: var(--status-error); --fill-text: var(--danger); }
+</style>

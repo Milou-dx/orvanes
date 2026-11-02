@@ -1,0 +1,431 @@
+---
+import PanelLayout from '../layouts/PanelLayout.astro';
+import PageSection from '../components/ui/PageSection.astro';
+import Card from '../components/ui/Card.astro';
+import Button from '../components/ui/Button.astro';
+import Badge from '../components/ui/Badge.astro';
+import StatusBadge from '../components/ui/StatusBadge.astro';
+import SubNav from '../components/ui/SubNav.astro';
+import Tabs from '../components/ui/Tabs.astro';
+import Toolbar from '../components/ui/Toolbar.astro';
+import DataTable from '../components/ui/DataTable.astro';
+import EmptyState from '../components/ui/EmptyState.astro';
+import ErrorState from '../components/ui/ErrorState.astro';
+import Skeleton from '../components/ui/Skeleton.astro';
+import Spinner from '../components/ui/Spinner.astro';
+import StatGrid from '../components/ui/StatGrid.astro';
+import Stat from '../components/ui/Stat.astro';
+import KeyValue from '../components/ui/KeyValue.astro';
+import Input from '../components/ui/Input.astro';
+import Select from '../components/ui/Select.astro';
+import Toggle from '../components/ui/Toggle.astro';
+import ActionButton from '../components/ui/ActionButton.astro';
+import Kbd from '../components/ui/Kbd.astro';
+import Meter from '../components/ui/Meter.astro';
+
+export const prerender = false;
+
+const COLORS = [
+  ['--bg-app', 'Fond de page'], ['--bg-surface', 'Surface (carte)'], ['--bg-surface-2', 'Surface discrète'],
+  ['--bg-hover', 'Survol'], ['--border', 'Filet'], ['--border-strong', 'Filet appuyé'],
+  ['--text-primary', 'Texte'], ['--text-secondary', 'Texte secondaire'], ['--text-tertiary', 'Texte tertiaire'],
+  ['--accent', 'Accent'], ['--accent-subtle', 'Accent pâle'], ['--success', 'Succès'],
+  ['--warning', 'Avertissement'], ['--danger', 'Danger'], ['--info', 'Information'],
+];
+const TONES = ['gray', 'brown', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'red'];
+const RADII = ['--radius-xs', '--radius-sm', '--radius-md', '--radius-lg'];
+const SHADOWS = ['--shadow-xs', '--shadow-sm', '--shadow-md'];
+const TYPE = ['page', 'section', 'card', 'body', 'dense', 'meta', 'micro'];
+const SPACES = [1, 2, 3, 4, 5, 6, 8, 10, 12, 16];
+
+const services = [
+  { name: 'caddy', state: 'running', mem: 48.2, since: '2026-10-01' },
+  { name: 'minecraft', state: 'running', mem: 6144, since: '2026-10-07' },
+  { name: 'site-web', state: 'warning', mem: 212.5, since: '2026-10-08' },
+  { name: 'backup', state: 'stopped', mem: 0, since: '2026-09-30' },
+  { name: 'mailer', state: 'error', mem: 0, since: '2026-10-05' },
+];
+const LABEL: Record<string, string> = { running: 'En cours', stopped: 'Arrêté', warning: 'Attention', error: 'Erreur' };
+
+const snippet = {
+  table: `<Toolbar controls="svc" search="Rechercher un service" topSearch>
+  <Button slot="right" icon="add" variant="primary">Nouveau</Button>
+</Toolbar>
+<Card flush>
+  <DataTable id="svc" noun={['service', 'services']} sort={{ key: 'name' }}
+    columns={[
+      { key: 'name', label: 'Nom', sortable: true, mono: true },
+      { key: 'state', label: 'État', sortable: true },
+      { key: 'mem', label: 'Mémoire', type: 'number', align: 'right', sortable: true },
+      { key: 'actions', label: 'Actions', actions: true, hideLabel: true },
+    ]}>
+    {rows.map((s) => (
+      <tr>
+        <td class="is-mono">{s.name}</td>
+        <td data-value={s.state}><StatusBadge raw={s.state} /></td>
+        <td class="al-right" data-value={s.mem}>{fmt(s.mem)}</td>
+        <td class="is-actions"><ActionButton action="restart" compact /></td>
+      </tr>
+    ))}
+  </DataTable>
+</Card>`,
+  client: `<DataTable id="procs" client columns={[...]} />
+
+<script>
+  import { mountTable } from '../scripts/ui/table';
+  import { statusBadgeHTML, esc } from '../scripts/ui/html';
+  document.addEventListener('astro:page-load', async () => {
+    if (!document.getElementById('procs')) return;
+    const t = mountTable('procs', {
+      columns: [
+        { key: 'name', label: 'Nom', sortable: true },
+        { key: 'cpu', label: 'CPU', type: 'number', align: 'right', sortable: true,
+          render: (r) => r.cpu.toFixed(1) + ' %' },
+        { key: 'state', label: 'État', render: (r) => ({ html: statusBadgeHTML(r.state) }) },
+        { key: 'actions', label: 'Actions', actions: true, hideLabel: true,
+          render: (r) => ({ html: '<button class="mini" data-pid="' + esc(r.pid) + '">Arrêter</button>' }) },
+      ],
+      rowKey: 'pid', noun: ['processus', 'processus'],
+      empty: { icon: 'cpu', title: 'Aucun processus' },
+    });
+    try { t.setRows(await (await fetch('/api/processes')).json()); }
+    catch (e) { t.setError({ detail: String(e) }); }
+  });
+</script>`,
+  tabs: `<Tabs id="vue" label="Vues" tabs={[{ id: 'journaux', label: 'Journaux' }, { id: 'stats', label: 'Statistiques', count: 4 }]}>
+  <div slot="journaux">…</div>
+  <div slot="stats">…</div>
+</Tabs>
+
+<SubNav label="Docker" items={[
+  { href: '/docker', label: 'Conteneurs' },
+  { href: '/docker/images', label: 'Images', count: 12 },
+]} />`,
+  commands: `import { registerCommands, registerShortcuts } from '../scripts/ui/commands';
+document.addEventListener('astro:page-load', () => {
+  if (!document.getElementById('svc')) return;      // seulement sur cette page
+  registerCommands([
+    { id: 'svc-reload', title: 'Recharger les services', icon: 'refresh', shortcut: 'r', run: reload },
+  ]);
+  registerShortcuts([{ keys: 'n', title: 'Nouveau service', run: create }]);
+});`,
+  states: `<EmptyState icon="inbox" title="Aucune application" text="Déployez votre première application.">
+  <Button slot="actions" variant="primary" icon="add">Nouvelle application</Button>
+</EmptyState>
+<ErrorState detail={err.message}><Button slot="actions" icon="refresh">Réessayer</Button></ErrorState>`,
+};
+---
+<PanelLayout title="Système de design" subtitle="Référence des jetons et composants du panel" refreshMs={null}>
+  <Button slot="actions" variant="ghost" icon="command" data-cmdk-open>Palette</Button>
+
+  <SubNav label="Rubriques du système de design" items={[
+    { href: '#jetons', label: 'Jetons' },
+    { href: '#actions', label: 'Actions et états' },
+    { href: '#navigation', label: 'Onglets' },
+    { href: '#tableaux', label: 'Tableaux' },
+    { href: '#donnees', label: 'Données' },
+    { href: '#retours', label: 'Vide, erreur, chargement' },
+    { href: '#formulaires', label: 'Formulaires et fenêtres' },
+    { href: '#commandes', label: 'Commandes' },
+  ]} />
+
+  <PageSection id="jetons" title="Jetons" description="Toujours une variable de tokens.css : jamais de couleur hexadécimale ni de taille en pixels dans une page.">
+    <Card title="Couleurs sémantiques">
+      <div class="swatches">
+        {COLORS.map(([v, l]) => (
+          <div class="swatch"><span class="swatch__chip" style={`background:var(${v})`}></span><span class="swatch__name">{l}</span><code>{v}</code></div>
+        ))}
+      </div>
+    </Card>
+    <Card title="Teintes" description="--tone-<teinte>-bg / -fg : palette de base des couleurs d’état (succès, avertissement, erreur, information) et des graphes. Jamais pour décorer une icône.">
+      <div class="tones">
+        {TONES.map((t) => <span class="tone" style={`background:var(--tone-${t}-bg);color:var(--tone-${t}-fg)`}>{t}</span>)}
+      </div>
+    </Card>
+    <div class="grid2">
+      <Card title="Rayons et ombres">
+        <div class="shapes">
+          {RADII.map((r) => <div class="shape" style={`border-radius:var(${r})`}><code>{r}</code></div>)}
+          {SHADOWS.map((s) => <div class="shape shape--shadow" style={`box-shadow:var(${s})`}><code>{s}</code></div>)}
+        </div>
+      </Card>
+      <Card title="Espacements" description="Grille de 4 px : --space-1 à --space-16.">
+        <div class="spaces">
+          {SPACES.map((n) => <div class="space"><code>--space-{n}</code><span style={`width:var(--space-${n})`}></span></div>)}
+        </div>
+      </Card>
+    </div>
+    <Card title="Typographie" description="Inter Variable auto-hébergée (@fontsource-variable/inter, licence OFL).">
+      <div class="types">
+        {TYPE.map((t) => (
+          <p style={`font-size:var(--${t}-size);line-height:var(--${t}-lh);letter-spacing:var(--${t}-ls)`}>
+            <code>--{t}</code> Serveur Minecraft en ligne depuis 3 jours
+          </p>
+        ))}
+        <p class="mono">--font-mono · journalctl -u minecraft -f</p>
+      </div>
+    </Card>
+  </PageSection>
+
+  <PageSection id="actions" title="Actions et états">
+    <Card title="Boutons" description="Une seule action primaire par zone. Icône seule : label obligatoire.">
+      <div class="row">
+        <Button variant="primary" icon="add">Nouveau</Button>
+        <Button>Secondaire</Button>
+        <Button variant="ghost" icon="refresh">Actualiser</Button>
+        <Button variant="danger" icon="trash">Supprimer</Button>
+        <Button loading>Enregistrement</Button>
+        <Button disabled>Désactivé</Button>
+        <Button iconOnly icon="more" label="Plus d’actions" />
+      </div>
+      <div class="row">
+        <Button size="sm">Petit</Button><Button>Moyen</Button><Button size="lg">Grand</Button>
+        <ActionButton action="start" /><ActionButton action="restart" /><ActionButton action="stop" /><ActionButton action="console" compact />
+        <button class="mini">.mini</button><button class="mini mini--go">.mini--go</button><button class="tbtn">.tbtn</button>
+      </div>
+    </Card>
+    <Card title="Pastilles">
+      <div class="row">
+        <StatusBadge status="running" pulse /><StatusBadge status="stopped" /><StatusBadge status="warning" />
+        <StatusBadge status="error" /><StatusBadge status="unknown" /><StatusBadge raw="activating" label="Démarrage…" />
+        <StatusBadge status="running" size="sm" />
+      </div>
+      <div class="row">
+        <Badge>Neutre</Badge><Badge tone="info">Info</Badge><Badge tone="success">Succès</Badge>
+        <Badge tone="warning">Avertissement</Badge><Badge tone="danger">Danger</Badge><Badge tone="accent">Accent</Badge>
+      </div>
+      <pre class="code">{`<StatusBadge status="running" pulse />   <StatusBadge raw={unit.active} />   <StatusBadge raw="activating" label="Démarrage…" />`}</pre>
+    </Card>
+  </PageSection>
+
+  <PageSection id="navigation" title="Onglets" description="SubNav : sous-pages (liens, une URL chacune). Tabs : vues d’une même page (clavier : flèches, Début, Fin).">
+    <Card>
+      <SubNav label="Exemple de sous-navigation" current="/docker" items={[
+        { href: '/docker', label: 'Conteneurs', icon: 'cube' },
+        { href: '/docker/images', label: 'Images', count: 12 },
+        { href: '/docker/volumes', label: 'Volumes' },
+      ]} />
+      <div class="gap"></div>
+      <Tabs id="demo-tabs" label="Vues d’exemple" tabs={[{ id: 'journaux', label: 'Journaux', icon: 'logs' }, { id: 'stats', label: 'Statistiques', count: 4 }, { id: 'config', label: 'Configuration' }]}>
+        <p slot="journaux" class="text-secondary">Panneau « Journaux ». Le choix est mémorisé pendant l’actualisation automatique.</p>
+        <p slot="stats" class="text-secondary">Panneau « Statistiques ».</p>
+        <p slot="config" class="text-secondary">Panneau « Configuration ».</p>
+      </Tabs>
+      <pre class="code">{snippet.tabs}</pre>
+    </Card>
+  </PageSection>
+
+  <PageSection id="tableaux" title="Tableaux" description="DataTable : tri au clic et au clavier, filtre, compteur, ligne vide, en-tête collant.">
+    <Toolbar controls="demo-svc" search="Rechercher un service" topSearch>
+      <Button slot="right" variant="primary" icon="add">Nouveau service</Button>
+    </Toolbar>
+    <Card flush>
+      <DataTable id="demo-svc" caption="Services d’exemple" noun={['service', 'services']} sort={{ key: 'name' }} maxHeight="320px"
+        columns={[
+          { key: 'name', label: 'Nom', sortable: true, mono: true },
+          { key: 'state', label: 'État', sortable: true },
+          { key: 'mem', label: 'Mémoire', type: 'number', align: 'right', sortable: true },
+          { key: 'since', label: 'Depuis', type: 'date', sortable: true, hideBelow: 'sm' },
+          { key: 'actions', label: 'Actions', actions: true, hideLabel: true },
+        ]}>
+        {services.map((s) => (
+          <tr>
+            <td class="is-mono">{s.name}</td>
+            <td data-value={LABEL[s.state]}><StatusBadge raw={s.state} /></td>
+            <td class="al-right" data-value={s.mem}>{s.mem ? `${s.mem.toLocaleString('fr-FR')} Mo` : '—'}</td>
+            <td class="hide-sm" data-value={s.since}>{new Date(s.since).toLocaleDateString('fr-FR')}</td>
+            <td class="is-actions"><span class="dt__actions"><ActionButton action="restart" compact /><ActionButton action="stop" compact /></span></td>
+          </tr>
+        ))}
+      </DataTable>
+    </Card>
+    <pre class="code">{snippet.table}</pre>
+
+    <Card title="Rempli côté client (mountTable)" description="Squelette, puis lignes ; boutons pour simuler les états." flush>
+      <div slot="actions" class="row">
+        <Button size="sm" id="demo-load">Recharger</Button>
+        <Button size="sm" id="demo-empty">Vider</Button>
+        <Button size="sm" variant="danger" id="demo-error">Erreur</Button>
+        <Button size="sm" variant="ghost" id="demo-density">Densité</Button>
+      </div>
+      <DataTable id="demo-procs" client density="compact" columns={[
+        { key: 'name', label: 'Nom', sortable: true },
+        { key: 'cpu', label: 'CPU', type: 'number', align: 'right', sortable: true },
+        { key: 'state', label: 'État' },
+        { key: 'actions', label: 'Actions', actions: true, hideLabel: true },
+      ]} />
+    </Card>
+    <pre class="code">{snippet.client}</pre>
+  </PageSection>
+
+  <PageSection id="donnees" title="Données">
+    <StatGrid>
+      <Stat label="Processeur" value="23" unit="%" />
+      <Stat label="Mémoire" value="13,0" unit="Go" delta="+0,4" deltaPeriod="vs 1 h" upIsGood={false} />
+      <Stat label="Sessions ouvertes" value="4" />
+      <Stat label="Disponibilité" value="36 j 12 h" />
+    </StatGrid>
+    <div class="grid2">
+      <Card title="Propriétés (KeyValue)">
+        <KeyValue items={[
+          { label: 'Nom d’hôte', value: 'serveur.example', mono: true },
+          { label: 'Adresse Tailscale', value: '192.0.2.10', mono: true },
+          { label: 'Système', value: 'Ubuntu 24.04 · ARM64' },
+          { label: 'Propriétaire', value: null },
+        ]} />
+      </Card>
+      <Card title="Jauges">
+        <div class="stack">
+          <Meter label="Disque /" value="38 Go / 96 Go" percent={40} />
+          <Meter label="Mémoire" value="19 Go / 24 Go" percent={79} />
+          <Meter label="Swap" value="1,9 Go / 2 Go" percent={95} />
+        </div>
+      </Card>
+    </div>
+  </PageSection>
+
+  <PageSection id="retours" title="Vide, erreur, chargement" description="Jamais de zone blanche : on explique, on propose l’action suivante.">
+    <div class="grid2">
+      <Card>
+        <EmptyState icon="inbox" title="Aucune application" text="Déployez votre première application pour la voir ici.">
+          <Button slot="actions" variant="primary" icon="add">Nouvelle application</Button>
+        </EmptyState>
+      </Card>
+      <Card>
+        <ErrorState detail="ECONNREFUSED 127.0.0.1:2375">
+          <Button slot="actions" icon="refresh">Réessayer</Button>
+        </ErrorState>
+      </Card>
+    </div>
+    <Card title="Chargement">
+      <div class="stack">
+        <Skeleton width="40%" height="20px" />
+        <Skeleton width="85%" /><Skeleton width="70%" />
+        <div class="row"><Spinner label="Chargement" /> <span class="text-secondary">Spinner : actions courtes uniquement ; squelette pour les contenus.</span></div>
+      </div>
+    </Card>
+    <pre class="code">{snippet.states}</pre>
+  </PageSection>
+
+  <PageSection id="formulaires" title="Formulaires et fenêtres">
+    <Card>
+      <div class="form">
+        <Input label="Nom de l’application" name="demo-name" placeholder="mon-site" hint="Lettres minuscules, chiffres et tirets." />
+        <Input label="Port" name="demo-port" type="number" value="80" error="Ce port est déjà utilisé par caddy." mono />
+        <label class="field-inline"><span>Redémarrage automatique</span><Toggle label="Redémarrage automatique" checked /></label>
+        <label class="field-inline"><span>Environnement</span>
+          <Select label="Environnement"><option>Production</option><option>Test</option></Select>
+        </label>
+      </div>
+      <div class="row">
+        <Button id="demo-confirm">confirmDialog</Button>
+        <Button id="demo-prompt">promptDialog</Button>
+        <Button id="demo-toast">toast</Button>
+        <Button variant="danger" id="demo-danger">Action destructive</Button>
+      </div>
+    </Card>
+  </PageSection>
+
+  <PageSection id="commandes" title="Commandes et raccourcis" description="Ctrl+K ouvre la palette ; « ? » liste les raccourcis. Cette page enregistre deux commandes : essayez-les.">
+    <Card>
+      <p class="row"><Kbd keys="Mod+K" /> palette <Kbd keys="Mod+F" /> recherche de la page <Kbd keys="?" /> aide <Kbd keys="Shift+T" /> commande d’exemple</p>
+      <pre class="code">{snippet.commands}</pre>
+    </Card>
+  </PageSection>
+</PanelLayout>
+
+<script>
+  import { mountTable } from '../scripts/ui/table';
+  import { esc, statusBadgeHTML } from '../scripts/ui/html';
+  import { confirmDialog, promptDialog, toast } from '../scripts/ui/dialog';
+  import { registerCommands, registerShortcuts } from '../scripts/ui/commands';
+
+  type Proc = { pid: number; name: string; cpu: number; state: string };
+  const DATA: Proc[] = [
+    { pid: 812, name: 'java', cpu: 41.3, state: 'running' },
+    { pid: 1201, name: 'node', cpu: 6.8, state: 'running' },
+    { pid: 455, name: 'caddy', cpu: 0.4, state: 'running' },
+    { pid: 990, name: 'tailscaled', cpu: 0.2, state: 'warning' },
+    { pid: 77, name: 'cron', cpu: 0, state: 'stopped' },
+  ];
+
+  document.addEventListener('astro:page-load', () => {
+    if (!document.getElementById('demo-procs')) return;
+    const t = mountTable<Proc>('demo-procs', {
+      columns: [
+        { key: 'name', label: 'Nom', sortable: true, mono: true },
+        { key: 'cpu', label: 'CPU', type: 'number', align: 'right', sortable: true, render: (r) => `${r.cpu.toFixed(1).replace('.', ',')} %` },
+        { key: 'state', label: 'État', render: (r) => ({ html: statusBadgeHTML(r.state, undefined, { size: 'sm' }) }) },
+        { key: 'actions', label: 'Actions', actions: true, hideLabel: true,
+          render: (r) => ({ html: `<button type="button" class="mini mini--danger" data-pid="${esc(r.pid)}">Arrêter</button>` }) },
+      ],
+      rowKey: 'pid',
+      noun: ['processus', 'processus'],
+      empty: { icon: 'cpu', title: 'Aucun processus', text: 'Rien ne tourne pour cet utilisateur.' },
+      onRowClick: (r) => toast(`Ligne ${r.name} (PID ${r.pid})`),
+    });
+    const load = () => { t.setLoading(); setTimeout(() => t.setRows(DATA), 700); };
+    load();
+    let compact = true;
+    document.getElementById('demo-load')!.addEventListener('click', load);
+    document.getElementById('demo-empty')!.addEventListener('click', () => t.setRows([]));
+    document.getElementById('demo-error')!.addEventListener('click', () => t.setError({ detail: 'HTTP 502 · /api/processes' }));
+    document.getElementById('demo-density')!.addEventListener('click', () => { compact = !compact; t.setDensity(compact ? 'compact' : 'comfortable'); });
+    document.getElementById('demo-procs')!.addEventListener('click', (e) => {
+      const b = (e.target as Element).closest<HTMLElement>('[data-pid]');
+      if (b) toast(`Arrêt demandé pour le PID ${b.dataset.pid}`, 'warning');
+    });
+
+    document.getElementById('demo-confirm')!.addEventListener('click', async () => {
+      toast((await confirmDialog({ title: 'Redémarrer le service « caddy » ?', message: 'Les sites seront indisponibles quelques secondes.', confirmLabel: 'Redémarrer' })) ? 'Confirmé' : 'Annulé');
+    });
+    document.getElementById('demo-prompt')!.addEventListener('click', async () => {
+      const v = await promptDialog({ title: 'Renommer le dossier', value: 'sauvegardes', confirmLabel: 'Renommer' });
+      if (v !== null) toast(`Nouveau nom : ${v}`, 'success');
+    });
+    document.getElementById('demo-toast')!.addEventListener('click', () => toast('Modifications enregistrées.', 'success'));
+    document.getElementById('demo-danger')!.addEventListener('click', async () => {
+      if (await confirmDialog({ title: 'Supprimer le monde « survie » ?', message: 'Cette action est définitive.', confirmLabel: 'Supprimer', danger: true })) toast('Suppression impossible : démonstration.', 'error');
+    });
+
+    registerCommands([
+      { id: 'design-reload', title: 'Recharger le tableau d’exemple', icon: 'refresh', keywords: ['démo'], run: load },
+      { id: 'design-toast', title: 'Afficher une notification d’exemple', icon: 'info', shortcut: 'Shift+T', run: () => toast('Commande de la page exécutée.') },
+    ]);
+    registerShortcuts([{ keys: 'Shift+L', title: 'Recharger le tableau d’exemple', run: load }]);
+  });
+</script>
+
+<style>
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(360px, 100%), 1fr)); gap: var(--space-4); }
+  .row { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+  .row + .row { margin-top: var(--space-3); }
+  .stack { display: flex; flex-direction: column; gap: var(--space-3); }
+  .gap { height: var(--space-4); }
+  .code {
+    margin: var(--space-3) 0 0; padding: var(--space-3) var(--space-4); overflow-x: auto;
+    border: var(--border-width) solid var(--border); border-radius: var(--radius-md); background: var(--bg-surface-2);
+    font-family: var(--font-mono); font-size: var(--meta-size); line-height: var(--meta-lh); color: var(--text-secondary);
+  }
+  code { font-family: var(--font-mono); font-size: var(--micro-size); color: var(--text-tertiary); }
+
+  .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: var(--space-3); }
+  .swatch { display: grid; grid-template-columns: auto 1fr; column-gap: var(--space-2); align-items: center; }
+  .swatch__chip { grid-row: span 2; width: var(--control-h); height: var(--control-h); border-radius: var(--radius-sm); box-shadow: inset 0 0 0 1px var(--border-strong); }
+  .swatch__name { font-size: var(--dense-size); }
+  .tones { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+  .tone { padding: var(--space-1) var(--space-3); border-radius: var(--radius-xs); font-size: var(--meta-size); font-weight: var(--weight-medium); }
+  .shapes { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+  .shape {
+    display: grid; place-items: center; width: 112px; height: 64px;
+    background: var(--bg-surface); border: var(--border-width) solid var(--border-strong); border-radius: var(--radius-md);
+  }
+  .shape--shadow { border-color: var(--border); }
+  .spaces { display: flex; flex-direction: column; gap: var(--space-1); }
+  .space { display: grid; grid-template-columns: 96px 1fr; align-items: center; }
+  .space span { height: var(--space-2); border-radius: var(--radius-xs); background: var(--accent); }
+  .types { display: flex; flex-direction: column; gap: var(--space-2); }
+  .types code { display: inline-block; min-width: 88px; }
+  .form { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); gap: var(--space-4); margin-bottom: var(--space-4); }
+  .field-inline { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); font-size: var(--dense-size); font-weight: var(--weight-medium); }
+</style>

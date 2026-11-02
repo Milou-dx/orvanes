@@ -1,0 +1,9 @@
+---
+interface Props { title?: string; footer?: string; class?: string; id?: string }
+const { title, footer, class: className = '', id } = Astro.props;
+---
+<section class:list={['sgroup', className]} id={id}>
+  {title && <h2 class="sgroup__title">{title}</h2>}
+  <div class="sgroup__rows"><slot /></div>
+  {footer && <p class="sgroup__foot">{footer}</p>}
+</section>

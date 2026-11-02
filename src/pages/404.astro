@@ -1,0 +1,24 @@
+---
+import AuthLayout from '../layouts/AuthLayout.astro';
+import Button from '../components/ui/Button.astro';
+
+export const prerender = false;
+Astro.response.status = 404;
+---
+<AuthLayout title="Page introuvable">
+  <h1 class="auth__title">Page introuvable</h1>
+  <p class="auth__lead">L’adresse <span class="mono">{Astro.url.pathname}</span> ne correspond à aucune page du panel.</p>
+  <div class="err__actions">
+    <Button variant="primary" href="/">Retour à l’accueil</Button>
+    <Button variant="secondary" id="err-back">Page précédente</Button>
+  </div>
+</AuthLayout>
+
+<script>
+  document.getElementById('err-back')?.addEventListener('click', () => (history.length > 1 ? history.back() : location.assign('/')));
+</script>
+
+<style>
+  .err__actions { display: flex; gap: var(--space-2); justify-content: center; flex-wrap: wrap; }
+  .mono { overflow-wrap: anywhere; }
+</style>

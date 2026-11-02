@@ -1,0 +1,499 @@
+---
+import PanelLayout from '../layouts/PanelLayout.astro';
+import SettingsGroup from '../components/ui/SettingsGroup.astro';
+import SettingsRow from '../components/ui/SettingsRow.astro';
+import EmptyState from '../components/ui/EmptyState.astro';
+import Tabs from '../components/ui/Tabs.astro';
+import Toolbar from '../components/ui/Toolbar.astro';
+import DataTable from '../components/ui/DataTable.astro';
+import Card from '../components/ui/Card.astro';
+import Badge from '../components/ui/Badge.astro';
+import Button from '../components/ui/Button.astro';
+import Select from '../components/ui/Select.astro';
+import Stat from '../components/ui/Stat.astro';
+import StatGrid from '../components/ui/StatGrid.astro';
+import KeyValue from '../components/ui/KeyValue.astro';
+import Icon from '../components/ui/Icon.astro';
+import * as net from '../server/network/network.js';
+import * as sys from '../server/system/system.js';
+import * as fw from '../server/network/firewall';
+import { safe } from '../server/core/safe';
+import { bytes } from '../server/core/format';
+
+export const prerender = false;
+
+const [ports, conns, routes, gw, localIp, ifaces, traffic, rules, dirty] = await Promise.all([
+  safe(() => net.listListeningPorts(), [] as any[]),
+  safe(() => net.listEstablished(), [] as any[]),
+  safe(() => net.listRoutes(), [] as any[]),
+  safe(() => sys.getGatewayAndDns(), null),
+  safe(() => sys.getLocalIp(), null),
+  safe(() => sys.getNetworkInterfaces(), [] as any[]),
+  safe(() => sys.getNetTraffic(), null),
+  safe(() => fw.list(), [] as any[]),
+  safe(() => fw.isDirty(), false),
+]);
+
+const deny = fw.denyPosition(rules);
+const inert = deny ? rules.filter((r: any) => r.num > deny) : [];
+const active = deny ? rules.filter((r: any) => r.num <= deny) : rules;
+
+const totals = (traffic?.totals ?? {}) as Record<string, { rx: number; tx: number }>;
+const rates = (traffic?.rates ?? {}) as Record<string, { rxBytesPerSec: number; txBytesPerSec: number }>;
+
+const isPublic = (a: string) => /^(0\.0\.0\.0|\*|\[::\])/.test(a ?? '');
+const sortedPorts = [...ports].sort((a: any, b: any) => (a.port ?? 0) - (b.port ?? 0));
+const externalIfaces = ifaces
+  .filter((i: any) => !i.internal)
+  .sort((a: any, b: any) => (totals[b.name]?.rx ?? 0) - (totals[a.name]?.rx ?? 0));
+const ifaceLabel = (n: string) =>
+  /^tailscale/.test(n) ? 'Réseau privé' : /^(en|eth)/.test(n) ? 'Ethernet' : /^wl/.test(n) ? 'Wi-Fi'
+  : /^(br-|docker)/.test(n) ? 'Pont Docker' : /^veth/.test(n) ? 'Lien de conteneur' : n;
+const ifaceIcon = (n: string) =>
+  /^tailscale/.test(n) ? 'shield' : /^(br-|docker)/.test(n) ? 'layers' : /^veth/.test(n) ? 'link' : 'network';
+const isUp = (i: any) => i.state !== 'down';
+const upCount = externalIfaces.filter(isUp).length;
+const dnsText = Array.isArray(gw?.dns) ? gw.dns.join(' · ') : (gw?.dns ?? '—');
+const sum = (f: (n: string) => number) => externalIfaces.reduce((n: number, i: any) => n + f(i.name), 0);
+const totalRx = sum((n) => totals[n]?.rx ?? 0);
+const totalTx = sum((n) => totals[n]?.tx ?? 0);
+const rateRx = sum((n) => rates[n]?.rxBytesPerSec ?? 0);
+const rateTx = sum((n) => rates[n]?.txBytesPerSec ?? 0);
+const isDeny = (r: any) => r.target === 'REJECT' || r.target === 'DROP';
+const defaultRoute = routes.find((r: any) => r.dest === 'default');
+const tcpCount = conns.filter((c: any) => c.protocol === 'tcp').length;
+---
+<PanelLayout title="Réseau" subtitle={localIp ? `IP locale ${localIp}` : undefined}>
+  <Button slot="actions" variant="secondary" icon="refresh" href="/reseau">Actualiser</Button>
+
+  {dirty && (
+    <div class="alert" role="status">
+      <Icon name="warning" size={16} class="alert__icon" />
+      <p class="t-meta"><strong>Règles du pare-feu non enregistrées.</strong> Elles seront perdues au prochain redémarrage du serveur.</p>
+      <button type="button" class="mini" data-go="pare-feu">Ouvrir le pare-feu</button>
+    </div>
+  )}
+
+  <StatGrid cols={4}>
+    <Stat label="Réception" value={`${bytes(rateRx)}/s`}>
+      <p slot="trend" class="t-meta text-tertiary">↓ {bytes(totalRx)} au total</p>
+    </Stat>
+    <Stat label="Envoi" value={`${bytes(rateTx)}/s`}>
+      <p slot="trend" class="t-meta text-tertiary">↑ {bytes(totalTx)} au total</p>
+    </Stat>
+    <Stat label="Interfaces" value={String(upCount)} unit={upCount > 1 ? 'actives' : 'active'}>
+      <p slot="trend" class="t-meta text-tertiary">{externalIfaces.length === upCount ? 'Toutes actives' : `${externalIfaces.length - upCount} sur ${externalIfaces.length} inactives`}</p>
+    </Stat>
+    <Stat label="Connexions" value={String(conns.length)} unit="établies">
+      <p slot="trend" class="t-meta text-tertiary">{sortedPorts.length} ports en écoute · TCP {tcpCount} · UDP {conns.length - tcpCount}</p>
+    </Stat>
+  </StatGrid>
+
+  <Tabs id="reseau" label="Sections réseau" tabs={[
+    { id: 'apercu', label: 'Vue d’ensemble', icon: 'activity' },
+    { id: 'interfaces', label: 'Interfaces', icon: 'network', count: externalIfaces.length },
+    { id: 'ports', label: 'Connexions', icon: 'globe', count: conns.length },
+    { id: 'pare-feu', label: 'Pare-feu', icon: 'shield', count: active.length },
+    { id: 'dns', label: 'DNS et passerelle', icon: 'waypoints' },
+  ]}>
+    <div slot="apercu" class="stack">
+      <Card title="Débit en temps réel" description="Toutes interfaces, une mesure par seconde. Envoi en pointillé.">
+        <div class="graph" transition:persist="reseau-graph">
+          <canvas id="net-live" aria-label="Débit réseau des 3 dernières minutes"></canvas>
+        </div>
+      </Card>
+
+      <div class="duo">
+        <Card title="Interfaces" flush>
+          <a slot="actions" class="more" href="#" data-go="interfaces">Tout voir <Icon name="chevronRight" size={14} /></a>
+          <ul class="list">
+            {externalIfaces.slice(0, 4).map((i: any) => (
+              <li>
+                <Icon name={ifaceIcon(i.name) as any} size={16} class="list__icon" />
+                <span class="list__main"><span class="list__title">{ifaceLabel(i.name)}</span><span class="list__sub mono">{i.name} · {i.ip ?? '—'}</span></span>
+                <span class="list__side">↓ {bytes(totals[i.name]?.rx)} · ↑ {bytes(totals[i.name]?.tx)}</span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+        <Card title="Connexions récentes" flush>
+          <a slot="actions" class="more" href="#" data-go="ports">Tout voir <Icon name="chevronRight" size={14} /></a>
+          {conns.length === 0 ? (
+            <p class="t-meta text-secondary empty">Aucune connexion établie.</p>
+          ) : (
+            <ul class="list">
+              {conns.slice(0, 4).map((c: any) => (
+                <li>
+                  <Badge tone={c.protocol === 'tcp' ? 'info' : 'neutral'}>{c.protocol.toUpperCase()}</Badge>
+                  <span class="list__main"><span class="list__title mono">{c.peer}</span><span class="list__sub">vers <span class="mono">{c.local}</span></span></span>
+                  <span class="list__side">{c.process ?? '—'}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      </div>
+    </div>
+
+    <div slot="interfaces" class="stack">
+      {externalIfaces.length === 0 ? (
+        <EmptyState icon="network" title="Aucune interface externe" text="Le système n’a remonté aucune carte réseau." />
+      ) : externalIfaces.map((i: any) => (
+        <Card>
+          <div class="iface">
+            <span class="iface__icon"><Icon name={ifaceIcon(i.name) as any} size={18} /></span>
+            <div class="iface__head">
+              <h3 class="iface__title">{ifaceLabel(i.name)}</h3>
+              <span class="t-meta text-secondary mono">{i.name}</span>
+            </div>
+            {i.name === defaultRoute?.dev && <Badge tone="accent">Principale</Badge>}
+            {isUp(i) ? <Badge tone="success" dot>Active</Badge> : <Badge tone="neutral" dot>Inactive</Badge>}
+          </div>
+          <KeyValue cols={2} mono items={[
+            { label: 'Adresse IP', value: i.ip },
+            { label: 'Masque', value: i.netmask },
+            { label: 'Adresse MAC', value: i.mac },
+            { label: 'MTU', value: i.mtu ? `${i.mtu} octets` : null },
+          ]} />
+          <p class="traffic t-meta">
+            <span><Icon name="arrowDown" size={14} /> Reçu <strong>{bytes(totals[i.name]?.rx)}</strong>{rates[i.name] && <span class="text-tertiary"> · {bytes(rates[i.name].rxBytesPerSec)}/s</span>}</span>
+            <span><Icon name="arrowUp" size={14} /> Émis <strong>{bytes(totals[i.name]?.tx)}</strong>{rates[i.name] && <span class="text-tertiary"> · {bytes(rates[i.name].txBytesPerSec)}/s</span>}</span>
+          </p>
+        </Card>
+      ))}
+    </div>
+
+    <div slot="ports" class="stack">
+      <Toolbar controls="conns-tbl" search="Filtrer par adresse ou processus" count />
+      <DataTable id="conns-tbl" caption="Connexions établies" noun={['connexion', 'connexions']} sort={{ key: 'peer' }}
+        empty={{ icon: 'globe', title: 'Aucune connexion établie', text: 'Aucune connexion ouverte en ce moment.' }}
+        columns={[
+          { key: 'proto', label: 'Proto', sortable: true },
+          { key: 'local', label: 'Adresse locale', sortable: true, mono: true, hideBelow: 'sm' },
+          { key: 'peer', label: 'Adresse distante', sortable: true, mono: true },
+          { key: 'proc', label: 'Processus', sortable: true },
+        ]}>
+        {conns.map((c: any) => (
+          <tr>
+            <td><Badge tone={c.protocol === 'tcp' ? 'info' : 'neutral'}>{c.protocol.toUpperCase()}</Badge></td>
+            <td class="is-mono hide-sm">{c.local}</td>
+            <td class="is-mono">{c.peer}</td>
+            <td>{c.process ? <>{c.process} <span class="text-tertiary">({c.pid})</span></> : <span class="text-tertiary">—</span>}</td>
+          </tr>
+        ))}
+      </DataTable>
+      <p class="t-meta text-secondary note">Le processus n’est affiché que pour les programmes lancés par le compte du panel.</p>
+
+      <h2 class="t-card section">Ports en écoute</h2>
+      <Toolbar controls="ports-tbl" search="Filtrer les ports" count>
+        <Select slot="left" id="ports-expo" label="Exposition">
+          <option value="">Toutes expositions</option>
+          <option value="Toutes interfaces">Toutes interfaces</option>
+          <option value="Restreint">Restreint</option>
+        </Select>
+      </Toolbar>
+      <DataTable id="ports-tbl" caption="Ports en écoute" noun={['port', 'ports']} sort={{ key: 'port' }}
+        empty={{ icon: 'globe', title: 'Aucun port en écoute', text: 'Aucun port en écoute remonté.' }}
+        columns={[
+          { key: 'port', label: 'Port', sortable: true, type: 'number', mono: true },
+          { key: 'proto', label: 'Proto', sortable: true, hideBelow: 'sm' },
+          { key: 'address', label: 'Adresse', sortable: true, mono: true, hideBelow: 'sm' },
+          { key: 'expo', label: 'Exposition', sortable: true },
+          { key: 'proc', label: 'Processus', sortable: true },
+        ]}>
+        {sortedPorts.map((p: any) => (
+          <tr>
+            <td class="is-mono" data-value={p.port}>{p.port}</td>
+            <td class="hide-sm">{p.protocol}</td>
+            <td class="is-mono hide-sm">{p.address}</td>
+            <td>
+              {isPublic(p.address)
+                ? <Badge tone="warning" dot>Toutes interfaces</Badge>
+                : <Badge tone="success" dot>Restreint</Badge>}
+            </td>
+            <td>{p.process ?? p.knownAs ?? '—'}</td>
+          </tr>
+        ))}
+      </DataTable>
+    </div>
+
+    <div slot="pare-feu" class="stack">
+      <Toolbar controls="fw-rules" search="Filtrer les règles" count>
+        <Badge slot="right" tone={dirty ? 'warning' : 'success'} dot>{dirty ? 'Non enregistré' : 'Enregistré'}</Badge>
+        <button slot="right" class="mini" id="fw-save" type="button">Enregistrer</button>
+      </Toolbar>
+      <DataTable id="fw-rules" caption="Règles du pare-feu" noun={['règle', 'règles']} sort={{ key: 'num' }}
+        empty={{ icon: 'shield', title: 'Aucune règle', text: 'Aucune règle de pare-feu n’a été remontée.' }}
+        columns={[
+          { key: 'num', label: '#', sortable: true, type: 'number', mono: true },
+          { key: 'action', label: 'Action', sortable: true },
+          { key: 'proto', label: 'Proto', sortable: true, hideBelow: 'sm' },
+          { key: 'port', label: 'Port', sortable: true, mono: true },
+          { key: 'source', label: 'Source', sortable: true, mono: true, hideBelow: 'sm' },
+          { key: 'packets', label: 'Paquets', sortable: true, type: 'number', align: 'right', hideBelow: 'md' },
+          { key: 'act', label: 'Actions', hideLabel: true, actions: true },
+        ]}>
+        {active.map((r: any) => (
+          <tr class:list={[isDeny(r) && 'row-deny']}>
+            <td class="is-mono is-muted">{r.num}</td>
+            <td>
+              {r.target === 'ACCEPT'
+                ? <Badge tone="success">Autoriser</Badge>
+                : isDeny(r)
+                  ? <Badge tone="danger">Refuser</Badge>
+                  : <Badge tone="neutral">{r.target === 'ts-input' ? 'Réseau privé' : r.target}</Badge>}
+            </td>
+            <td class="hide-sm">{r.protocol ?? '—'}</td>
+            <td class="is-mono">{r.port ?? '—'}</td>
+            <td class="is-mono hide-sm">{r.source ?? 'toutes'}</td>
+            <td class="al-right is-muted hide-md" data-value={r.packets ?? 0}>{r.packets != null ? r.packets.toLocaleString('fr-FR') : '—'}</td>
+            <td class="is-actions">
+              {r.protectedReason
+                ? <span class="t-meta text-tertiary" title={r.protectedReason}>protégée</span>
+                : <button type="button" class="mini mini--danger" data-del={r.num}>Supprimer</button>}
+            </td>
+          </tr>
+        ))}
+      </DataTable>
+      <p class="t-meta text-secondary note">Tout ce qui n’est pas autorisé est bloqué. Un port ouvert ici doit aussi l’être chez l’hébergeur.</p>
+
+      {inert.length > 0 && (
+        <p class="t-meta text-secondary note"><strong>{inert.length} anciennes règles sans effet</strong> : placées après « Refuser », elles ne s’appliquent jamais.</p>
+      )}
+
+      <Card eyebrow="Nouvelle règle" title="Autoriser un port">
+        <form id="fw-form" class="form" novalidate>
+          <div class="field">
+            <label for="fw-proto">Protocole</label>
+            <Select id="fw-proto" name="protocol">
+              <option value="tcp">TCP</option>
+              <option value="udp">UDP</option>
+            </Select>
+          </div>
+          <div class="field">
+            <label for="fw-port">Port</label>
+            <input id="fw-port" name="port" class="mono" placeholder="8080 ou 8000:8100" required />
+          </div>
+          <div class="field">
+            <label for="fw-source">Source <span class="text-tertiary">(vide = toutes)</span></label>
+            <input id="fw-source" name="source" class="mono" placeholder="100.64.0.0/10" />
+          </div>
+          <div class="field">
+            <label for="fw-comment">Commentaire</label>
+            <input id="fw-comment" name="comment" placeholder="Pourquoi cette ouverture ?" />
+          </div>
+          <Button variant="primary" size="md" type="submit">Ajouter</Button>
+        </form>
+        <p id="fw-msg" class="t-meta msg" role="status" hidden></p>
+      </Card>
+    </div>
+
+    <div slot="dns" class="stack">
+      <SettingsGroup title="Connexion" footer="Lecture seule : ces réglages sont fournis par l’hébergeur (DHCP). Les modifier ici risquerait de couper l’accès au serveur.">
+        <SettingsRow title="Adresse IP locale"><span class="mono">{localIp ?? '—'}</span></SettingsRow>
+        <SettingsRow title="Passerelle"><span class="mono">{gw?.gateway ?? '—'}</span></SettingsRow>
+        <SettingsRow title="Interface par défaut"><span class="mono">{defaultRoute?.dev ?? '—'}</span></SettingsRow>
+        <SettingsRow title="Serveurs DNS"><span class="mono">{dnsText}</span></SettingsRow>
+      </SettingsGroup>
+      <DataTable id="routes-tbl" caption="Table de routage" noun={['route', 'routes']}
+        empty={{ icon: 'waypoints', title: 'Aucune route', text: 'La table de routage n’a pas pu être lue.' }}
+        columns={[
+          { key: 'dest', label: 'Destination', mono: true },
+          { key: 'via', label: 'Passerelle', mono: true, hideBelow: 'sm' },
+          { key: 'dev', label: 'Interface', mono: true },
+          { key: 'state', label: 'Lien' },
+        ]}>
+        {routes.map((r: any) => (
+          <tr>
+            <td class="is-mono">{r.dest === 'default' ? 'par défaut' : r.dest}</td>
+            <td class="is-mono hide-sm">{r.via ?? '—'}</td>
+            <td class="is-mono">{r.dev ?? '—'}</td>
+            <td>{r.down ? <Badge tone="neutral" dot>Coupé</Badge> : <Badge tone="success" dot>Actif</Badge>}</td>
+          </tr>
+        ))}
+      </DataTable>
+    </div>
+  </Tabs>
+</PanelLayout>
+
+<script>
+  import { confirmDialog, toast } from '../scripts/ui/dialog';
+  import { registerCommands } from '../scripts/ui/commands';
+  import { getTable } from '../scripts/ui/table';
+  import { allowError } from '../server/network/firewall-check';
+  import { createGraph } from '../scripts/ui/graph';
+
+  let liveCanvas: HTMLCanvasElement | null = null;
+  function startLive(canvas: HTMLCanvasElement) {
+    if (canvas === liveCanvas) return;
+    liveCanvas = canvas;
+    const graph = createGraph(canvas, 'net', [{ name: 'Réception' }, { name: 'Envoi', dashed: true }], 'auto');
+    const tick = async () => {
+      if (!canvas.isConnected) { graph.stop(); if (liveCanvas === canvas) liveCanvas = null; return; }
+      if (document.visibilityState === 'visible') {
+        try {
+          const s = await (await fetch('/api/system/stats')).json();
+          graph.push([s.network?.rxBytesPerSec ?? 0, s.network?.txBytesPerSec ?? 0]);
+        } catch {}
+      }
+      setTimeout(tick, 1000);
+    };
+    tick();
+  }
+
+  document.addEventListener('astro:page-load', () => {
+    const live = document.getElementById('net-live') as HTMLCanvasElement | null;
+    if (live) startLive(live);
+    const goTab = (tab: string) => document.getElementById(`reseau-tab-${tab}`)?.click();
+    document.querySelectorAll<HTMLElement>('[data-go]').forEach((el) => el.addEventListener('click', (e) => {
+      e.preventDefault();
+      goTab(el.dataset.go!);
+    }));
+
+    const form = document.getElementById('fw-form') as HTMLFormElement | null;
+    if (!form) return;
+
+    document.getElementById('ports-expo')?.addEventListener('change', (e) => {
+      getTable('ports-tbl')?.setFilter((e.target as HTMLSelectElement).value);
+    });
+    registerCommands([
+      { id: 'reseau-fw', title: 'Réseau : voir le pare-feu', group: 'Réseau', run: () => goTab('pare-feu') },
+      { id: 'reseau-ports', title: 'Réseau : voir les connexions et ports', group: 'Réseau', run: () => goTab('ports') },
+      { id: 'reseau-ifaces', title: 'Réseau : voir les interfaces', group: 'Réseau', run: () => goTab('interfaces') },
+      { id: 'reseau-dns', title: 'Réseau : voir DNS et routes', group: 'Réseau', run: () => goTab('dns') },
+      { id: 'reseau-save', title: 'Pare-feu : enregistrer les règles', group: 'Réseau', run: () => document.getElementById('fw-save')?.click() },
+    ]);
+    const msg = document.getElementById('fw-msg');
+
+    function show(text: string, ok: boolean) {
+      if (!msg) return;
+      msg.textContent = text;
+      msg.className = `t-meta msg ${ok ? 'msg--ok' : 'msg--err'}`;
+      msg.hidden = false;
+    }
+
+    async function call(body: unknown): Promise<any> {
+      const res = await fetch('/api/firewall', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      return { ok: res.ok, data: await res.json() };
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(form);
+      const port = String(fd.get('port') ?? '').trim();
+      const proto = String(fd.get('protocol') ?? 'tcp');
+      const source = String(fd.get('source') ?? '').trim();
+
+      const invalid = allowError(proto, port, source || null);
+      if (invalid) { show(invalid, false); document.getElementById(invalid.startsWith('Source') ? 'fw-source' : 'fw-port')?.focus(); return; }
+      const where = source ? `depuis ${source}` : 'depuis toutes les sources';
+      if (!(await confirmDialog({ title: 'Autoriser ce trafic ?', message: `${proto.toUpperCase()} ${port} ${where}.`, confirmLabel: 'Autoriser' }))) return;
+
+      try {
+        const { ok, data } = await call({
+          protocol: proto, port, source: source || null, comment: fd.get('comment'),
+        });
+        if (!ok) { show(data.error ?? 'Échec', false); return; }
+        show(`Règle insérée en position ${data.position}. Pensez à enregistrer.`, true);
+        setTimeout(() => location.reload(), 1200);
+      } catch {
+        show('Le panel n’a pas pu joindre le service.', false);
+      }
+    });
+
+    document.getElementById('fw-rules')?.addEventListener('click', async (ev) => {
+      const btn = (ev.target as Element).closest<HTMLButtonElement>('button[data-del]');
+      if (!btn) return;
+      const num = btn.dataset.del!;
+      if (!(await confirmDialog({ title: `Supprimer la règle n° ${num} ?`, confirmLabel: 'Supprimer', danger: true }))) return;
+      btn.disabled = true;
+      const { ok, data } = await call({ op: 'delete', num: Number(num) });
+      if (!ok) { toast(data.error ?? 'Échec', 'error'); btn.disabled = false; return; }
+      location.reload();
+    });
+
+    document.getElementById('fw-save')?.addEventListener('click', async () => {
+      if (!(await confirmDialog({ title: 'Écrire les règles actives sur le disque ?', message: 'Elles survivront alors au redémarrage.', confirmLabel: 'Enregistrer' }))) return;
+      const { ok, data } = await call({ op: 'persist' });
+      if (!ok) { toast(data.error ?? 'Échec', 'error'); return; }
+      location.reload();
+    });
+  });
+</script>
+
+<style>
+  .stack { display: flex; flex-direction: column; gap: var(--space-4); }
+  .alert {
+    border: var(--border-width) solid var(--warning-border);
+    background: var(--warning-subtle);
+    border-radius: var(--radius-card);
+    padding: var(--space-4);
+    display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;
+  }
+  .alert .t-meta { color: var(--text-primary); max-width: 80ch; flex: 1 1 260px; }
+  .alert :global(.alert__icon) { color: var(--warning); flex: none; }
+
+  .graph { height: 220px; }
+  .graph canvas { display: block; width: 100%; height: 100%; border-radius: var(--radius-sm); }
+  .duo { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(360px, 100%), 1fr)); gap: var(--space-4); }
+  .more { display: inline-flex; align-items: center; gap: 2px; font-size: var(--meta-size); color: var(--text-secondary); text-decoration: none; }
+  .more:hover { color: var(--text-primary); }
+  .list { list-style: none; margin: 0; padding: 0; }
+  .list li {
+    display: flex; align-items: center; gap: var(--space-3); min-height: var(--row-h);
+    padding: var(--space-2) var(--space-4); border-top: var(--border-width) solid var(--border);
+  }
+  .list :global(.list__icon) { color: var(--text-secondary); flex: none; }
+  .list__main { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+  .list__title { font-size: var(--dense-size); color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .list__sub { font-size: var(--meta-size); color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .list__side { font-size: var(--meta-size); color: var(--text-secondary); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .empty { padding: var(--space-4); border-top: var(--border-width) solid var(--border); }
+
+  .iface { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-3); }
+  .iface__icon {
+    display: grid; place-items: center; width: 32px; height: 32px; flex: none;
+    border-radius: var(--radius-sm); background: var(--bg-surface-2); color: var(--text-secondary);
+    box-shadow: inset 0 0 0 1px var(--border);
+  }
+  .iface__head { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+  .iface__title { font-size: var(--body-size); font-weight: 600; margin: 0; color: var(--text-primary); }
+  .traffic {
+    display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-5); margin-top: var(--space-3);
+    padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); background: var(--bg-surface-2); color: var(--text-secondary);
+  }
+  .traffic > span { display: inline-flex; align-items: center; gap: var(--space-1); }
+  .traffic strong { color: var(--text-primary); font-weight: 500; font-variant-numeric: tabular-nums; }
+  .section { margin-top: var(--space-4); }
+  .note { max-width: 80ch; }
+  .row-deny td { background: var(--danger-subtle); }
+
+  .form {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+    gap: var(--space-4); align-items: end;
+  }
+  .field { display: flex; flex-direction: column; gap: var(--space-2); }
+  .field label { font-size: var(--dense-size); line-height: var(--dense-lh); font-weight: 500; color: var(--text-primary); }
+  .field input {
+    height: var(--control-h); padding-inline: var(--space-3);
+    background: var(--control-fill); color: var(--text-primary);
+    border: var(--border-width) solid var(--field-stroke);
+    border-radius: var(--radius-control); font-size: var(--dense-size); box-shadow: var(--shadow-xs);
+    transition: border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+  }
+  .field input:hover { border-color: var(--border-strong); }
+  .field input:focus-visible {
+    outline: none; border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+  }
+  .field input::placeholder { color: var(--text-tertiary); }
+  .field :global(.select) { width: 100%; }
+
+  .msg { margin-top: var(--space-4); }
+  .msg--err { color: var(--danger); }
+  .msg--ok { color: var(--success); }
+</style>

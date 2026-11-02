@@ -1,0 +1,13 @@
+---
+import Icon from './Icon.astro';
+import type { IconName } from './lucide';
+
+interface Props { icon?: IconName; title: string; text?: string; compact?: boolean; class?: string }
+const { icon = 'inbox', title, text, compact = false, class: className = '' } = Astro.props;
+---
+<div class:list={['ui-state', compact && 'ui-state--compact', className]}>
+  <span class="ui-state__icon"><Icon name={icon} size={20} /></span>
+  <p class="ui-state__title">{title}</p>
+  {text && <p class="ui-state__text">{text}</p>}
+  {Astro.slots.has('actions') && <div class="ui-state__actions"><slot name="actions" /></div>}
+</div>

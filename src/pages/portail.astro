@@ -1,0 +1,16 @@
+---
+import AuthLayout from '../layouts/AuthLayout.astro';
+import { firstAllowedPage } from '../server/auth/auth-core.js';
+import { SITES } from './api/auth/relais';
+
+export const prerender = false;
+
+const user = Astro.locals.user;
+if (!user || user.status !== 'active') return Astro.redirect('/connexion?suite=/portail');
+const panel = firstAllowedPage(user);
+---
+<AuthLayout title="Choisir">
+  <h1 class="auth__title">Où aller ?</h1>
+  {panel && <a class="auth__btn auth__btn--primary" href={panel}>Panel</a>}
+  {[...SITES].map((site) => <a class="auth__btn" href={`/api/auth/relais?site=${encodeURIComponent(site)}`}>{site}</a>)}
+</AuthLayout>

@@ -1,0 +1,380 @@
+---
+import PanelLayout from '../layouts/PanelLayout.astro';
+import Card from '../components/ui/Card.astro';
+import Badge from '../components/ui/Badge.astro';
+import Button from '../components/ui/Button.astro';
+
+export const prerender = false;
+---
+<PanelLayout title="Terminal" subtitle="Session SSH" refreshMs={null}>
+  <div slot="actions" class="acts">
+    <Badge tone="neutral" dot id="term-state"><span id="term-state-text">Déconnecté</span></Badge>
+    <Button variant="secondary" size="sm" id="term-new" icon="refresh">Nouvelle session</Button>
+  </div>
+
+  <div class="term-wrap" id="term-wrap" data-no-shortcuts>
+    <Card flush>
+      <div class="term-bar" role="toolbar" aria-label="Outils du terminal">
+        <div class="term-bar__group">
+          <Button variant="ghost" size="sm" id="term-copy" icon="copy">Copier</Button>
+          <Button variant="ghost" size="sm" id="term-paste" icon="clipboard">Coller</Button>
+          <Button variant="ghost" size="sm" id="term-clear" icon="dismiss">Effacer</Button>
+          <Button variant="ghost" size="sm" id="term-sigint">Ctrl+C</Button>
+        </div>
+        <div class="term-bar__group">
+          <Button variant="ghost" size="sm" iconOnly label="Réduire la police" id="term-font-down">A−</Button>
+          <span id="term-font" class="t-meta mono term-bar__font" aria-live="polite">13</span>
+          <Button variant="ghost" size="sm" iconOnly label="Agrandir la police" id="term-font-up">A+</Button>
+          <Button variant="ghost" size="sm" id="term-full" icon="open">Plein écran</Button>
+        </div>
+      </div>
+
+      <div class="term-frame">
+        <div id="term" class="term"></div>
+      </div>
+
+      <div class="term-keys" id="term-keys" role="group" aria-label="Touches spéciales">
+        <button type="button" class="term-key" data-send="\u001b">Échap</button>
+        <button type="button" class="term-key" data-send="\t">Tab</button>
+        <button type="button" class="term-key" data-send="\u0003">Ctrl+C</button>
+        <button type="button" class="term-key" data-send="\u0004">Ctrl+D</button>
+        <button type="button" class="term-key" data-send="\u001b[A" aria-label="Flèche haut">↑</button>
+        <button type="button" class="term-key" data-send="\u001b[B" aria-label="Flèche bas">↓</button>
+        <button type="button" class="term-key" data-send="\u001b[D" aria-label="Flèche gauche">←</button>
+        <button type="button" class="term-key" data-send="\u001b[C" aria-label="Flèche droite">→</button>
+      </div>
+
+      <div class="term-status t-meta" role="status">
+        <span id="term-status-state">Déconnecté</span>
+        <span class="term-status__sep" aria-hidden="true">·</span>
+        <span id="term-size" class="mono">—</span>
+        <span class="term-status__sep" aria-hidden="true">·</span>
+        <span>SSH · UTF-8</span>
+      </div>
+      <p id="term-msg" class="cmd__msg t-meta" hidden></p>
+    </Card>
+  </div>
+</PanelLayout>
+
+<script>
+  import { Terminal } from '@xterm/xterm';
+  import { FitAddon } from '@xterm/addon-fit';
+  import { WebLinksAddon } from '@xterm/addon-web-links';
+  import '@xterm/xterm/css/xterm.css';
+  import { toast } from '../scripts/ui/dialog';
+  import { registerCommands } from '../scripts/ui/commands';
+
+  document.addEventListener('astro:page-load', () => {
+    const container = document.getElementById('term');
+    if (!container) return;
+
+    const msg = document.getElementById('term-msg');
+    const state = document.getElementById('term-state');
+    const stateText = document.getElementById('term-state-text');
+    const statusState = document.getElementById('term-status-state');
+    const sizeEl = document.getElementById('term-size');
+    const wrap = document.getElementById('term-wrap');
+    const fontEl = document.getElementById('term-font');
+
+    function setState(text: string, tone: string) {
+      if (stateText) stateText.textContent = text;
+      if (statusState) statusState.textContent = text;
+      if (state) state.className = `badge badge--${tone}`;
+    }
+
+    function showSize() {
+      if (sizeEl) sizeEl.textContent = `${term.cols} × ${term.rows}`;
+    }
+
+    function showError(text: string) {
+      if (!msg) return;
+      msg.textContent = text;
+      msg.className = 'cmd__msg t-meta cmd__msg--err';
+      msg.hidden = false;
+    }
+
+    function hideError() {
+      if (msg) msg.hidden = true;
+    }
+
+    const styles = getComputedStyle(document.documentElement);
+    const token = (name: string, fallback: string) => styles.getPropertyValue(name).trim() || fallback;
+
+    const FONT_MIN = 10;
+    const FONT_MAX = 24;
+    const savedRaw = Number(localStorage.getItem('orvane.term.font'));
+    const savedFont = savedRaw >= FONT_MIN && savedRaw <= FONT_MAX ? savedRaw : 13;
+    if (fontEl) fontEl.textContent = String(savedFont);
+
+    const term = new Terminal({
+      cursorBlink: true,
+      fontFamily: token('--font-mono', 'monospace'),
+      fontSize: savedFont,
+      scrollback: 5000,
+      theme: {
+        background: token('--console-bg', '#0c0c0c'),
+        foreground: token('--console-fg', '#cccccc'),
+        cursor: token('--console-strong', '#f2f2f2'),
+        cursorAccent: token('--console-bg', '#0c0c0c'),
+        selectionBackground: token('--console-select', '#264f78'),
+        red: token('--console-red', '#e74856'),
+        brightRed: token('--console-red', '#e74856'),
+        green: token('--console-green', '#16c60c'),
+        brightGreen: token('--console-green', '#16c60c'),
+        yellow: token('--console-yellow', '#f9f1a5'),
+        brightYellow: token('--console-yellow', '#f9f1a5'),
+        blue: token('--console-blue', '#3b78ff'),
+        brightBlue: token('--console-blue', '#3b78ff'),
+        cyan: token('--console-cyan', '#61d6d6'),
+        brightCyan: token('--console-cyan', '#61d6d6'),
+        white: token('--console-fg', '#cccccc'),
+        brightWhite: token('--console-strong', '#f2f2f2'),
+        brightBlack: token('--console-muted', '#8a8a8a'),
+      },
+    });
+    const fitAddon = new FitAddon();
+    term.loadAddon(fitAddon);
+    term.loadAddon(new WebLinksAddon());
+    term.open(container);
+
+    let ws: WebSocket | null = null;
+    let intentionalClose = false;
+    let sessionEnded = false;
+    let retries = 0;
+    let retryTimer: number | null = null;
+    let lastSentCols = 0;
+    let lastSentRows = 0;
+
+    function sendResize() {
+      if (ws?.readyState !== WebSocket.OPEN) return;
+      if (term.cols === lastSentCols && term.rows === lastSentRows) return;
+      lastSentCols = term.cols;
+      lastSentRows = term.rows;
+      ws.send(JSON.stringify({ type: 'resize', cols: term.cols, rows: term.rows }));
+    }
+
+    function connect() {
+      if (retryTimer) { clearTimeout(retryTimer); retryTimer = null; }
+      hideError();
+      sessionEnded = false;
+      setState('Connexion…', 'accent');
+      term.reset();
+
+      const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const params = new URLSearchParams({ cols: String(term.cols), rows: String(term.rows) });
+      lastSentCols = term.cols;
+      lastSentRows = term.rows;
+      ws = new WebSocket(`${proto}//${location.host}/api/shell/ws?${params}`);
+
+      ws.addEventListener('message', (event) => {
+        let payload: { type: string; data?: string; reason?: string; message?: string };
+        try {
+          payload = JSON.parse(event.data);
+        } catch {
+          return;
+        }
+        if (payload.type === 'ready') {
+          retries = 0;
+          setState('Connecté', 'success');
+        } else if (payload.type === 'output' && payload.data) {
+          term.write(payload.data);
+        } else if (payload.type === 'closed') {
+          term.write(`\r\n\n[${payload.reason ?? 'session fermée'}]\r\n`);
+          setState('Fermé', 'neutral');
+          sessionEnded = true;
+        } else if (payload.type === 'error') {
+          showError(payload.message ?? 'Erreur de connexion SSH');
+          setState('Erreur', 'danger');
+          sessionEnded = true;
+        }
+      });
+
+      ws.addEventListener('close', () => {
+        if (intentionalClose || sessionEnded) return;
+        if (retries < 3) {
+          retries += 1;
+          setState(`Reconnexion (${retries}/3)…`, 'warning');
+          retryTimer = window.setTimeout(connect, retries * 2000);
+        } else {
+          setState('Déconnecté', 'neutral');
+          showError('Connexion perdue. Utilisez « Nouvelle session » pour reprendre.');
+        }
+      });
+
+      ws.addEventListener('error', () => {
+        showError('Le panel n’a pas pu joindre le terminal.');
+        setState('Erreur', 'danger');
+      });
+    }
+
+    term.onData(sendInput);
+
+    term.onResize(() => { sendResize(); showSize(); });
+
+    const resizeObserver = new ResizeObserver(() => fitAddon.fit());
+    resizeObserver.observe(container);
+
+    function sendInput(data: string) {
+      if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'input', data }));
+    }
+
+    document.getElementById('term-sigint')?.addEventListener('click', () => { sendInput('\x03'); term.focus(); });
+    document.getElementById('term-clear')?.addEventListener('click', () => term.clear());
+    function newSession() {
+      intentionalClose = true;
+      ws?.close();
+      intentionalClose = false;
+      retries = 0;
+      connect();
+      term.focus();
+    }
+    document.getElementById('term-new')?.addEventListener('click', newSession);
+
+    async function copySelection() {
+      const text = term.getSelection();
+      if (!text) { toast('Aucune sélection à copier.', 'info'); return; }
+      try {
+        await navigator.clipboard.writeText(text);
+        toast('Sélection copiée.', 'success');
+      } catch {
+        toast('Copie refusée par le navigateur.', 'error');
+      }
+    }
+    async function pasteClipboard() {
+      try {
+        const text = await navigator.clipboard.readText();
+        if (text) term.paste(text);
+      } catch {
+        toast('Collage refusé : autorisez l’accès au presse-papiers ou utilisez Ctrl+Maj+V.', 'warning');
+      }
+      term.focus();
+    }
+    document.getElementById('term-copy')?.addEventListener('click', copySelection);
+    document.getElementById('term-paste')?.addEventListener('click', pasteClipboard);
+
+    function setFont(size: number) {
+      const next = Math.min(FONT_MAX, Math.max(FONT_MIN, size));
+      term.options.fontSize = next;
+      localStorage.setItem('orvane.term.font', String(next));
+      if (fontEl) fontEl.textContent = String(next);
+      fitAddon.fit();
+      term.focus();
+    }
+    document.getElementById('term-font-down')?.addEventListener('click', () => setFont((term.options.fontSize ?? 13) - 1));
+    document.getElementById('term-font-up')?.addEventListener('click', () => setFont((term.options.fontSize ?? 13) + 1));
+
+    const fullBtn = document.getElementById('term-full');
+    function toggleFull() {
+      if (document.fullscreenElement) void document.exitFullscreen();
+      else void wrap?.requestFullscreen?.().catch(() => toast('Plein écran indisponible.', 'warning'));
+    }
+    fullBtn?.addEventListener('click', toggleFull);
+    const onFullChange = () => {
+      const on = Boolean(document.fullscreenElement);
+      const label = fullBtn && [...fullBtn.childNodes].reverse().find((n) => n.nodeType === 3 && n.textContent?.trim());
+      if (label) label.textContent = on ? 'Quitter le plein écran' : 'Plein écran';
+      fitAddon.fit();
+      term.focus();
+    };
+    document.addEventListener('fullscreenchange', onFullChange);
+
+    document.getElementById('term-keys')?.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-send]');
+      if (!btn) return;
+      sendInput(JSON.parse(`"${btn.dataset.send}"`));
+      term.focus();
+    });
+
+    term.attachCustomKeyEventHandler((e) => {
+      if (e.type === 'keydown' && e.ctrlKey && e.shiftKey) {
+        if (e.code === 'KeyC') { void copySelection(); return false; }
+        if (e.code === 'KeyV') { void pasteClipboard(); return false; }
+      }
+      return true;
+    });
+
+    const unregister = registerCommands([
+      { id: 'term.new', title: 'Terminal : nouvelle session', group: 'Terminal', run: newSession },
+      { id: 'term.clear', title: 'Terminal : effacer l’écran', group: 'Terminal', run: () => term.clear() },
+      { id: 'term.full', title: 'Terminal : plein écran', group: 'Terminal', run: toggleFull },
+      { id: 'term.copy', title: 'Terminal : copier la sélection', group: 'Terminal', run: () => void copySelection() },
+      { id: 'term.paste', title: 'Terminal : coller', group: 'Terminal', run: () => void pasteClipboard() },
+    ]);
+
+    const closeOnLeave = () => {
+      intentionalClose = true;
+      ws?.close();
+      resizeObserver.disconnect();
+      if (retryTimer) clearTimeout(retryTimer);
+      document.removeEventListener('fullscreenchange', onFullChange);
+      unregister();
+    };
+    document.addEventListener('astro:before-swap', closeOnLeave, { once: true });
+    window.addEventListener('pagehide', closeOnLeave, { once: true });
+
+    fitAddon.fit();
+    showSize();
+    connect();
+    term.focus();
+  });
+</script>
+
+<style>
+  .acts { display: flex; align-items: center; gap: var(--space-2); }
+
+  .term-wrap { background: var(--bg-app); }
+  .term-wrap:fullscreen { display: flex; flex-direction: column; padding: var(--space-3); }
+  .term-wrap:fullscreen :global(.card) { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  .term-wrap:fullscreen .term-frame { flex: 1; height: auto; min-height: 0; }
+
+  .term-bar {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+    gap: var(--space-2); padding: var(--space-2) var(--space-3);
+    border-bottom: var(--border-width) solid var(--border);
+  }
+  .term-bar__group { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); }
+  .term-bar__font { min-width: var(--space-6); text-align: center; color: var(--text-secondary); }
+
+  .term-frame {
+    background: var(--console-bg);
+    height: min(70dvh, 45rem);
+    padding: var(--space-3) var(--space-4);
+    border-bottom: var(--border-width) solid var(--console-border);
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+  .term { height: 100%; }
+  .term :global(.xterm) { height: 100%; }
+  .term :global(.xterm-viewport) { background-color: var(--console-bg) !important; }
+
+  .term-keys {
+    display: none; gap: var(--space-1); padding: var(--space-2) var(--space-3);
+    overflow-x: auto; border-bottom: var(--border-width) solid var(--border);
+  }
+  .term-key {
+    flex: 1 0 auto; min-height: 44px; min-width: 44px;
+    padding-inline: var(--space-3); font: inherit; font-size: var(--meta-size);
+    color: var(--text-primary); background: var(--bg-surface);
+    border: var(--border-width) solid var(--control-stroke); border-radius: var(--radius-sm);
+    cursor: pointer; touch-action: manipulation;
+  }
+  .term-key:hover { background: var(--bg-hover); }
+  .term-key:active { background: var(--bg-surface-2); }
+  .term-key:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  @media (pointer: coarse), (max-width: 640px) { .term-keys { display: flex; } .term-bar :global(#term-sigint) { display: none; } }
+
+  .term-status {
+    display: flex; align-items: center; gap: var(--space-2);
+    padding: var(--space-1) var(--space-4); color: var(--text-secondary);
+    min-height: var(--control-h-sm);
+  }
+  .term-status__sep { color: var(--text-tertiary); }
+
+  .cmd__msg { padding: var(--space-2) var(--space-4) var(--space-3); color: var(--text-tertiary); }
+  .cmd__msg--err { color: var(--danger); }
+
+  @media (max-width: 640px) {
+    .term-frame { padding: var(--space-2); height: min(60dvh, 45rem); }
+    .term-bar { padding: var(--space-2); }
+  }
+</style>

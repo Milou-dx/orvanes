@@ -1,0 +1,367 @@
+---
+import PanelLayout from '../layouts/PanelLayout.astro';
+import Card from '../components/ui/Card.astro';
+import Button from '../components/ui/Button.astro';
+import DataTable from '../components/ui/DataTable.astro';
+import Toolbar from '../components/ui/Toolbar.astro';
+import Select from '../components/ui/Select.astro';
+import Kbd from '../components/ui/Kbd.astro';
+import os from 'node:os';
+import { tabAllowed } from '../layouts/nav';
+
+export const prerender = false;
+
+const cores = os.cpus().length || 1;
+const panelUser = os.userInfo().username;
+const canTerminal = tabAllowed(Astro.locals)('terminal');
+---
+<PanelLayout title="Processus" refreshMs={null}>
+  {canTerminal && <Button slot="actions" variant="secondary" icon="terminal" href="/terminal">Ouvrir le terminal</Button>}
+  <Button slot="actions" variant="danger" icon="dismiss" id="pm-end" disabled>Fin de tâche</Button>
+
+  <div id="pm-root" data-cores={cores} data-user={panelUser}>
+    <Toolbar controls="pm" search="Rechercher un nom, un utilisateur ou un PID" topSearch count label="Filtres des processus">
+      <Select slot="left" id="pm-user" label="Filtrer par utilisateur">
+        <option value="">Tous les utilisateurs</option>
+        <option value="system">SYSTÈME</option>
+        <option value="user">Panel</option>
+        <option value="other">Autres comptes</option>
+      </Select>
+      <Button slot="left" variant="secondary" size="sm" icon="layers" id="pm-group" aria-pressed="false">Grouper par nom</Button>
+      <Button slot="right" variant="ghost" size="sm" icon="refresh" id="pm-refresh">Actualiser</Button>
+    </Toolbar>
+
+    <p class="pm-sum" aria-live="polite">
+      <span><span class="pm-sum__k">Processeur</span> <strong id="pm-cpu">—</strong></span>
+      <span><span class="pm-sum__k">Mémoire</span> <strong id="pm-mem">—</strong></span>
+      <span><span class="pm-sum__k">Processus</span> <strong id="pm-count">—</strong></span>
+      <span class="pm-sum__stale" id="pm-stale" hidden>Données non actualisées : nouvelle tentative en cours</span>
+    </p>
+
+    <div class="pm-grid">
+      <Card flush>
+        <DataTable id="pm" client density="compact" skeletonRows={10} maxHeight="640px" caption="Processus en cours d’exécution"
+          columns={[{ key: 'name', label: 'Nom' }]} />
+      </Card>
+
+      <aside class="pm-detail" aria-label="Détails du processus">
+        <div id="pm-detail-body">
+          <p class="text-secondary">Aucun processus sélectionné. <Kbd keys="Delete" /> termine la sélection, clic droit ou touche Menu pour les autres actions.</p>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+</PanelLayout>
+
+<script>
+  import { mountTable } from '../scripts/ui/table';
+  import { esc, buttonHTML } from '../scripts/ui/html';
+  import { openMenu as openUiMenu, closeMenu, isMenuOpen } from '../scripts/ui/menu';
+  import { registerCommands } from '../scripts/ui/commands';
+  import { confirmDialog, toast } from '../scripts/ui/dialog';
+  import { num as fmtNum } from '../server/core/format';
+
+  type Proc = { pid: number; user: string; name: string; state: string; cpu: number; mem: number; command: string };
+  type Row = { key: string; name: string; pids: number[]; count: number; user: string; state: string; cpu: number; mem: number; command: string };
+
+  const STATE: Record<string, string> = { R: 'En cours', D: 'Attente E/S', Z: 'Zombie', T: 'Suspendu', t: 'Suspendu', I: 'Inactif', S: '' };
+  const stateLabel = (st: string) => STATE[(st ?? '')[0]] ?? '';
+  let panelUser = '';
+  const userLabel = (u: string) => (u === 'root' ? 'SYSTÈME' : u);
+  const isKernelThread = (p: Proc) => /^\[.*\]$/.test(String(p.command ?? '').trim());
+  const heat = (v: number, scale: number) => Math.max(0, Math.min(1, v / scale)).toFixed(2);
+
+  document.addEventListener('astro:page-load', () => {
+    const rootEl = document.getElementById('pm-root');
+    if (!rootEl || !document.getElementById('pm')) return;
+    const cores = Number(rootEl.dataset.cores) || 1;
+    panelUser = rootEl.dataset.user ?? '';
+
+    const endBtn = document.getElementById('pm-end') as HTMLButtonElement;
+    const groupBtn = document.getElementById('pm-group') as HTMLButtonElement;
+    const userSel = document.getElementById('pm-user') as HTMLSelectElement;
+    const refreshBtn = document.getElementById('pm-refresh') as HTMLButtonElement;
+    const detail = document.getElementById('pm-detail-body')!;
+    const staleEl = document.getElementById('pm-stale')!;
+    const tableEl = document.getElementById('pm')!;
+
+    const st = { procs: [] as Proc[], grouped: false, userFilter: '', selected: null as string | null, loaded: false };
+
+    function accountOf(u: string) { return u === 'root' ? 'system' : u === panelUser ? 'user' : 'other'; }
+
+    function buildRows(): Row[] {
+      const list = st.procs.filter((p) => !st.userFilter || accountOf(p.user) === st.userFilter);
+      if (!st.grouped) {
+        return list.map((p) => ({ key: String(p.pid), name: p.name, pids: [p.pid], count: 1, user: p.user, state: p.state, cpu: (p.cpu || 0) / cores, mem: p.mem || 0, command: p.command }));
+      }
+      const groups = new Map<string, Row>();
+      for (const p of list) {
+        const g = groups.get(p.name);
+        if (!g) {
+          groups.set(p.name, { key: `g:${p.name}`, name: p.name, pids: [p.pid], count: 1, user: p.user, state: p.state, cpu: (p.cpu || 0) / cores, mem: p.mem || 0, command: p.command });
+        } else {
+          g.pids.push(p.pid); g.count++; g.cpu += (p.cpu || 0) / cores; g.mem += p.mem || 0;
+          if (g.user !== p.user) g.user = 'plusieurs';
+          if (!g.state.startsWith('R') && p.state.startsWith('R')) g.state = p.state;
+        }
+      }
+      return [...groups.values()];
+    }
+
+    const table = mountTable('pm', {
+      columns: [
+        { key: 'name', label: 'Nom', sortable: true, nowrap: true,
+          render: (r: Row) => ({ html: `<span title="${esc(r.command)}">${esc(r.name)}</span>${r.count > 1 ? ` <span class="pm-n">(${r.count})</span>` : ''}` }) },
+        { key: 'state', label: 'Statut', sortable: true, muted: true, nowrap: true, hideBelow: 'lg', render: (r: Row) => stateLabel(r.state) },
+        { key: 'cpu', label: 'Processeur', type: 'number', align: 'right', sortable: true,
+          render: (r: Row) => ({ html: `<span data-h="${heat(r.cpu, 25)}">${esc(fmtNum(r.cpu, 1))} %</span>` }) },
+        { key: 'mem', label: 'Mémoire', type: 'number', align: 'right', sortable: true,
+          render: (r: Row) => ({ html: `<span data-h="${heat(r.mem, 25)}">${esc(fmtNum(r.mem, 1))} %</span>` }) },
+        { key: 'pid', label: 'PID', type: 'number', align: 'right', sortable: true, muted: true, hideBelow: 'lg',
+          value: (r: Row) => Math.min(...r.pids), render: (r: Row) => (r.count > 1 ? `×${r.count}` : String(r.pids[0])) },
+        { key: 'user', label: 'Utilisateur', sortable: true, muted: true, hideBelow: 'lg',
+          render: (r: Row) => userLabel(r.user) },
+        { key: 'actions', label: 'Actions', actions: true, hideLabel: true,
+          render: (r: Row) => ({ html: buttonHTML(`Actions pour ${r.name}`, { variant: 'ghost', size: 'sm', icon: 'more', iconOnly: true, className: 'pm-more', data: { key: r.key } }).replace('<button ', '<button aria-haspopup="menu" aria-expanded="false" ') }) },
+      ],
+      rowKey: 'key',
+      sort: { key: 'cpu', dir: 'desc' },
+      noun: ['processus', 'processus'],
+      filterKeys: ['name', 'pid', 'user', 'command'],
+      empty: { icon: 'cpu', title: 'Aucun processus', text: 'La liste est vide pour ce filtre.' },
+      rowClass: (r: Row) => (r.key === st.selected ? 'pm-sel' : undefined),
+      onRowClick: (r: Row) => select(r.key),
+      caption: 'Processus en cours d’exécution',
+    });
+    table.setLoading(true, 10);
+
+    const tbody = tableEl.querySelector('tbody')!;
+    function paintHeat() {
+      tbody.querySelectorAll<HTMLElement>('td > [data-h]').forEach((s) => {
+        const td = s.parentElement!;
+        td.style.setProperty('--h', s.dataset.h!);
+        td.classList.add('pm-heat');
+      });
+    }
+    new MutationObserver(paintHeat).observe(tbody, { childList: true });
+
+    const rowByKey = (k: string | null) => (k ? buildRows().find((r) => r.key === k) : undefined);
+
+    function paintSelection() {
+      tbody.querySelectorAll<HTMLElement>('tr[data-key]').forEach((tr) => tr.classList.toggle('pm-sel', tr.dataset.key === st.selected));
+      endBtn.disabled = !rowByKey(st.selected);
+    }
+
+    function kv(label: string, value: string, mono = false) {
+      const v = value ? (mono ? `<span class="is-mono">${esc(value)}</span>` : esc(value)) : '<span class="text-tertiary">Non renseigné</span>';
+      return `<div class="srow srow--plain"><span class="srow__txt"><span class="srow__title">${esc(label)}</span></span><span class="srow__end">${v}</span></div>`;
+    }
+    function paintDetail() {
+      const r = rowByKey(st.selected);
+      if (!r) {
+        detail.innerHTML = '<p class="text-secondary">Aucun processus sélectionné. Clic droit ou touche Menu sur une ligne pour les actions.</p>';
+        return;
+      }
+      detail.innerHTML = `
+        <section class="sgroup"><h2 class="sgroup__title">Détails</h2><div class="sgroup__rows">
+          <div class="srow srow--plain"><span class="srow__txt"><span class="srow__title pm-d__name">${esc(r.name)}${r.count > 1 ? ` <span class="pm-n">(${r.count} processus)</span>` : ''}</span></span></div>
+          ${kv('PID', r.pids.slice(0, 12).join(', ') + (r.pids.length > 12 ? '…' : ''), true)}
+          ${kv('Utilisateur', r.user === 'plusieurs' ? 'Plusieurs comptes' : userLabel(r.user))}
+          ${kv('Statut', stateLabel(r.state) || 'En veille')}
+          ${kv('Processeur', `${fmtNum(r.cpu, 1)} %`)}
+          ${kv('Mémoire', `${fmtNum(r.mem, 1)} %`)}
+          ${kv('Commande', r.command, true)}
+        </div></section>
+        <div class="pm-d__actions">
+          <button type="button" class="tbtn tbtn--danger" data-act="end">Fin de tâche</button>
+          <button type="button" class="tbtn tbtn--danger" data-act="kill">Forcer la fermeture</button>
+          <button type="button" class="tbtn" data-act="pid">Copier le PID</button>
+          <button type="button" class="tbtn" data-act="cmd">Copier la commande</button>
+        </div>`;
+    }
+    function select(key: string | null) { st.selected = key; paintSelection(); paintDetail(); }
+
+    async function copy(text: string, what: string) {
+      try { await navigator.clipboard.writeText(text); toast(`${what} copié.`, 'success'); }
+      catch { toast('Copie impossible dans ce navigateur.', 'error'); }
+    }
+
+    async function endTask(r: Row, signal: 'SIGTERM' | 'SIGKILL' = 'SIGTERM') {
+      const label = r.count > 1 ? `${r.name} (${r.count} processus)` : `${r.pids[0]} (${r.name})`;
+      const force = signal === 'SIGKILL';
+      const ok = await confirmDialog({
+        title: `${force ? 'Forcer la fermeture de' : 'Terminer'} ${label} ?`,
+        message: 'Cette action est immédiate et sans confirmation du programme.',
+        confirmLabel: force ? 'Forcer la fermeture' : 'Terminer',
+        danger: true,
+      });
+      if (!ok) return;
+      let failed = 0, lastError = '';
+      for (const pid of r.pids) {
+        try {
+          const res = await fetch('/api/process', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ pid, signal }) });
+          if (!res.ok) { failed++; lastError = (await res.json().catch(() => ({}))).error ?? 'Échec'; }
+        } catch { failed++; lastError = 'Le panel n’a pas pu joindre le service.'; }
+      }
+      if (failed) toast(r.pids.length > 1 ? `${failed} sur ${r.pids.length} ont échoué : ${lastError}` : lastError, 'error');
+      else toast('Signal envoyé.', 'success');
+      if (st.selected === r.key) select(null);
+      await refresh();
+    }
+
+    function runAction(act: string, r: Row) {
+      if (act === 'end') endTask(r, 'SIGTERM');
+      else if (act === 'kill') endTask(r, 'SIGKILL');
+      else if (act === 'pid') copy(r.pids.join(' '), 'PID');
+      else if (act === 'cmd') copy(r.command, 'Commande');
+    }
+
+    const ITEMS: { act: string; label: string; danger?: boolean }[] = [
+      { act: 'end', label: 'Fin de tâche', danger: true },
+      { act: 'kill', label: 'Forcer la fermeture', danger: true },
+      { act: 'pid', label: 'Copier le PID' },
+      { act: 'cmd', label: 'Copier la ligne de commande' },
+    ];
+    function openMenu(r: Row, x: number, y: number, from: HTMLElement) {
+      select(r.key);
+      const anchored = from.classList.contains('pm-more');
+      openUiMenu({
+        label: 'Actions du processus',
+        items: ITEMS.map((it) => ({ label: it.label, danger: it.danger, run: () => runAction(it.act, r) })),
+        ...(anchored ? { anchor: from } : { x, y }),
+        returnFocus: from,
+      });
+    }
+
+    tbody.addEventListener('click', (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLElement>('.pm-more');
+      if (!b) return;
+      const r = rowByKey(b.dataset.key ?? null);
+      if (!r) return;
+      const rect = b.getBoundingClientRect();
+      openMenu(r, rect.right, rect.bottom + 4, b);
+    });
+    tbody.addEventListener('contextmenu', (e) => {
+      const tr = (e.target as HTMLElement).closest<HTMLElement>('tr[data-key]');
+      const r = rowByKey(tr?.dataset.key ?? null);
+      if (!tr || !r) return;
+      e.preventDefault();
+      openMenu(r, e.clientX, e.clientY, tr);
+    });
+    tbody.addEventListener('keydown', (e) => {
+      const tr = (e.target as HTMLElement).closest<HTMLElement>('tr[data-key]');
+      if (!tr || e.target !== tr) return;
+      const r = rowByKey(tr.dataset.key ?? null);
+      if (!r) return;
+      if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) {
+        e.preventDefault();
+        const rect = tr.getBoundingClientRect();
+        openMenu(r, rect.left + 24, rect.bottom, tr);
+      } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const sib = (e.key === 'ArrowDown' ? tr.nextElementSibling : tr.previousElementSibling) as HTMLElement | null;
+        sib?.focus();
+      }
+    });
+    detail.addEventListener('click', (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLElement>('[data-act]');
+      const r = rowByKey(st.selected);
+      if (b && r) runAction(b.dataset.act!, r);
+    });
+
+    function redraw() {
+      const focusKey = (document.activeElement as HTMLElement | null)?.closest?.('tr[data-key]') && tbody.contains(document.activeElement)
+        ? (document.activeElement as HTMLElement).closest<HTMLElement>('tr')!.dataset.key : null;
+      const moreKey = document.activeElement?.classList.contains('pm-more') ? (document.activeElement as HTMLElement).dataset.key : null;
+      table.setRows(buildRows());
+      if (st.selected && !rowByKey(st.selected)) st.selected = null;
+      paintSelection(); paintDetail();
+      if (moreKey) tbody.querySelector<HTMLElement>(`.pm-more[data-key="${CSS.escape(moreKey)}"]`)?.focus();
+      else if (focusKey) tbody.querySelector<HTMLElement>(`tr[data-key="${CSS.escape(focusKey)}"]`)?.focus();
+    }
+    groupBtn.addEventListener('click', () => {
+      st.grouped = !st.grouped;
+      groupBtn.setAttribute('aria-pressed', String(st.grouped));
+      groupBtn.textContent = st.grouped ? 'Dissocier' : 'Grouper par nom';
+      st.selected = null;
+      redraw();
+    });
+    userSel.addEventListener('change', () => { st.userFilter = userSel.value; redraw(); });
+    refreshBtn.addEventListener('click', () => refresh());
+    endBtn.addEventListener('click', () => { const r = rowByKey(st.selected); if (r) endTask(r); });
+
+    const onKey = (e: KeyboardEvent) => {
+      const a = document.activeElement as HTMLElement | null;
+      if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.tagName === 'SELECT' || a.closest('[role="dialog"]'))) return;
+      if (e.key === 'Delete') { const r = rowByKey(st.selected); if (r) { e.preventDefault(); endTask(r); } }
+      else if (e.key === 'Escape' && !isMenuOpen() && st.selected) select(null);
+    };
+    document.addEventListener('keydown', onKey);
+
+    const sumCpu = document.getElementById('pm-cpu')!, sumMem = document.getElementById('pm-mem')!, sumCount = document.getElementById('pm-count')!;
+    async function refresh() {
+      try {
+        const res = await fetch('/api/processes/list', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        st.procs = ((data.processes ?? []) as Proc[]).filter((p) => !isKernelThread(p));
+        st.loaded = true;
+        staleEl.hidden = true;
+        sumCpu.textContent = `${fmtNum(Math.min(100, st.procs.reduce((s, p) => s + (p.cpu || 0), 0) / cores), 0)} %`;
+        sumMem.textContent = `${fmtNum(Math.min(100, st.procs.reduce((s, p) => s + (p.mem || 0), 0)), 0)} %`;
+        sumCount.textContent = String(st.procs.length);
+        redraw();
+      } catch (err) {
+        if (!st.loaded) table.setError({ title: 'Impossible de lire les processus', detail: String(err), text: 'Nouvelle tentative automatique toutes les 2 secondes.' });
+        else staleEl.hidden = false;
+      }
+    }
+
+    let timer: number | null = null;
+    const schedule = () => { timer = window.setTimeout(async () => { await refresh(); if (timer !== null) schedule(); }, 2000); };
+    const onVis = () => {
+      if (document.visibilityState === 'visible' && timer === null) { refresh().then(schedule); }
+      else if (document.visibilityState !== 'visible' && timer !== null) { clearTimeout(timer); timer = null; }
+    };
+    document.addEventListener('visibilitychange', onVis);
+    refresh().then(schedule);
+
+    registerCommands([
+      { id: 'pm-refresh', title: 'Actualiser les processus', icon: 'refresh', run: () => refresh() },
+      { id: 'pm-group', title: 'Grouper ou dissocier les processus par nom', icon: 'layers', keywords: ['regrouper'], run: () => groupBtn.click() },
+      { id: 'pm-end', title: 'Fin de tâche du processus sélectionné', icon: 'dismiss', keywords: ['tuer', 'kill', 'fermer'], shortcut: 'Delete',
+        run: () => { const r = rowByKey(st.selected); if (r) endTask(r); else toast('Sélectionnez d’abord un processus.', 'info'); } },
+      { id: 'pm-sort-cpu', title: 'Trier par processeur', icon: 'cpu', run: () => table.sortBy('cpu', 'desc') },
+      { id: 'pm-sort-mem', title: 'Trier par mémoire', icon: 'memory', run: () => table.sortBy('mem', 'desc') },
+    ]);
+
+    document.addEventListener('astro:before-swap', () => {
+      if (timer !== null) { clearTimeout(timer); timer = null; }
+      document.removeEventListener('visibilitychange', onVis);
+      document.removeEventListener('keydown', onKey);
+      closeMenu();
+    }, { once: true });
+  });
+</script>
+
+<style>
+  .pm-sum { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-6); margin: var(--space-3) 0; font-size: var(--dense-size); line-height: var(--dense-lh); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .pm-sum strong { color: var(--text-primary); font-weight: var(--weight-semibold); }
+  .pm-sum__stale { color: var(--warning); }
+  .pm-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: var(--space-4); align-items: start; }
+  .pm-detail { position: sticky; top: var(--space-4); min-width: 0; }
+
+  #pm-root :global(.pm-n) { color: var(--text-secondary); }
+  #pm-root :global(td.pm-heat) { background: color-mix(in srgb, var(--heat-hi) calc(var(--h) * 100%), var(--heat-lo)); font-variant-numeric: tabular-nums; }
+  #pm-root :global(tr.pm-sel td),
+  #pm-root :global(tr.pm-sel td.pm-heat) { background: var(--accent-subtle); }
+  #pm-root :global(.pm-d__name) { font-weight: var(--weight-semibold); overflow-wrap: anywhere; }
+  #pm-root :global(.pm-d__actions) { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-4); }
+  #pm-root :global(.srow__end) { overflow-wrap: anywhere; text-align: right; min-width: 0; }
+
+  @media (max-width: 1200px) {
+    .pm-grid { grid-template-columns: minmax(0, 1fr); }
+    .pm-detail { position: static; }
+  }
+</style>

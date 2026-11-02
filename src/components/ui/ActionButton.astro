@@ -1,0 +1,72 @@
+---
+import Icon from './Icon.astro';
+import type { IconName } from './lucide';
+
+type Action = 'start' | 'restart' | 'stop' | 'console' | 'remove';
+interface Props {
+  action: Action;
+  label?: string;
+  href?: string;
+  compact?: boolean;
+  disabled?: boolean;
+  id?: string;
+  class?: string;
+}
+const META: Record<Action, { icon: IconName; text: string }> = {
+  start: { icon: 'play', text: 'Démarrer' },
+  restart: { icon: 'restart', text: 'Redémarrer' },
+  stop: { icon: 'stop', text: 'Arrêter' },
+  console: { icon: 'console', text: 'Console' },
+  remove: { icon: 'trash', text: 'Supprimer' },
+};
+const { action, label, href, compact = false, disabled = false, class: className = '', ...rest } = Astro.props;
+const text = label ?? META[action].text;
+const Tag = href ? 'a' : 'button';
+---
+<Tag
+  class:list={['qa', `qa--${action}`, compact && 'qa--compact', className]}
+  href={href}
+  type={href ? undefined : 'button'}
+  disabled={href ? undefined : disabled}
+  aria-label={compact ? text : undefined}
+  title={compact ? text : undefined}
+  data-astro-prefetch={href ? 'hover' : undefined}
+  {...rest}
+>
+  <span class="qa__icon" aria-hidden="true"><Icon name={META[action].icon} size={16} /></span>
+  {!compact && <span class="qa__label">{text}</span>}
+</Tag>
+
+<style>
+  .qa {
+    display: inline-flex; align-items: center; gap: 6px; height: 28px; padding-inline: 8px 10px;
+    border: var(--border-width) solid var(--control-stroke); border-radius: var(--radius-control);
+    background: var(--bg-surface); color: var(--text-primary); box-shadow: var(--shadow-xs);
+    font-family: var(--font-ui); font-size: var(--meta-size); line-height: var(--meta-lh); font-weight: 500;
+    text-decoration: none; white-space: nowrap; cursor: pointer;
+    transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out),
+                box-shadow var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+  }
+  .qa--compact { width: 28px; padding: 0; justify-content: center; }
+  .qa__icon { display: inline-grid; place-items: center; color: var(--qa-fg); }
+  .qa:hover:not(:disabled) { background: var(--qa-bg); border-color: color-mix(in srgb, var(--qa-fg) 30%, var(--control-stroke)); }
+  .qa:active:not(:disabled) { transform: scale(var(--press-scale)); }
+  .qa:disabled { color: var(--text-disabled); cursor: not-allowed; box-shadow: none; }
+  .qa:disabled .qa__icon { color: var(--text-disabled); }
+
+  .qa--start   { --qa-fg: var(--tone-green-fg); --qa-bg: var(--tone-green-bg); }
+  .qa--restart { --qa-fg: var(--tone-blue-fg);  --qa-bg: var(--tone-blue-bg); }
+  .qa--stop    { --qa-fg: var(--tone-red-fg);   --qa-bg: var(--tone-red-bg); }
+  .qa--remove  { --qa-fg: var(--tone-red-fg);   --qa-bg: var(--tone-red-bg); }
+  .qa--console { --qa-fg: var(--tone-gray-fg);  --qa-bg: var(--tone-gray-bg); }
+
+  .qa[aria-busy='true'] { cursor: progress; }
+  .qa[aria-busy='true'] .qa__icon :global(svg) { display: none; }
+  .qa[aria-busy='true'] .qa__icon::before {
+    content: ''; width: 12px; height: 12px; border-radius: 50%;
+    border: 2px solid currentColor; border-right-color: transparent; animation: n-spin 0.7s linear infinite;
+  }
+
+  @media (pointer: coarse) { .qa { min-height: 44px; } .qa--compact { min-width: 44px; } }
+  @media (prefers-reduced-motion: reduce) { .qa:active:not(:disabled) { transform: none; } }
+</style>

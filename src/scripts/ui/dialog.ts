@@ -1,0 +1,176 @@
+
+export interface ModalOptions {
+  title: string;
+  body?: HTMLElement | string;
+  confirmLabel?: string;
+  cancelLabel?: string | null;
+  danger?: boolean;
+  wide?: boolean;
+  onConfirm?: () => boolean | void | Promise<boolean | void>;
+}
+
+let seq = 0;
+const stack: HTMLElement[] = [];
+
+export function openModal(opts: ModalOptions): Promise<boolean> {
+  return new Promise((resolve) => {
+    const previous = document.activeElement as HTMLElement | null;
+    const id = `dlg-${++seq}`;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'dlg-overlay';
+
+    const box = document.createElement('div');
+    box.className = `dlg${opts.wide ? ' dlg--wide' : ''}`;
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-modal', 'true');
+    box.setAttribute('aria-labelledby', `${id}-t`);
+
+    const title = document.createElement('h2');
+    title.className = 'dlg__title';
+    title.id = `${id}-t`;
+    title.textContent = opts.title;
+
+    const body = document.createElement('div');
+    body.className = 'dlg__body';
+    if (typeof opts.body === 'string') {
+      for (const para of opts.body.split('\n\n')) {
+        const p = document.createElement('p');
+        p.textContent = para;
+        body.append(p);
+      }
+    } else if (opts.body) {
+      body.append(opts.body);
+    }
+
+    const actions = document.createElement('div');
+    actions.className = 'dlg__actions';
+    const ok = document.createElement('button');
+    ok.type = 'button';
+    ok.className = `dlg__btn dlg__ok${opts.danger ? ' dlg__ok--danger' : ''}`;
+    ok.textContent = opts.confirmLabel ?? 'Confirmer';
+    actions.append(ok);
+    let cancel: HTMLButtonElement | null = null;
+    if (opts.cancelLabel !== null) {
+      cancel = document.createElement('button');
+      cancel.type = 'button';
+      cancel.className = 'dlg__btn';
+      cancel.textContent = opts.cancelLabel ?? 'Annuler';
+      actions.prepend(cancel);
+    }
+
+    box.append(title, body, actions);
+    overlay.append(box);
+
+    let closed = false;
+    const close = (result: boolean) => {
+      if (closed) return;
+      closed = true;
+      document.removeEventListener('keydown', onKey, true);
+      stack.splice(stack.indexOf(overlay), 1);
+      overlay.remove();
+      previous?.focus?.({ preventScroll: true });
+      resolve(result);
+    };
+
+    const confirm = async () => {
+      ok.disabled = true;
+      try {
+        if ((await opts.onConfirm?.()) === false) { ok.disabled = false; return; }
+      } catch {
+        ok.disabled = false;
+        return;
+      }
+      close(true);
+    };
+
+    function onKey(e: KeyboardEvent) {
+      if (stack[stack.length - 1] !== overlay) return;
+      if (e.key === 'Escape') {
+        e.preventDefault(); e.stopPropagation();
+        close(false);
+      } else if (e.key === 'Tab') {
+        const f = [...box.querySelectorAll<HTMLElement>('button, input, textarea, select, a[href], [tabindex]:not([tabindex="-1"])')].filter((x) => !x.hasAttribute('disabled'));
+        if (!f.length) return;
+        const first = f[0], last = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    }
+
+    ok.addEventListener('click', confirm);
+    cancel?.addEventListener('click', () => close(false));
+    overlay.addEventListener('mousedown', (e) => { if (e.target === overlay) close(false); });
+    document.addEventListener('keydown', onKey, true);
+
+    stack.push(overlay);
+    document.body.append(overlay);
+    const field = box.querySelector<HTMLElement>('input, textarea');
+    (field ?? (opts.danger ? cancel : null) ?? ok).focus({ preventScroll: true });
+  });
+}
+
+export function confirmDialog(o: { title: string; message?: string; confirmLabel?: string; danger?: boolean }): Promise<boolean> {
+  return openModal({ title: o.title, body: o.message, confirmLabel: o.confirmLabel, danger: o.danger });
+}
+
+export async function promptDialog(o: {
+  title: string; message?: string; label?: string; value?: string; placeholder?: string; confirmLabel?: string;
+}): Promise<string | null> {
+  const wrap = document.createElement('div');
+  if (o.message) {
+    const p = document.createElement('p');
+    p.textContent = o.message;
+    wrap.append(p);
+  }
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'filter dlg__input';
+  input.value = o.value ?? '';
+  if (o.placeholder) input.placeholder = o.placeholder;
+  input.setAttribute('aria-label', o.label ?? o.title);
+  wrap.append(input);
+  let result: string | null = null;
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.isComposing) {
+      e.preventDefault();
+      wrap.closest('.dlg')?.querySelector<HTMLButtonElement>('.dlg__ok')?.click();
+    }
+  });
+  const ok = await openModal({
+    title: o.title,
+    body: wrap,
+    confirmLabel: o.confirmLabel,
+    onConfirm: () => { result = input.value; },
+  });
+  return ok ? result : null;
+}
+
+export type ToastKind = 'info' | 'success' | 'warning' | 'error';
+
+export function toast(message: string, kind: ToastKind = 'info', durationMs = kind === 'error' ? 7000 : 4000): void {
+  let host = document.getElementById('toasts');
+  if (!host) {
+    host = document.createElement('div');
+    host.id = 'toasts';
+    host.className = 'toasts';
+    host.setAttribute('aria-live', 'polite');
+    document.body.append(host);
+  }
+  const t = document.createElement('div');
+  t.className = `toast toast--${kind}`;
+  t.setAttribute('role', kind === 'error' ? 'alert' : 'status');
+  const text = document.createElement('span');
+  text.className = 'toast__text';
+  text.textContent = message;
+  const x = document.createElement('button');
+  x.type = 'button';
+  x.className = 'toast__close';
+  x.setAttribute('aria-label', 'Fermer la notification');
+  x.textContent = '×';
+  const remove = () => t.remove();
+  x.addEventListener('click', remove);
+  t.append(text, x);
+  host.append(t);
+  window.setTimeout(remove, durationMs);
+}

@@ -1,0 +1,24 @@
+---
+import Icon from './Icon.astro';
+
+interface Props { search?: string; controls?: string; topSearch?: boolean; count?: boolean; label?: string; searchId?: string; class?: string }
+const { search, controls, topSearch = false, count = false, label, searchId, class: className = '' } = Astro.props;
+const inputId = searchId ?? (controls ? `${controls}-search` : undefined);
+---
+<div class:list={['ui-toolbar', className]} aria-label={label} role={label ? 'group' : undefined}>
+  <div class="ui-toolbar__left">
+    {search && (
+      <div class="ui-toolbar__search" role="search">
+        <Icon name="search" size={16} />
+        <input class="filter" type="search" id={inputId} placeholder={search} aria-label={search}
+               autocomplete="off" spellcheck="false"
+               data-table-filter={controls} aria-controls={controls ? `${controls}-table` : undefined}
+               data-search-target={topSearch ? '' : undefined} />
+      </div>
+    )}
+    <slot name="left" />
+    <slot />
+    {count && controls && <span class="ui-toolbar__count" data-table-count={controls} aria-live="polite"></span>}
+  </div>
+  {Astro.slots.has('right') && <div class="ui-toolbar__right"><slot name="right" /></div>}
+</div>

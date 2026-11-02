@@ -1,0 +1,69 @@
+---
+interface Props {
+  label: string;
+  value: string;
+  unit?: string;
+  delta?: string;
+  deltaPeriod?: string;
+  upIsGood?: boolean;
+  hero?: boolean;
+  class?: string;
+}
+const {
+  label, value, unit, delta, deltaPeriod,
+  upIsGood = true, hero = false, class: className = '',
+} = Astro.props;
+
+const dir = delta ? (delta.trim().startsWith('-') ? 'down' : 'up') : null;
+const tone = dir ? ((dir === 'up') === upIsGood ? 'good' : 'bad') : null;
+---
+<div class:list={['stat', hero && 'stat--hero', className]}>
+  <p class="stat__label t-meta text-secondary">{label}</p>
+  <p class="stat__value">
+    <span class="stat__number">{value}</span>
+    {unit && <span class="stat__unit">{unit}</span>}
+  </p>
+  {delta && (
+    <p class:list={['stat__delta', 't-meta', tone && `stat__delta--${tone}`]}>
+      <span aria-hidden="true">{dir === 'up' ? '↑' : '↓'}</span>
+      <span>{delta}</span>
+      {deltaPeriod && <span class="text-tertiary">{deltaPeriod}</span>}
+    </p>
+  )}
+  {Astro.slots.has('trend') && <div class="stat__trend"><slot name="trend" /></div>}
+</div>
+
+<style>
+  .stat {
+    display: flex; flex-direction: column; gap: 4px; min-width: 0;
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-card);
+    background: var(--bg-surface);
+    border: var(--border-width) solid var(--border);
+    box-shadow: var(--shadow-xs);
+  }
+  .stat__label { text-wrap: balance; font-size: var(--meta-size); line-height: var(--meta-lh); color: var(--text-secondary); }
+
+  .stat__value {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--space-1); min-width: 0;
+    color: var(--text-primary); overflow-wrap: anywhere;
+    font-family: var(--font-display);
+    font-size: 24px; line-height: 32px; letter-spacing: -0.02em;
+    font-weight: 600; font-variant-numeric: tabular-nums;
+  }
+  .stat__unit {
+    font-family: var(--font-ui);
+    font-size: var(--meta-size); font-weight: 400; letter-spacing: 0;
+    color: var(--text-secondary);
+  }
+
+  .stat--hero .stat__value { font-size: 34px; line-height: 40px; }
+  .stat--hero .stat__unit { font-size: var(--body-size); }
+  @media (max-width: 640px) { .stat__value { font-size: 20px; line-height: 28px; } }
+
+  .stat__delta { display: flex; align-items: center; gap: var(--space-1); margin-top: var(--space-1); }
+  .stat__delta--good { color: var(--success); }
+  .stat__delta--bad  { color: var(--danger); }
+
+  .stat__trend { margin-top: var(--space-2); }
+</style>

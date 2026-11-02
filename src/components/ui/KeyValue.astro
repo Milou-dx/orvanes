@@ -1,0 +1,14 @@
+---
+interface Item { label: string; value?: string | number | null; mono?: boolean; html?: string }
+interface Props { items: Item[]; mono?: boolean; cols?: 1 | 2; plain?: boolean; class?: string }
+const { items, mono = false, cols = 1, plain = false, class: className = '' } = Astro.props;
+const shown = (v: Item['value']) => (v === null || v === undefined || v === '' ? null : String(v));
+---
+<dl class:list={['ui-kv', cols === 2 && 'ui-kv--cols-2', plain && 'ui-kv--plain', className]}>
+  {items.map((it) => (
+    <div class="ui-kv__row">
+      <dt>{it.label}</dt>
+      {it.html ? <dd class:list={[(it.mono ?? mono) && 'is-mono']} set:html={it.html} /> : <dd class:list={[(it.mono ?? mono) && 'is-mono', 'is-text']}>{shown(it.value) ?? <span class="text-tertiary">Non renseigné</span>}</dd>}
+    </div>
+  ))}
+</dl>

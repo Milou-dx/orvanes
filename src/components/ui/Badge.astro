@@ -1,0 +1,40 @@
+---
+interface Props {
+  tone?: 'neutral' | 'success' | 'warning' | 'danger' | 'info' | 'accent';
+  dot?: boolean;
+  pulse?: boolean;
+  class?: string;
+  id?: string;
+}
+const { tone = 'neutral', dot = false, pulse = false, class: className = '', id } = Astro.props;
+---
+<span class:list={['badge', `badge--${tone}`, className]} id={id}>
+  {dot && <span class:list={['badge__dot', pulse && 'badge__dot--pulse']} aria-hidden="true" />}
+  <slot />
+</span>
+
+<style>
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 22px; padding-inline: 8px;
+    border-radius: var(--radius-xs);
+    font-size: var(--micro-size); line-height: 1; font-weight: var(--weight-medium);
+    white-space: nowrap; color: var(--badge-fg); background: var(--badge-bg);
+  }
+  .badge__dot { position: relative; width: 6px; height: 6px; border-radius: 50%; background: var(--badge-dot, currentColor); flex-shrink: 0; }
+  .badge__dot--pulse::after {
+    content: ''; position: absolute; inset: 0; border-radius: 50%; background: inherit;
+    animation: n-pulse 2s var(--ease-out) infinite; animation-delay: var(--pulse-phase, 0ms);
+  }
+
+  .badge--neutral { --badge-fg: var(--tone-gray-fg);   --badge-bg: var(--tone-gray-bg);   --badge-dot: var(--status-offline); }
+  .badge--success { --badge-fg: var(--success);         --badge-bg: var(--success-subtle); --badge-dot: var(--status-online); }
+  .badge--warning { --badge-fg: var(--warning);         --badge-bg: var(--warning-subtle); --badge-dot: var(--status-warning); }
+  .badge--danger  { --badge-fg: var(--danger);          --badge-bg: var(--danger-subtle);  --badge-dot: var(--status-error); }
+  .badge--info    { --badge-fg: var(--info);            --badge-bg: var(--info-subtle); }
+  .badge--accent  {
+    --badge-fg: color-mix(in srgb, var(--accent) 75%, var(--text-primary));
+    --badge-bg: color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+  @media (prefers-reduced-motion: reduce) { .badge__dot--pulse::after { display: none; } }
+</style>

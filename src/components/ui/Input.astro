@@ -1,0 +1,47 @@
+---
+interface Props {
+  label: string;
+  name: string;
+  type?: 'text' | 'password' | 'number' | 'search' | 'url' | 'email';
+  value?: string;
+  placeholder?: string;
+  hint?: string;
+  error?: string;
+  mono?: boolean;
+  disabled?: boolean;
+  class?: string;
+}
+const {
+  label, name, type = 'text', value, placeholder,
+  hint, error, mono = false, disabled = false, class: className = '',
+} = Astro.props;
+
+const hintId = hint ? `${name}-hint` : undefined;
+const errId = error ? `${name}-error` : undefined;
+const describedBy = [hintId, errId].filter(Boolean).join(' ') || undefined;
+---
+<div class:list={['field', className]}>
+  <label class="field__label" for={name}>{label}</label>
+  <input
+    class:list={['filter', 'field__input', mono && 'mono', error && 'field__input--error']}
+    id={name}
+    name={name}
+    type={type}
+    value={value}
+    placeholder={placeholder}
+    disabled={disabled}
+    aria-describedby={describedBy}
+    aria-invalid={error ? 'true' : undefined}
+  />
+  {hint && !error && <p class="field__hint t-meta text-secondary" id={hintId}>{hint}</p>}
+  {error && <p class="field__error t-meta" id={errId}>{error}</p>}
+</div>
+
+<style>
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field__label { font-size: var(--dense-size); line-height: var(--dense-lh); font-weight: 500; color: var(--text-primary); }
+  .field__input:disabled { color: var(--text-disabled); background: var(--bg-surface-2); cursor: not-allowed; }
+  .field__input--error { border-color: var(--danger); border-bottom-color: var(--danger); }
+  :global(:root[data-ui='notion']) .field__input--error { border-color: var(--danger); }
+  .field__error { color: var(--danger); }
+</style>

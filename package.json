@@ -1,0 +1,53 @@
+{
+  "name": "orvane",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "engines": { "node": ">=22.13" },
+  "description": "Panel d'administration d'un VPS Debian ou Ubuntu, extensible par modules",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "bash scripts/release.sh",
+    "preview": "astro preview",
+    "check": "astro check",
+    "start": "node ./serve.mjs",
+    "textures": "python3 modules/minecraft/tools/extract-textures.py ${ORVANE_MINECRAFT_CACHE_DIR:-.cache}/textures ${ORVANE_MINECRAFT_CLIENT_JAR:-${ORVANE_MINECRAFT_CACHE_DIR:-.cache}/minecraft-client-${ORVANE_MINECRAFT_CLIENT_VERSION:-1.21.1}.jar} ${ORVANE_MINECRAFT_DIR:-$HOME/minecraft-server}/mods && npm run faces",
+    "icons": "python3 modules/minecraft/tools/extract-mod-icons.py ${ORVANE_MINECRAFT_DIR:-$HOME/minecraft-server}/mods ${ORVANE_MINECRAFT_CACHE_DIR:-.cache}/mod-icons",
+    "faces": "python3 modules/minecraft/tools/extract-faces.py ${ORVANE_MINECRAFT_CACHE_DIR:-.cache}/textures ${ORVANE_MINECRAFT_CLIENT_JAR:-${ORVANE_MINECRAFT_CACHE_DIR:-.cache}/minecraft-client-${ORVANE_MINECRAFT_CLIENT_VERSION:-1.21.1}.jar} ${ORVANE_MINECRAFT_DIR:-$HOME/minecraft-server}/mods",
+    "deploy": "bash scripts/release.sh --restart",
+    "test": "vitest run",
+    "admin": "node scripts/admin.mjs",
+    "magasin": "node scripts/magasin.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.3.286",
+    "@astrojs/node": "^11.1.5",
+    "@fontsource-variable/inter": "^5.3.0",
+    "@fontsource-variable/source-serif-4": "^5.3.0",
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/addon-web-links": "^0.12.0",
+    "@xterm/xterm": "^6.0.0",
+    "astro": "^7.2.10",
+    "dompurify": "^3.4.16",
+    "highlight.js": "^11.12.0",
+    "imapflow": "2.3.0",
+    "mailparser": "3.9.37",
+    "marked": "^18.0.14",
+    "nodemailer": "10.0.16",
+    "sharp": "^0.35.5",
+    "ssh2": "^1.17.0",
+    "ws": "^8.21.3",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@types/mailparser": "^3.9.0",
+    "@types/node": "^22.20.2",
+    "@types/nodemailer": "^8.0.2",
+    "@types/ssh2": "^1.15.6",
+    "@types/ws": "^8.18.1",
+    "jsdom": "^30.1.2",
+    "typescript": "^6.0.3",
+    "vitest": "^3.2.7"
+  }
+}
