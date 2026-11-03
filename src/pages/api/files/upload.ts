@@ -51,7 +51,7 @@ export const POST: APIRoute = async ({ request }) => {
 
   for (const f of uploaded) {
     const name = files.safeBasename(f.name);
-    if (!name) { errors.push(`${f.name} : nom de fichier refusé`); continue; }
+    if (!name) { errors.push(`${f.name} : le panel refuse ce nom de fichier`); continue; }
     if (f.size > MAX_BYTES) {
       errors.push(`${name} : ${Math.round(f.size / 1048576)} Mo dépasse la limite de 512 Mo`);
       continue;

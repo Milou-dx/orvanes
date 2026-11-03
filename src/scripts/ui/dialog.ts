@@ -6,11 +6,21 @@ export interface ModalOptions {
   cancelLabel?: string | null;
   danger?: boolean;
   wide?: boolean;
+  /** false : Échap et clic sur le fond ne ferment pas (seul le bouton de confirmation ferme). */
+  dismissible?: boolean;
   onConfirm?: () => boolean | void | Promise<boolean | void>;
 }
 
 let seq = 0;
 const stack: HTMLElement[] = [];
+
+/** Joue l'animation de sortie (CSS `[data-closing]`) puis retire l'élément ; retrait direct sans animation. */
+function dismiss(el: HTMLElement): void {
+  el.setAttribute('data-closing', '');
+  const running = el.getAnimations?.() ?? [];
+  if (!running.length) { el.remove(); return; }
+  void Promise.allSettled(running.map((a) => a.finished)).then(() => el.remove());
+}
 
 export function openModal(opts: ModalOptions): Promise<boolean> {
   return new Promise((resolve) => {
@@ -68,7 +78,7 @@ export function openModal(opts: ModalOptions): Promise<boolean> {
       closed = true;
       document.removeEventListener('keydown', onKey, true);
       stack.splice(stack.indexOf(overlay), 1);
-      overlay.remove();
+      dismiss(overlay);
       previous?.focus?.({ preventScroll: true });
       resolve(result);
     };
@@ -88,7 +98,7 @@ export function openModal(opts: ModalOptions): Promise<boolean> {
       if (stack[stack.length - 1] !== overlay) return;
       if (e.key === 'Escape') {
         e.preventDefault(); e.stopPropagation();
-        close(false);
+        if (opts.dismissible !== false) close(false);
       } else if (e.key === 'Tab') {
         const f = [...box.querySelectorAll<HTMLElement>('button, input, textarea, select, a[href], [tabindex]:not([tabindex="-1"])')].filter((x) => !x.hasAttribute('disabled'));
         if (!f.length) return;
@@ -100,7 +110,7 @@ export function openModal(opts: ModalOptions): Promise<boolean> {
 
     ok.addEventListener('click', confirm);
     cancel?.addEventListener('click', () => close(false));
-    overlay.addEventListener('mousedown', (e) => { if (e.target === overlay) close(false); });
+    overlay.addEventListener('mousedown', (e) => { if (e.target === overlay && opts.dismissible !== false) close(false); });
     document.addEventListener('keydown', onKey, true);
 
     stack.push(overlay);
@@ -148,7 +158,7 @@ export async function promptDialog(o: {
 
 export type ToastKind = 'info' | 'success' | 'warning' | 'error';
 
-export function toast(message: string, kind: ToastKind = 'info', durationMs = kind === 'error' ? 7000 : 4000): void {
+export function toast(message: string, kind: ToastKind = 'info', durationMs = 4000): void {
   let host = document.getElementById('toasts');
   if (!host) {
     host = document.createElement('div');
@@ -168,9 +178,27 @@ export function toast(message: string, kind: ToastKind = 'info', durationMs = ki
   x.className = 'toast__close';
   x.setAttribute('aria-label', 'Fermer la notification');
   x.textContent = '×';
-  const remove = () => t.remove();
+  let timer = 0;
+  const remove = () => { window.clearTimeout(timer); if (t.isConnected && !t.hasAttribute('data-closing')) dismiss(t); };
   x.addEventListener('click', remove);
   t.append(text, x);
   host.append(t);
-  window.setTimeout(remove, durationMs);
+
+  // WCAG 2.2.1 : une erreur reste au moins 10 s, et le minuteur s'arrête tant que le toast est survolé ou focalisé.
+  let left = kind === 'error' ? Math.max(durationMs, 10_000) : durationMs;
+  let started = 0;
+  const held = new Set<string>();
+  const run = () => { started = Date.now(); timer = window.setTimeout(remove, left); };
+  const hold = (why: string) => () => {
+    if (!held.size) { window.clearTimeout(timer); left -= Date.now() - started; }
+    held.add(why);
+  };
+  const release = (why: string) => () => {
+    if (held.delete(why) && !held.size) run();
+  };
+  t.addEventListener('pointerenter', hold('hover'));
+  t.addEventListener('pointerleave', release('hover'));
+  t.addEventListener('focusin', hold('focus'));
+  t.addEventListener('focusout', release('focus'));
+  run();
 }

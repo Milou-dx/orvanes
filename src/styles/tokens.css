@@ -18,6 +18,7 @@
   --accent-subtle: #e8f0f8;
   --accent-border: #b4cfea;
   --accent-fg:     #ffffff;
+  --accent-text:   var(--accent);
 
   --success: #0f7b0f;  --success-subtle: #dff6dd;  --success-border: #b7e1b2;
   --warning: #9d5d00;  --warning-subtle: #fff4ce;  --warning-border: #f0d98a;
@@ -74,13 +75,14 @@
   --font-mono: 'Cascadia Mono', 'Cascadia Code', Consolas, ui-monospace, 'SF Mono', Menlo,
                'DejaVu Sans Mono', monospace;
 
-  --micro-size: 12px;   --micro-lh: 16px;   --micro-ls: 0.01em;
-  --meta-size: 13px;    --meta-lh: 20px;    --meta-ls: 0;
-  --dense-size: 14px;   --dense-lh: 20px;   --dense-ls: 0;
-  --body-size: 15px;    --body-lh: 24px;    --body-ls: 0;
-  --card-size: 15px;    --card-lh: 24px;    --card-ls: -0.005em;
-  --section-size: 20px; --section-lh: 28px; --section-ls: -0.01em;
-  --page-size: 28px;    --page-lh: 36px;    --page-ls: -0.02em;
+  /* rem (16px = 1rem) pour suivre la taille de texte choisie par l'utilisateur */
+  --micro-size: .75rem;    --micro-lh: 1rem;       --micro-ls: 0.01em;
+  --meta-size: .8125rem;   --meta-lh: 1.25rem;     --meta-ls: 0;
+  --dense-size: .875rem;   --dense-lh: 1.25rem;    --dense-ls: 0;
+  --body-size: .9375rem;   --body-lh: 1.5rem;      --body-ls: 0;
+  --card-size: .9375rem;   --card-lh: 1.5rem;      --card-ls: -0.005em;
+  --section-size: 1.25rem; --section-lh: 1.75rem;  --section-ls: -0.01em;
+  --page-size: 1.75rem;    --page-lh: 2.25rem;     --page-ls: -0.02em;
 
   --space-1: 4px;
   --space-2: 8px;
@@ -201,11 +203,11 @@
   --radius-lg: 12px;
   --radius-full: 999px;
 
-  --control-h-sm: 28px;
-  --control-h:    32px;
-  --control-h-lg: 40px;
-  --row-h:         40px;
-  --row-h-compact: 32px;
+  --control-h-sm: 1.75rem;
+  --control-h:    2rem;
+  --control-h-lg: 2.5rem;
+  --row-h:         2.5rem;
+  --row-h-compact: 2rem;
 
   --space-0-5: 2px;
   --space-10:  40px;
@@ -294,18 +296,18 @@
   --control-fill-hover:    var(--gray-3);
   --control-fill-subtle:   var(--gray-1);
   --control-stroke-bottom: var(--control-stroke);
-  --focus-ring: var(--accent);
+  --focus-ring: var(--accent-text);
   --scrim:      rgb(15 15 15 / 30%);
 
   --heat-lo: #fbf6e6;
   --heat-hi: #f2c38b;
 
-  --micro-size: 12px;   --micro-lh: 16px;   --micro-ls: 0;
-  --meta-size: 13px;    --meta-lh: 18px;    --meta-ls: 0;
-  --dense-size: 14px;   --dense-lh: 20px;   --dense-ls: 0;
-  --body-size: 15px;    --body-lh: 24px;    --body-ls: 0;
-  --card-size: 15px;    --card-lh: 22px;    --card-ls: -0.006em;
-  --section-size: 18px; --section-lh: 26px; --section-ls: -0.012em;
+  --micro-size: .75rem;    --micro-lh: 1rem;       --micro-ls: 0.01em;
+  --meta-size: .8125rem;   --meta-lh: 1.125rem;    --meta-ls: 0;
+  --dense-size: .875rem;   --dense-lh: 1.25rem;    --dense-ls: 0;
+  --body-size: .9375rem;   --body-lh: 1.5rem;      --body-ls: 0;
+  --card-size: .9375rem;   --card-lh: 1.375rem;    --card-ls: -0.006em;
+  --section-size: 1.125rem; --section-lh: 1.625rem; --section-ls: -0.012em;
 
   --space-5: 24px;
 
@@ -354,10 +356,11 @@
   --gray-10: #5c5c61;
   --gray-11: #1d1d1f;
 
-  --accent: #0071e3;  --accent-hover: #0077ed;  --accent-active: #006edb;
-  --accent-subtle: #e5f0fd;  --accent-border: #b3d4fb;  --accent-fg: #ffffff;
+  /* blanc sur accent/hover/active >= 4.7:1 ; --accent-text >= 4.5:1 sur app, surface, subtle, hover */
+  --accent: #0071e3;  --accent-hover: #0068d9;  --accent-active: #0062c4;
+  --accent-subtle: #e5f0fd;  --accent-border: #b3d4fb;  --accent-fg: #ffffff;  --accent-text: #0066cc;
 
-  --success: #248a3d;  --warning: #b25000;  --danger: #d70015;  --info: var(--accent);
+  --success: #1f7a37;  --warning: #b25000;  --danger: #d70015;  --info: var(--accent);
   --success-subtle: color-mix(in srgb, var(--mac-green) 14%, var(--bg-surface));
   --warning-subtle: color-mix(in srgb, var(--mac-orange) 16%, var(--bg-surface));
   --danger-subtle:  color-mix(in srgb, var(--mac-red) 12%, var(--bg-surface));
@@ -378,7 +381,7 @@
   --font-ui: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter Variable', system-ui, 'Helvetica Neue', Arial, sans-serif;
   --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter Variable', system-ui, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: 'SF Mono', ui-monospace, Menlo, 'Cascadia Mono', Consolas, monospace;
-  --page-size: 28px;  --page-lh: 34px;  --page-ls: -0.024em;
+  --page-size: 1.75rem;  --page-lh: 2.125rem;  --page-ls: -0.024em;
 
   --radius-sm: 7px;  --radius-md: 10px;  --radius-lg: 12px;
   --radius-control: var(--radius-sm);
@@ -402,7 +405,7 @@
     --mac-pink: #ff375f;  --mac-indigo: #5e5ce6; --mac-teal: #40c8e0;   --mac-purple: #bf5af2;  --mac-gray: #98989d;
     --gray-1: #232326;  --gray-2: #2c2c2e;  --gray-3: #1c1c1e;  --gray-4: #3a3a3c;  --gray-5: #38383a;  --gray-6: #48484a;
     --gray-7: #636366;  --gray-8: #7c7c80;  --gray-9: #98989d;  --gray-10: #aeaeb2;  --gray-11: #f5f5f7;
-    --accent: #0a84ff;  --accent-hover: #409cff;  --accent-active: #0071e3;  --accent-subtle: #10263f;  --accent-border: #1d4b7d;  --accent-fg: #ffffff;
+    --accent: #0071e3;  --accent-hover: #0068d9;  --accent-active: #0062c4;  --accent-subtle: #10263f;  --accent-border: #1d4b7d;  --accent-fg: #ffffff;  --accent-text: #5aa9ff;
     --success: #30d158;  --warning: #ff9f0a;  --danger: #ff6961;
     --status-online: #30d158;  --status-warning: #ff9f0a;  --status-error: #ff453a;  --status-offline: #636366;
     --bg-app: #1c1c1e;  --control-stroke: #48484a;  --field-stroke: #7c7c80;
@@ -423,7 +426,7 @@
   --mac-pink: #ff375f;  --mac-indigo: #5e5ce6; --mac-teal: #40c8e0;   --mac-purple: #bf5af2;  --mac-gray: #98989d;
   --gray-1: #232326;  --gray-2: #2c2c2e;  --gray-3: #1c1c1e;  --gray-4: #3a3a3c;  --gray-5: #38383a;  --gray-6: #48484a;
   --gray-7: #636366;  --gray-8: #7c7c80;  --gray-9: #98989d;  --gray-10: #aeaeb2;  --gray-11: #f5f5f7;
-  --accent: #0a84ff;  --accent-hover: #409cff;  --accent-active: #0071e3;  --accent-subtle: #10263f;  --accent-border: #1d4b7d;  --accent-fg: #ffffff;
+  --accent: #0071e3;  --accent-hover: #0068d9;  --accent-active: #0062c4;  --accent-subtle: #10263f;  --accent-border: #1d4b7d;  --accent-fg: #ffffff;  --accent-text: #5aa9ff;
   --success: #30d158;  --warning: #ff9f0a;  --danger: #ff6961;
   --status-online: #30d158;  --status-warning: #ff9f0a;  --status-error: #ff453a;  --status-offline: #636366;
   --bg-app: #1c1c1e;  --control-stroke: #48484a;  --field-stroke: #7c7c80;
@@ -437,4 +440,17 @@
   --shadow-sm: 0 0 0 .5px rgb(255 255 255 / 12%), 0 8px 24px rgb(0 0 0 / 40%);
   --shadow-md: 0 0 0 .5px rgb(255 255 255 / 12%), 0 12px 36px rgb(0 0 0 / 55%);
   color-scheme: dark;
+}
+
+/* Préférences système : !important pour passer devant les blocs de thème, quelle que soit leur spécificité. */
+@media (prefers-contrast: more) {
+  :root, .window, #agent {
+    --text-tertiary: var(--text-secondary) !important;
+    --border: var(--gray-7) !important;
+    --border-strong: var(--gray-8) !important;
+    --control-stroke: var(--gray-8) !important;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  :root, .window, #agent { --scrim: rgb(0 0 0 / 70%) !important; }
 }

@@ -54,14 +54,14 @@ const redirectUri = `${Astro.url.origin}/api/auth/google/callback`;
 
   {!ov.enabled && (
     <div class="alert alert--warn" role="alert">
-      <p class="t-meta"><strong>La protection est désactivée.</strong> Toute personne qui atteint le panel y entre sans se connecter. <a href="/acces?vue=securite">Voir comment l’activer</a>.</p>
+      <p class="t-meta"><strong>La protection est inactive.</strong> Toute personne qui atteint le panel y entre sans se connecter. <a href="/acces?vue=securite">Voir comment l’activer</a>.</p>
     </div>
   )}
 
   {vue === 'utilisateurs' && (
     <>
       {pendingUsers.length > 0 && (
-        <SettingsGroup title={`${pendingUsers.length} demande${pendingUsers.length > 1 ? 's' : ''} d’accès en attente`} footer="Ces personnes se sont connectées avec Google mais n’ont encore aucun droit.">
+        <SettingsGroup title={`${pendingUsers.length} demande${pendingUsers.length > 1 ? 's' : ''} d’accès en attente`} footer="Ces personnes se sont connectées avec Google mais n’ont aucun droit pour l’instant.">
           {pendingUsers.map((u) => (
             <SettingsRow icon="user" tint="--mac-orange" title={u.name} desc={`${u.email} · inscrit il y a ${ago(u.createdAt)}`}>
               <Button size="sm" variant="primary" data-edit={u.id}>Approuver…</Button>
@@ -112,14 +112,14 @@ const redirectUri = `${Astro.url.origin}/api/auth/google/callback`;
             );
           })}
         </DataTable>
-        <p class="note t-meta text-secondary">Un administrateur voit tous les onglets, dont celui-ci. Un utilisateur ne voit que les onglets que vous lui attribuez : ni la page, ni les fonctions qu’elle appelle ne lui sont accessibles autrement. Les onglets marqués « sensible » donnent la main sur la machine.{linux && ' Un utilisateur lié à un compte Linux utilise Claude sous ce compte, enfermé dans son dossier personnel (écriture complète dans /home/<compte>, reste du système en lecture seule) ; sans compte Linux, Claude ne fait que consulter.'}</p>
+        <p class="note t-meta text-secondary">Un administrateur voit tous les onglets, dont celui-ci. Un utilisateur ne voit que les onglets que vous lui attribuez : sans cette attribution, il ne peut ouvrir ni la page ni ses fonctions. Les onglets « sensible » donnent la main sur la machine.{linux && ' Un utilisateur lié à un compte Linux utilise Claude sous ce compte, enfermé dans son dossier personnel (écriture complète dans /home/<compte>, reste du système en lecture seule) ; sans compte Linux, Claude ne fait que consulter.'}</p>
       </Card>
     </>
   )}
 
   {vue === 'droits' && (
     <>
-      <p class="t-meta text-secondary lead">Cochez un onglet pour l’ouvrir à un utilisateur ; chaque case est enregistrée tout de suite. Les administrateurs ({admins.length}) voient tous les onglets et ne figurent pas ici. {sensitiveCount} onglets sont marqués <span class="sens">sensible</span> : ils donnent la main sur la machine.</p>
+      <p class="t-meta text-secondary lead">Cochez un onglet pour l’ouvrir à un utilisateur ; le panel enregistre la case dès que vous cliquez. Les administrateurs ({admins.length}) voient tous les onglets et ne figurent pas ici. {sensitiveCount} onglets de niveau <span class="sens">sensible</span> donnent la main sur la machine.</p>
       {members.length === 0 ? (
         <Card><EmptyState icon="users" title="Aucun utilisateur à configurer" text="Créez un utilisateur non administrateur pour lui attribuer des onglets."><Button slot="actions" variant="primary" href="/acces?vue=utilisateurs">Aller aux utilisateurs</Button></EmptyState></Card>
       ) : (
@@ -184,12 +184,12 @@ const redirectUri = `${Astro.url.origin}/api/auth/google/callback`;
       <Card title="Créer vos identifiants Google">
         <ol class="steps">
           <li>Ouvrez la <a href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noopener">console Google Cloud</a> et créez un projet (par exemple « {PANEL_NAME} »).</li>
-          <li>Dans « API et services » → <a href="https://console.cloud.google.com/apis/credentials/consent" target="_blank" rel="noopener">Écran de consentement OAuth</a> : type <strong>Externe</strong>, nom « {PANEL_NAME} ». Gardez l’état <strong>Test</strong> et ajoutez comme <strong>utilisateurs de test</strong> chaque adresse Gmail qui doit se connecter (la vôtre comprise).</li>
+          <li>Dans « API et services » → <a href="https://console.cloud.google.com/apis/credentials/consent" target="_blank" rel="noopener">Écran de consentement OAuth</a> : type <strong>Externe</strong>, nom « {PANEL_NAME} ». Gardez l’état <strong>Test</strong> et ajoutez comme <strong>utilisateurs de test</strong> les adresses Gmail autorisées à se connecter, la vôtre incluse.</li>
           <li>Dans <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Identifiants</a> → « Créer des identifiants » → « ID client OAuth » → type d’application : <strong>Application Web</strong>.</li>
-          <li>Dans « URI de redirection autorisés », ajoutez exactement : <code class="mono">{redirectUri}</code></li>
-          <li>Copiez l’<strong>ID client</strong> et le <strong>code secret</strong> dans le formulaire ci-dessus, enregistrez, puis testez.</li>
+          <li>Dans « URI de redirection autorisés », ajoutez : <code class="mono">{redirectUri}</code></li>
+          <li>Copiez l’<strong>ID client</strong> et le <strong>code secret</strong> dans le formulaire ci-dessus, puis enregistrez et testez.</li>
         </ol>
-        <p class="t-meta text-secondary">Google n’accepte qu’une adresse de retour en HTTPS : le bouton fonctionne donc par le domaine public, pas par l’adresse Tailscale (l’identifiant et le mot de passe restent disponibles partout). Un compte Google inconnu n’obtient rien : il apparaît ici « en attente » et vous décidez.</p>
+        <p class="t-meta text-secondary">Google n’accepte qu’une adresse de retour en HTTPS : le bouton passe donc par le domaine public, et l’adresse Tailscale ne le permet pas (l’identifiant et le mot de passe restent disponibles partout). Un compte Google inconnu apparaît ici « en attente » ; vous décidez de son accès.</p>
       </Card>
     </>
   )}
@@ -197,15 +197,15 @@ const redirectUri = `${Astro.url.origin}/api/auth/google/callback`;
   {vue === 'securite' && (
     <>
       <SettingsGroup title="Protection par connexion">
-        <SettingsRow icon="shield" title="Exiger une connexion pour entrer dans le panel" desc="Désactivée : le panel est ouvert comme avant. Activée : écran de connexion, onglets filtrés par compte, terminal et Claude compris.">
+        <SettingsRow icon="shield" title="Exiger une connexion pour entrer dans le panel" desc="Désactivée : le panel reste ouvert. Activée : écran de connexion et onglets limités par compte, terminal et Claude inclus.">
           <Toggle id="acces-enable" checked={ov.enabled} label="Protection par connexion" />
         </SettingsRow>
       </SettingsGroup>
 
       <SettingsGroup title="Avant d’activer">
-        <SettingsRow icon={rescue.length ? 'check' : 'warning'} title="Compte de secours" desc="Un administrateur avec identifiant et mot de passe : il vous reste si Google ne répond plus. Obligatoire.">
+        <SettingsRow icon={rescue.length ? 'check' : 'warning'} title="Compte de secours" desc="Un administrateur avec identifiant et mot de passe : il vous reste si Google ne répond plus. Ce compte est requis.">
           <Badge tone={rescue.length ? 'success' : 'warning'}>{rescue.length ? `${rescue.length} compte${rescue.length > 1 ? 's' : ''}` : 'À créer'}</Badge>
-          {!rescue.length && admins[0] && <button class="mini" data-password={admins[0].id} data-name={admins[0].name}>Définir le mot de passe de {admins[0].name}</button>}
+          {!rescue.length && admins[0] && <Button size="sm" data-password={admins[0].id} data-name={admins[0].name}>Définir le mot de passe de {admins[0].name}</Button>}
         </SettingsRow>
         <SettingsRow icon={ov.google.configured ? 'check' : 'info'} title="Connexion Google" desc="Facultative : sans elle, on se connecte par identifiant et mot de passe.">
           <Badge tone={ov.google.configured ? 'success' : 'neutral'}>{ov.google.configured ? 'Configurée' : 'Non configurée'}</Badge>
@@ -216,14 +216,14 @@ const redirectUri = `${Astro.url.origin}/api/auth/google/callback`;
         <SettingsRow icon="apps" title="Le panel" desc="Toutes les pages, leurs fonctions, et les WebSockets du terminal et de Claude.">
           <Badge tone="success">Protégé</Badge>
         </SettingsRow>
-        <SettingsRow icon="network" title="Les sites relayés" desc="Les sites publiés par le relais (par exemple /blog ou /docs) et les applications créées restent publics.">
+        <SettingsRow icon="network" title="Les sites relayés" desc="Les sites du relais (par exemple /blog ou /docs) et les applications restent publics.">
           <Badge tone="neutral">Public</Badge>
         </SettingsRow>
         <SettingsRow icon="logs" title="Durée d’une session">{ov.sessionDays} jours</SettingsRow>
       </SettingsGroup>
 
       <div class="alert alert--info">
-        <p class="t-meta"><strong>Si vous êtes enfermé dehors :</strong> en SSH sur la machine, supprimez le fichier <span class="mono">data/auth.json</span> du dossier d’installation du panel (ou mettez <span class="mono">"enabled": false</span>) : la protection se désactive dès la requête suivante.</p>
+        <p class="t-meta"><strong>Verrouillé hors du panel ?</strong> En SSH sur la machine, supprimez le fichier <span class="mono">data/auth.json</span> du dossier d’installation du panel (ou mettez <span class="mono">"enabled": false</span>) : la protection s’arrête à la requête suivante.</p>
       </div>
     </>
   )}
@@ -234,20 +234,20 @@ const redirectUri = `${Astro.url.origin}/api/auth/google/callback`;
 </script>
 
 <style>
-  .alert { padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); border: 1px solid var(--border); margin-block: var(--space-3); }
+  .alert { padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); border: var(--border-width) solid var(--border); margin-block: var(--space-3); }
   .alert--warn { background: var(--warning-subtle); border-color: var(--warning-border); }
   .alert--info { background: var(--accent-subtle); border-color: var(--accent-border); }
   .alert a { color: inherit; text-decoration: underline; }
-  .note { padding: var(--space-3) var(--space-4); margin: 0; border-top: 1px solid var(--border); }
+  .note { padding: var(--space-3) var(--space-4); margin: 0; border-top: var(--border-width) solid var(--border); }
   .lead { margin: var(--space-3) 0; max-width: 70ch; }
   .mono { font-family: var(--font-mono); font-size: var(--meta-size); }
   .gin { width: min(26rem, 100%); }
   .msg { margin-top: var(--space-3); }
   .steps { margin: 0 0 var(--space-3); padding-left: var(--space-5); display: grid; gap: var(--space-2); font-size: var(--body-size); line-height: var(--body-lh); }
-  .steps a { color: var(--accent); }
+  .steps a { color: var(--accent-text); }
   .sens { margin-left: var(--space-2); padding: 0 var(--space-1); border-radius: var(--radius-xs); background: var(--warning-subtle); color: var(--warning); font-size: var(--micro-size); font-weight: var(--weight-medium); }
 
-  .avatar { flex: none; display: inline-grid; place-items: center; width: var(--control-h); height: var(--control-h); border-radius: var(--radius-full); background: var(--accent-subtle); color: var(--accent); font-size: var(--meta-size); font-weight: var(--weight-bold); position: relative; overflow: hidden; }
+  .avatar { flex: none; display: inline-grid; place-items: center; width: var(--control-h); height: var(--control-h); border-radius: var(--radius-full); background: var(--accent-subtle); color: var(--accent-text); font-size: var(--meta-size); font-weight: var(--weight-bold); position: relative; overflow: hidden; }
   .avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
   .who { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
   .who__t { min-width: 12rem; overflow-wrap: anywhere; }
@@ -275,11 +275,11 @@ const redirectUri = `${Astro.url.origin}/api/auth/google/callback`;
   :global(.acform) { display: grid; gap: var(--space-3); min-width: min(32rem, 100%); }
   :global(.acform__field) { display: grid; gap: var(--space-1); font-size: var(--dense-size); color: var(--text-secondary); }
   :global(.acform__row) { display: grid; gap: var(--space-3); grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr)); }
-  :global(.acform select), :global(.acform input[type='text']) { height: var(--control-h); padding: 0 var(--space-2); border-radius: var(--radius-sm); border: 1px solid var(--field-stroke); background: var(--bg-app); color: var(--text-primary); font: inherit; }
-  :global(.actabs) { display: grid; gap: var(--space-0-5); max-height: 18rem; overflow: auto; padding: var(--space-1); border: 1px solid var(--border); border-radius: var(--radius-sm); }
+  :global(.acform select), :global(.acform input[type='text']) { height: var(--control-h); padding: 0 var(--space-2); border-radius: var(--radius-sm); border: var(--border-width) solid var(--field-stroke); background: var(--bg-app); color: var(--text-primary); font: inherit; }
+  :global(.actabs) { display: grid; gap: var(--space-0-5); max-height: 18rem; overflow: auto; padding: var(--space-1); border: var(--border-width) solid var(--border); border-radius: var(--radius-sm); }
   :global(.actabs label) { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2); min-height: var(--control-h); border-radius: var(--radius-xs); color: var(--text-primary); cursor: pointer; }
   :global(.actabs label:hover) { background: var(--bg-hover); }
   :global(.actabs small) { color: var(--warning); margin-left: auto; font-size: var(--meta-size); }
   :global(.acquick) { display: flex; gap: var(--space-2); }
-  :global(.acpass) { font-family: var(--font-mono); font-size: var(--section-size); letter-spacing: .04em; text-align: center; padding: var(--space-3); border-radius: var(--radius-sm); background: var(--bg-app); border: 1px dashed var(--border-strong); user-select: all; overflow-wrap: anywhere; }
+  :global(.acpass) { font-family: var(--font-mono); font-size: var(--section-size); letter-spacing: .04em; text-align: center; padding: var(--space-3); border-radius: var(--radius-sm); background: var(--bg-app); border: var(--border-width) dashed var(--border-strong); user-select: all; overflow-wrap: anywhere; }
 </style>

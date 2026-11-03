@@ -23,7 +23,7 @@ export const POST: APIRoute = async ({ request }) => {
       deleted.push(p);
     } catch (e: any) {
       const name = p.split('/').pop() || p;
-      errors.push(`${name} : ${e?.code === 'EACCES' ? 'suppression refusée' : (e?.message ?? 'échec')}`);
+      errors.push(`${name} : ${e?.code === 'EACCES' ? 'droits insuffisants pour supprimer' : (e?.message ?? 'échec')}`);
     }
   }
   return json({ deleted, errors }, errors.length && !deleted.length ? 400 : 200);

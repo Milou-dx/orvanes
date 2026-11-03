@@ -398,6 +398,7 @@ const favicon = faviconProp ?? `/icons/${logoKey}.svg?v=${ICON_V}`;
         transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
       }
       .cmdk-btn:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--border-strong); }
+      .cmdk-btn:active { background: var(--nav-selected); }
       .cmdk-btn :global(.kbd) { height: 22px; }
 
       .tsearch {
@@ -501,12 +502,20 @@ const favicon = faviconProp ?? `/icons/${logoKey}.svg?v=${ICON_V}`;
         .cmdk-btn :global(.cmdk-btn__keys) { display: none; }
         .refresh__txt { display: none; }
 
-        .scrim { position: fixed; inset: 0; z-index: 30; background: var(--scrim); }
-        :global(body.nav-open) .scrim { display: block; animation: n-fade var(--dur-base) var(--ease-out); }
+        .scrim {
+          display: block; position: fixed; inset: 0; z-index: 30; background: var(--scrim);
+          opacity: 0; visibility: hidden;
+          transition: opacity var(--dur-base) var(--ease-out), visibility 0s linear var(--dur-base);
+        }
+        :global(body.nav-open) .scrim { opacity: 1; visibility: visible; transition: opacity var(--dur-base) var(--ease-out); }
 
         .content { border-left: 0; }
       }
-      @media (pointer: coarse) { .iconbtn { width: 44px; height: 44px; } .navlink { height: 44px; } }
+      @media (pointer: coarse) {
+        .iconbtn { width: 44px; height: 44px; } .navlink { height: 44px; }
+        .navsub-toggle { width: 44px; height: 44px; right: 0; }
+        .navitem:has(.navsub-toggle) .navlink { padding-right: 48px; }
+      }
       @media (prefers-reduced-motion: reduce) {
         .iconbtn:active { transform: none; }
         .refresh__dot::after { display: none; }

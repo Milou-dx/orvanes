@@ -2,6 +2,7 @@
 import PanelLayout from '../layouts/PanelLayout.astro';
 import Button from '../components/ui/Button.astro';
 import Icon from '../components/ui/Icon.astro';
+import ErrorState from '../components/ui/ErrorState.astro';
 import SettingsGroup from '../components/ui/SettingsGroup.astro';
 import ModuleLogo from '../components/ui/ModuleLogo.astro';
 import { storeState } from '../server/modules/store-ops.js';
@@ -16,7 +17,8 @@ const host = STORE_URL.replace(/^https?:\/\//, '');
 const byName = <T extends { name: string }>(a: T, b: T) => a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' });
 ---
 <PanelLayout title="Magasin" subtitle={`${installed.length} installée${installed.length > 1 ? 's' : ''}${error ? '' : ` · ${available.length} disponible${available.length > 1 ? 's' : ''} sur ${host}`}`} refreshMs={null}>
-  {rebuilding && <p class="note" role="status">Le panel se reconstruit pour ajouter ou retirer des onglets. Rechargez la page dans une minute.</p>}
+  {rebuilding && <p class="note" id="mod-rebuild" role="status">Le panel se reconstruit pour ajouter ou retirer des onglets. La page se rechargera toute seule dès qu’il répond.</p>}
+  <p class="note" id="mod-busy" role="status" hidden></p>
   <div class="mods">
     <SettingsGroup title="Installées" footer={installed.length ? undefined : 'Aucune intégration installée.'}>
       {[...installed].sort(byName).map((m) => (
@@ -32,12 +34,17 @@ const byName = <T extends { name: string }>(a: T, b: T) => a.name.localeCompare(
               <Button size="sm" variant="secondary" data-action="uninstall" data-id={m.id} data-name={m.name} data-has-data={m.data.length ? '' : undefined}>Désinstaller</Button>
             </span>
           </div>
-          <pre class="mono mod__out" hidden></pre>
+          <pre class="mono mod__out" role="status" hidden></pre>
         </div>
       ))}
     </SettingsGroup>
 
-    <SettingsGroup title={`Disponibles sur ${host}`} footer={error ?? (available.length ? undefined : 'Toutes les intégrations du Magasin sont installées.')}>
+    <SettingsGroup title={`Disponibles sur ${host}`} footer={error ? undefined : available.length ? undefined : 'Toutes les intégrations du Magasin sont installées.'}>
+      {error && (
+        <ErrorState compact title="Magasin injoignable" text={error}>
+          <Button slot="actions" variant="secondary" size="sm" icon="refresh" href="/modules">Réessayer</Button>
+        </ErrorState>
+      )}
       {[...available].sort(byName).map((m) => (
         <div class="mod" id={`module-${m.id}`}>
           <div class="srow">
@@ -50,33 +57,33 @@ const byName = <T extends { name: string }>(a: T, b: T) => a.name.localeCompare(
               <Button size="sm" variant="primary" data-action="install" data-id={m.id} data-name={m.name}>Installer</Button>
             </span>
           </div>
-          <pre class="mono mod__out" hidden></pre>
+          <pre class="mono mod__out" role="status" hidden></pre>
         </div>
       ))}
     </SettingsGroup>
 
     {sources.length > 0 && (
-      <SettingsGroup title="Publication" footer="Visible sur ce serveur seulement. Pour publier une nouvelle version, augmentez « version » dans le module.json de la source.">
+      <SettingsGroup title="Publication" footer="Réservé à ce serveur. Pour publier une nouvelle version, augmentez « version » dans le module.json de la source.">
         {sources.map((m) => (
           <div class="mod" id={`source-${m.id}`}>
             <div class="srow srow--plain">
               <span class="srow__txt">
                 <span class="srow__title">{m.name}</span>
-                <span class="srow__desc">Source {m.version} · publié : {m.published ?? 'jamais'}{m.errors.length > 0 && <span class="mod__err"> · manifeste invalide</span>}</span>
+                <span class="srow__desc">Source {m.version} · publié : {m.published ?? 'non'}{m.errors.length > 0 && <span class="mod__err"> · manifeste invalide</span>}</span>
               </span>
               <span class="srow__end">
                 <Button size="sm" variant={m.published === m.version ? 'secondary' : 'primary'} data-action="publish" data-id={m.id} data-name={m.name}
                         disabled={m.errors.length > 0 || m.published === m.version}>{m.published === m.version ? 'À jour' : 'Publier'}</Button>
               </span>
             </div>
-            <pre class="mono mod__out" hidden></pre>
+            <pre class="mono mod__out" role="status" hidden></pre>
           </div>
         ))}
       </SettingsGroup>
     )}
   </div>
   <p class="t-meta text-secondary foot">
-    Les intégrations viennent de {host}. Chaque paquet est signé : le panel refuse tout ce qui n’a pas été publié depuis le serveur principal. Installer ou retirer une intégration reconstruit le panel (environ une minute).
+    Les intégrations viennent de {host}. Le serveur principal signe chaque paquet : le panel refuse tout paquet qu’il n’a pas publié. Installer ou retirer une intégration reconstruit le panel (environ une minute).
   </p>
 </PanelLayout>
 
@@ -86,10 +93,10 @@ const byName = <T extends { name: string }>(a: T, b: T) => a.name.localeCompare(
 
 <style>
   .mods { display: grid; gap: var(--space-5); }
-  .mod__logo { background: var(--bg-surface-2); color: var(--text-primary); width: auto; min-width: 26px; padding-inline: 4px; }
-  .mod__new { color: var(--accent); font-weight: 600; }
+  .mod__logo { background: var(--bg-surface-2); color: var(--text-primary); width: auto; min-width: var(--control-h-sm); padding-inline: var(--space-1); }
+  .mod__new { color: var(--accent-text); font-weight: 600; }
   .mod__err { color: var(--danger); }
-  .note { margin: 0; padding: var(--space-3) var(--space-4); border-radius: 10px; background: var(--accent-subtle); color: var(--text-primary); }
+  .note { margin: 0; padding: var(--space-3) var(--space-4); border-radius: var(--radius-lg); background: var(--accent-subtle); color: var(--text-primary); }
   .mod__out { margin: 0 var(--space-3) var(--space-3); padding: var(--space-2) var(--space-3); border-radius: var(--radius-control); background: var(--bg-hover); font-size: var(--meta-size); overflow: auto; max-height: 16rem; white-space: pre-wrap; }
   .foot { margin-top: var(--space-4); }
   :global(.mod__purge) { display: flex; align-items: center; gap: var(--space-2); min-height: var(--control-h); color: var(--text-primary); cursor: pointer; }

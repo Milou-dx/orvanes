@@ -16,7 +16,7 @@ if (user?.status === 'active' && !etat) return Astro.redirect(firstAllowedPage(u
 
 const googleOn = googleConfigured();
 const googleHref = `/api/auth/google/start${suite ? `?suite=${encodeURIComponent(suite)}` : ''}`;
-const ERREURS: Record<string, string> = { google: 'Connexion Google impossible.', refus: 'Connexion Google refusée.', bloque: 'Compte bloqué.', trop: 'Trop de tentatives, réessayez plus tard.' };
+const ERREURS: Record<string, string> = { google: 'Connexion Google impossible.', refus: 'Google a refusé la connexion.', bloque: 'Le panel a bloqué ce compte.', trop: 'Trop de tentatives : réessayez dans quelques minutes.' };
 const erreurMessage = ERREURS[Astro.url.searchParams.get('erreur') ?? ''] ?? '';
 const refusedTab = tabs().find((t) => t.pages.some((p) => Astro.url.searchParams.get('onglet')?.startsWith(p) && p !== '/'));
 const home = user ? firstAllowedPage(user) : null;
@@ -43,8 +43,9 @@ const initial = String(who?.name || who?.email || '?').trim().charAt(0).toUpperC
           <label for="f-pw">Mot de passe</label>
         </div>
         <p class="auth__error" id="login-error" role="alert">{erreurMessage}</p>
-        <button type="submit" class="go magnetic" id="login-btn" aria-label="Se connecter" title="Se connecter" style="--i:2">
+        <button type="submit" class="go" id="login-btn" style="--i:2">
           <span class="go__fill"></span>
+          <span class="go__label">Se connecter</span>
           <Icon name="arrowRight" size={20} class="go__arrow" />
           <span class="go__spin"></span>
         </button>
@@ -52,7 +53,7 @@ const initial = String(who?.name || who?.email || '?').trim().charAt(0).toUpperC
 
       {googleOn && (
         <div id="google-start" class="auth__alt" style="--i:3">
-          <a class="bubble magnetic" href={googleHref} aria-label="Se connecter avec Google" data-tip="Google">
+          <a class="bubble" href={googleHref} aria-label="Se connecter avec Google" data-tip="Google">
               <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
             <path fill="#4285F4" d="M17.64 9.2045c0-.6381-.0573-1.2518-.1636-1.8409H9v3.4814h4.8436c-.2086 1.125-.8427 2.0782-1.7959 2.7164v2.2581h2.9087c1.7018-1.5668 2.6836-3.874 2.6836-6.615z"/>
             <path fill="#34A853" d="M9 18c2.43 0 4.4673-.806 5.9564-2.1805l-2.9087-2.2581c-.8059.54-1.8368.859-3.0477.859-2.344 0-4.3282-1.5831-5.036-3.7104H.9574v2.3318C2.4382 15.9832 5.4818 18 9 18z"/>
@@ -76,7 +77,7 @@ const initial = String(who?.name || who?.email || '?').trim().charAt(0).toUpperC
         <span class="wait__badge"><Icon name="clock" size={16} /></span>
       </div>
       <h1 class="wait__title">Demande envoyée</h1>
-      <p class="wait__text">L’administrateur va examiner votre demande d’accès. Vous pourrez vous connecter dès qu’elle sera acceptée.</p>
+      <p class="wait__text">L’administrateur va examiner votre demande d’accès. Vous pourrez vous connecter dès que l’administrateur l’aura acceptée.</p>
       {who?.email && <p class="wait__who">{who.email}</p>}
       <ol class="wait__steps">
         <li class="is-done"><span class="wait__dot"><Icon name="check" size={16} /></span>Demande reçue</li>
@@ -91,8 +92,8 @@ const initial = String(who?.name || who?.email || '?').trim().charAt(0).toUpperC
     <>
       <h1 class="auth__title">Accès refusé</h1>
       <p class="auth__lead">{refusedTab
-        ? <>Votre compte n’a pas accès à l’onglet <strong>{refusedTab.label}</strong>. Demandez à un administrateur de vous l’attribuer si nécessaire.</>
-        : 'Cette page n’existe pas ou est réservée aux administrateurs.'}</p>
+        ? <>Votre compte n’a pas accès à l’onglet <strong>{refusedTab.label}</strong>. Demandez-le à un administrateur.</>
+        : 'Cette page n’existe pas ou seuls les administrateurs y accèdent.'}</p>
       {home && <a class="auth__btn auth__btn--primary" href={home}>Retour à mes onglets</a>}
       <button type="button" class="auth__btn" data-logout>Se déconnecter</button>
     </>
@@ -101,7 +102,7 @@ const initial = String(who?.name || who?.email || '?').trim().charAt(0).toUpperC
   {etat === 'aucun' && (
     <>
       <h1 class="auth__title">Aucun onglet attribué</h1>
-      <p class="auth__lead">Votre compte est actif mais aucun onglet ne vous a encore été donné. Contactez l’administrateur.</p>
+      <p class="auth__lead">Votre compte est actif, sans onglet attribué. Contactez l’administrateur.</p>
       <button type="button" class="auth__btn" data-logout>Se déconnecter</button>
     </>
   )}

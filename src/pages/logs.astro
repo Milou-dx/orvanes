@@ -2,8 +2,7 @@
 import PanelLayout from '../layouts/PanelLayout.astro';
 import Card from '../components/ui/Card.astro';
 import Button from '../components/ui/Button.astro';
-import SettingsGroup from '../components/ui/SettingsGroup.astro';
-import SettingsRow from '../components/ui/SettingsRow.astro';
+import EmptyState from '../components/ui/EmptyState.astro';
 import Select from '../components/ui/Select.astro';
 import Icon from '../components/ui/Icon.astro';
 import * as logs from '../server/system/logs.js';
@@ -33,39 +32,30 @@ const srcLabel = (l: string) => String(l ?? '').replace(/\s*\(journald\)/i, '');
 ---
 <PanelLayout title="Journaux" refreshMs={null}>
   {sources.length === 0 ? (
-    <Card flush><div class="empty"><p>Aucune source de journal disponible.</p></div></Card>
+    <Card flush><EmptyState icon="logs" title="Aucune source de journal disponible" /></Card>
   ) : (
     <div id="lg-root" data-source={current}>
-      <SettingsGroup title="Affichage">
-        <SettingsRow title="Source" desc="Journal à afficher.">
-          <Select id="lg-source" label="Source du journal">
-            {sources.map((s: any) => <option value={s.id} selected={s.id === current}>{srcLabel(s.label)}</option>)}
-          </Select>
-        </SettingsRow>
-        <SettingsRow title="Niveau">
-          <Select id="lg-level" label="Niveau">
-            <option value="all">Tous les niveaux</option>
-            <option value="error">Erreurs</option>
-            <option value="warn">Avertissements</option>
-            <option value="info">Infos</option>
-            <option value="debug">Debug</option>
-          </Select>
-        </SettingsRow>
-        <SettingsRow title="Nombre de lignes">
-          <Select id="lg-lines" label="Nombre de lignes">
-            <option value="100">100 lignes</option>
-            <option value="300" selected>300 lignes</option>
-            <option value="1000">1 000 lignes</option>
-            <option value="2000">2 000 lignes</option>
-          </Select>
-        </SettingsRow>
-      </SettingsGroup>
-
       <div class="lg-bar" role="group" aria-label="Options du journal">
         <div class="ui-toolbar__search lg-search" role="search">
           <Icon name="search" size={16} />
           <input class="filter" type="search" id="lg-search" placeholder="Rechercher dans le journal" aria-label="Rechercher dans le journal" autocomplete="off" spellcheck="false" data-search-target />
         </div>
+        <Select id="lg-source" label="Source du journal">
+          {sources.map((s: any) => <option value={s.id} selected={s.id === current}>{srcLabel(s.label)}</option>)}
+        </Select>
+        <Select id="lg-level" label="Niveau">
+          <option value="all">Tous les niveaux</option>
+          <option value="error">Erreurs</option>
+          <option value="warn">Avertissements</option>
+          <option value="info">Infos</option>
+          <option value="debug">Debug</option>
+        </Select>
+        <Select id="lg-lines" label="Nombre de lignes">
+          <option value="100">100 lignes</option>
+          <option value="300" selected>300 lignes</option>
+          <option value="1000">1 000 lignes</option>
+          <option value="2000">2 000 lignes</option>
+        </Select>
         <div class="lg-actions">
           <Button id="lg-live" size="md" icon="pause" aria-pressed="true">Pause</Button>
           <Button id="lg-refresh" size="md" icon="refresh" iconOnly label="Actualiser maintenant" />
@@ -75,7 +65,8 @@ const srcLabel = (l: string) => String(l ?? '').replace(/\s*\(journald\)/i, '');
       </div>
 
       <Card flush>
-        <p slot="actions" class="lg-stat" id="lg-stat" role="status" aria-live="polite"></p>
+        <p slot="actions" class="lg-stat" id="lg-stat"></p>
+        <p id="lg-stale" class="lg-stale" role="status" hidden>Données non actualisées : la dernière lecture a échoué. Les lignes affichées datent de la lecture précédente.</p>
         <div id="lg-viewer" class="viewer" tabindex="0" role="log" aria-label="Contenu du journal" aria-live="off">
           <p class="lg-msg">Chargement…</p>
         </div>
@@ -88,6 +79,7 @@ const srcLabel = (l: string) => String(l ?? '').replace(/\s*\(journald\)/i, '');
   import { toast } from '../scripts/ui/dialog';
   import { registerCommands } from '../scripts/ui/commands';
   import { esc, iconSVG } from '../scripts/ui/html';
+  import { highlightLine } from '../scripts/pages/logs';
 
   type Level = 'error' | 'warn' | 'info' | 'debug' | 'ok' | 'none';
   const POLL_MS = 3000;
@@ -108,7 +100,7 @@ const srcLabel = (l: string) => String(l ?? '').replace(/\s*\(journald\)/i, '');
     if (!root) return;
     const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
     const sourceSel = $<HTMLSelectElement>('lg-source'), levelSel = $<HTMLSelectElement>('lg-level'), linesSel = $<HTMLSelectElement>('lg-lines');
-    const search = $<HTMLInputElement>('lg-search'), viewer = $('lg-viewer'), stat = $('lg-stat');
+    const search = $<HTMLInputElement>('lg-search'), viewer = $('lg-viewer'), stat = $('lg-stat'), stale = $('lg-stale');
     const liveBtn = $<HTMLButtonElement>('lg-live'), followBtn = $<HTMLButtonElement>('lg-follow');
 
     let all: { text: string; level: Level }[] = [];
@@ -119,6 +111,7 @@ const srcLabel = (l: string) => String(l ?? '').replace(/\s*\(journald\)/i, '');
     let timer: number | undefined;
     let busy = false;
     let failed = false;
+    let painted = '';
 
     const setBtn = (b: HTMLElement, icon: 'play' | 'pause' | 'arrowDown', text: string, on: boolean) => {
       b.innerHTML = `${iconSVG(icon, 16)}${esc(text)}`;
@@ -128,12 +121,12 @@ const srcLabel = (l: string) => String(l ?? '').replace(/\s*\(journald\)/i, '');
       setBtn(liveBtn, live ? 'pause' : 'play', live ? 'Pause' : 'Reprendre', live);
       liveBtn.title = live ? 'Mise à jour en direct active : mettre en pause' : 'En pause : reprendre le direct';
       setBtn(followBtn, 'arrowDown', 'Suivre', follow);
-      followBtn.title = 'Défilement automatique en bas';
+      followBtn.title = 'Suivre les nouvelles lignes';
     };
 
     const toBottom = () => { viewer.scrollTop = viewer.scrollHeight; };
 
-    function render() {
+    function render(force = true) {
       const q = search.value.trim().toLowerCase();
       const lv = levelSel.value;
       const keep = all.filter((l) => (lv === 'all' || l.level === lv) && (!q || l.text.toLowerCase().includes(q)));
@@ -143,13 +136,20 @@ const srcLabel = (l: string) => String(l ?? '').replace(/\s*\(journald\)/i, '');
       stat.textContent = `${keep.length} sur ${all.length} lignes · ${counts.error} erreurs · ${counts.warn} avertissements`;
 
       if (failed) return;
+      // Repeindre seulement si le contenu change, et jamais pendant une sélection de texte (le polling l'effacerait).
+      const sig = `${lv}|${q}|${keep.length}|${keep.map((l) => l.text).join('\n')}`;
+      if (!force) {
+        if (sig === painted) return;
+        const sel = getSelection();
+        if (sel && !sel.isCollapsed && viewer.contains(sel.anchorNode)) return;
+      }
+      painted = sig;
       if (!keep.length) {
         viewer.innerHTML = `<p class="lg-msg">${all.length ? 'Aucune ligne ne correspond aux filtres.' : 'Aucune ligne à afficher.'}</p>`;
         return;
       }
-      const re = q ? new RegExp(esc(q).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi') : null;
       viewer.innerHTML = keep.map((l) => {
-        const body = re ? esc(l.text).replace(re, (m) => `<mark>${m}</mark>`) : esc(l.text);
+        const body = highlightLine(l.text, q);
         const tag = TAG[l.level] ? `<span class="visually-hidden">${TAG[l.level]}</span>` : '';
         return `<div class="line l-${l.level}">${tag}${body}</div>`;
       }).join('');
@@ -164,11 +164,14 @@ const srcLabel = (l: string) => String(l ?? '').replace(/\s*\(journald\)/i, '');
         const out = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(out.error || `Erreur ${res.status}`);
         failed = false;
+        stale.hidden = true;
         all = (out.lines as string[]).map((text) => ({ text, level: levelOf(text) }));
-        render();
+        render(manual);
         if (manual) toast('Journal actualisé.', 'success', 1500);
       } catch (e: any) {
+        if (all.length) { stale.hidden = false; return; }
         failed = true;
+        painted = '';
         viewer.innerHTML = `<div class="ui-state ui-state--error" role="alert"><span class="ui-state__icon">${iconSVG('circleAlert', 20)}</span>`
           + `<p class="ui-state__title">Impossible de lire ce journal</p>`
           + `<p class="ui-state__text">Réessayez ou choisissez une autre source.</p><pre class="ui-state__detail">${esc(e?.message ?? e)}</pre></div>`;
@@ -191,11 +194,12 @@ const srcLabel = (l: string) => String(l ?? '').replace(/\s*\(journald\)/i, '');
       const u = new URL(location.href); u.searchParams.set('source', sourceSel.value);
       history.replaceState(history.state, '', u);
       viewer.innerHTML = '<p class="lg-msg">Chargement…</p>';
+      all = []; painted = ''; stale.hidden = true;
       load();
     });
     linesSel.addEventListener('change', () => load());
-    levelSel.addEventListener('change', render);
-    search.addEventListener('input', render);
+    levelSel.addEventListener('change', () => render());
+    search.addEventListener('input', () => render());
     liveBtn.addEventListener('click', () => setLive(!live));
     followBtn.addEventListener('click', () => setFollow(!follow));
     $('lg-refresh').addEventListener('click', () => load(true));
@@ -235,7 +239,8 @@ const srcLabel = (l: string) => String(l ?? '').replace(/\s*\(journald\)/i, '');
   .lg-search > :global(svg) { position: absolute; left: var(--space-3); color: var(--text-tertiary); pointer-events: none; }
   .lg-search .filter { width: 100%; padding-left: calc(var(--space-3) + 14px + var(--space-2)); }
   .lg-actions { display: flex; gap: var(--space-2); margin-left: auto; }
-  .lg-actions :global(button[aria-pressed='true']#lg-follow) { border-color: var(--accent-border); background: var(--accent-subtle); color: var(--accent); }
+  .lg-actions :global(button[aria-pressed='true']#lg-follow) { border-color: var(--accent-border); background: var(--accent-subtle); color: var(--accent-text); }
+  .lg-stale { margin: 0; padding: var(--space-2) var(--space-4); font-size: var(--meta-size); color: var(--warning); background: var(--warning-subtle); border-bottom: var(--border-width) solid var(--warning-border); }
   .lg-stat { font-size: var(--meta-size); line-height: var(--meta-lh); color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
   @media (max-width: 640px) {
     .lg-search { flex-basis: 100%; max-width: none; }

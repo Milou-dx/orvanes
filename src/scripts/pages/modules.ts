@@ -16,15 +16,28 @@ function body(text: string, withData: boolean): { el: HTMLElement; purge: () => 
   return { el, purge: () => withData && box.checked };
 }
 
-const REBUILD = 'Le panel se reconstruira ensuite et redémarrera (environ une minute).';
+const REBUILD = 'Le panel se reconstruit et redémarre (environ une minute).';
 const ASK = {
-  install: { title: (n: string) => `Installer « ${n} » ?`, label: 'Installer', text: (n: string) => `« ${n} » va être téléchargé depuis le Magasin, vérifié, puis son script d’installation s’exécutera sur ce serveur. ${REBUILD}` },
-  update: { title: (n: string) => `Mettre à jour « ${n} » ?`, label: 'Mettre à jour', text: (n: string, v?: string) => `« ${n} » passe en version ${v ?? 'récente'} ; ses réglages et données sont gardés. ${REBUILD}` },
-  uninstall: { title: (n: string) => `Désinstaller « ${n} » ?`, label: 'Désinstaller', text: (n: string) => `Les onglets de « ${n} » disparaîtront et ses fichiers seront retirés du panel. ${REBUILD}` },
-  publish: { title: (n: string) => `Publier « ${n} » sur le Magasin ?`, label: 'Publier', text: (n: string) => `La version de « ${n} » présente dans les sources sera signée et proposée à tous les panels.` },
+  install: { title: (n: string) => `Installer « ${n} » ?`, label: 'Installer', text: (n: string) => `Le panel télécharge « ${n} » depuis le Magasin, le vérifie, puis exécute son script d’installation sur ce serveur. ${REBUILD}` },
+  update: { title: (n: string) => `Mettre à jour « ${n} » ?`, label: 'Mettre à jour', text: (n: string, v?: string) => `« ${n} » passe en version ${v ?? 'récente'} ; le panel garde ses réglages et données. ${REBUILD}` },
+  uninstall: { title: (n: string) => `Désinstaller « ${n} » ?`, label: 'Désinstaller', text: (n: string) => `Les onglets de « ${n} » disparaîtront et le panel supprime ses fichiers sans retour possible. ${REBUILD}` },
+  publish: { title: (n: string) => `Publier « ${n} » sur le Magasin ?`, label: 'Publier', text: (n: string) => `Le panel signe la version de « ${n} » présente dans les sources et la propose aux autres panels.` },
 };
 
+// Après une installation, le panel redémarre : on attend qu'il réponde (et ne se reconstruise plus) avant de recharger.
+async function reloadWhenReady() {
+  for (let i = 0; i < 90; i++) {
+    await new Promise((r) => setTimeout(r, 2000));
+    try {
+      const r = await fetch('/modules', { cache: 'no-store' });
+      if (r.ok && !(await r.text()).includes('id="mod-rebuild"')) break;
+    } catch { /* le panel redémarre */ }
+  }
+  location.reload();
+}
+
 document.addEventListener('astro:page-load', () => {
+  if (document.getElementById('mod-rebuild')) void reloadWhenReady();
   for (const btn of document.querySelectorAll<HTMLButtonElement>('.mod [data-action]')) {
     btn.addEventListener('click', async () => {
       const { action, id, name, version } = btn.dataset as { action: keyof typeof ASK; id: string; name: string; version?: string };
@@ -36,6 +49,11 @@ document.addEventListener('astro:page-load', () => {
       out.hidden = true;
       btn.disabled = true;
       btn.setAttribute('aria-busy', 'true');
+      const busy = document.getElementById('mod-busy');
+      if (busy) {
+        busy.textContent = action === 'publish' ? `Publication de « ${name} » en cours…` : `${ask.label} « ${name} » : en cours, environ une minute. Ne fermez pas la page.`;
+        busy.hidden = false;
+      }
       try {
         const r = await fetch('/api/modules', {
           method: 'POST',
@@ -52,8 +70,11 @@ document.addEventListener('astro:page-load', () => {
           throw new Error(res.error ?? 'Le panel ne répond pas. Réessayez.');
         }
         toast(res.output?.split('\n')[0] ?? `${name} : fait.`, 'success');
-        setTimeout(() => location.reload(), 900);
+        if (action === 'publish') { setTimeout(() => location.reload(), 900); return; }
+        if (busy) busy.textContent = 'Le panel redémarre. La page se rechargera dès qu’il répond…';
+        void reloadWhenReady();
       } catch (e) {
+        if (busy) busy.hidden = true;
         toast((e as Error).message, 'error');
         btn.disabled = false;
         btn.removeAttribute('aria-busy');

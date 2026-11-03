@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-ORVANE_REPO="${ORVANE_REPO:-https://github.com/Drasewave/orvane.git}"
+ORVANE_REPO="${ORVANE_REPO:-https://github.com/Drasewave/orvanes.git}"
 ORVANE_BRANCH="${ORVANE_BRANCH:-master}"
 ORVANE_DIR="${ORVANE_DIR:-$HOME/orvane}"
 ORVANE_ADMIN="${ORVANE_ADMIN:-admin}"
@@ -239,7 +239,11 @@ summary() {
   printf '\nPanel installé dans %s.\n' "$ORVANE_DIR"
   [ "$ORVANE_NO_SERVICE" = 1 ] && printf 'Démarrage : cd %s && %s serve.mjs\n' "$ORVANE_DIR" "$NODE"
   printf 'Adresse locale : http://%s:%s\n' "$HOST" "$PORT"
-  printf 'Exposez-le par un reverse proxy HTTPS ou Tailscale (README, « Premier lancement »),\n'
+  # SSH_CONNECTION = "ip_client port_client ip_serveur port_serveur" quand on installe en SSH.
+  local server; server="$(set -- ${SSH_CONNECTION:-}; echo "${3:-<serveur>}")"
+  printf '\nOuvrir le panel tout de suite, depuis votre poste :\n  ssh -L %s:%s:%s %s@%s\n  puis http://localhost:%s\n\n' \
+    "$PORT" "$HOST" "$PORT" "$(id -un)" "$server" "$PORT"
+  printf 'Pour un accès permanent, exposez-le par un reverse proxy HTTPS ou Tailscale (README, « Premier lancement »),\n'
   printf 'puis renseignez PANEL_PUBLIC_URL dans %s/.env et lancez scripts/update.sh.\n' "$ORVANE_DIR"
   printf 'Mise à jour : %s/scripts/update.sh    Journal : journalctl --user -u %s -f\n' "$ORVANE_DIR" "$SERVICE"
 }

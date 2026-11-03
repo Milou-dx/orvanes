@@ -19,19 +19,19 @@ interface Rule {
 
 function protectionFor(spec: string, target: string): string | null {
   if (/-j\s+ts-input/.test(spec)) {
-    return 'Chaîne Tailscale — c’est par elle que vous atteignez ce panel.';
+    return 'Chaîne Tailscale : c’est par elle que vous atteignez ce panel.';
   }
   if (/--state\s+RELATED,ESTABLISHED/i.test(spec) || /ctstate\s+RELATED,ESTABLISHED/i.test(spec)) {
-    return 'Connexions déjà établies — la supprimer coupe toutes les sessions en cours.';
+    return 'Connexions déjà établies : la supprimer coupe toutes les sessions en cours.';
   }
   if (/--dport\s+22(\s|$)/.test(spec)) {
-    return 'SSH — la supprimer te coupe l’accès à la machine.';
+    return 'SSH : la supprimer vous coupe l’accès à la machine.';
   }
   if (/-i\s+lo(\s|$)/.test(spec)) {
-    return 'Boucle locale — de nombreux services en dépendent.';
+    return 'Boucle locale : de nombreux services en dépendent.';
   }
   if (target === 'REJECT' || target === 'DROP') {
-    return 'Refus final — la supprimer ouvrirait tous les ports non filtrés.';
+    return 'Refus final : la supprimer ouvre les ports non filtrés.';
   }
   return null;
 }
@@ -111,7 +111,7 @@ export async function addAllow(input: AddInput): Promise<{ position: number }> {
   const args = ['-n', IPT, '-I', 'INPUT', String(position)];
   if (source) args.push('-s', source);
   args.push('-p', protocol, '-m', protocol, '--dport', port);
-  args.push('-m', 'comment', '--comment', (input.comment || 'ajoutée depuis le panel').slice(0, 60));
+  args.push('-m', 'comment', '--comment', (input.comment || 'ajout via le panel').slice(0, 60));
   args.push('-j', 'ACCEPT');
 
   await run('sudo', args, { timeout: 8000 });
@@ -122,7 +122,7 @@ export async function remove(num: number): Promise<void> {
   if (!Number.isInteger(num) || num < 1) throw new Error('Numéro de règle invalide');
   const rules = await list();
   const rule = rules.find((r) => r.num === num);
-  if (!rule) throw new Error('Règle introuvable — la liste a peut-être changé, recharge la page.');
+  if (!rule) throw new Error('Règle introuvable : la liste a changé. Rechargez la page.');
   if (rule.protectedReason) throw new Error(rule.protectedReason);
 
   await run('sudo', ['-n', IPT, '-D', 'INPUT', String(num)], { timeout: 8000 });

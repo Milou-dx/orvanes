@@ -41,7 +41,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       }
       default: return json({ error: 'Action inconnue.' }, 400);
     }
-    return json(res.ok ? res : { ...res, error: 'L’opération a échoué.' }, res.ok ? 200 : 422);
+    return json(res.ok ? res : { ...res, error: 'L’opération a échoué : consultez le journal du panel.' }, res.ok ? 200 : 422);
   } catch (e) {
     return json({ ok: false, error: (e as Error).message ?? 'Le Magasin ne répond pas.' }, 502);
   }

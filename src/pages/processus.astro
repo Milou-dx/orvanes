@@ -31,11 +31,11 @@ const canTerminal = tabAllowed(Astro.locals)('terminal');
       <Button slot="right" variant="ghost" size="sm" icon="refresh" id="pm-refresh">Actualiser</Button>
     </Toolbar>
 
-    <p class="pm-sum" aria-live="polite">
-      <span><span class="pm-sum__k">Processeur</span> <strong id="pm-cpu">—</strong></span>
-      <span><span class="pm-sum__k">Mémoire</span> <strong id="pm-mem">—</strong></span>
-      <span><span class="pm-sum__k">Processus</span> <strong id="pm-count">—</strong></span>
-      <span class="pm-sum__stale" id="pm-stale" hidden>Données non actualisées : nouvelle tentative en cours</span>
+    <p class="pm-sum">
+      <span><span class="pm-sum__k">Processeur</span> <strong id="pm-cpu">-</strong></span>
+      <span><span class="pm-sum__k">Mémoire</span> <strong id="pm-mem">-</strong></span>
+      <span><span class="pm-sum__k">Processus</span> <strong id="pm-count">-</strong></span>
+      <span class="pm-sum__stale" id="pm-stale" role="status" hidden>Données non actualisées : nouvelle tentative en cours</span>
     </p>
 
     <div class="pm-grid">
@@ -153,34 +153,46 @@ const canTerminal = tabAllowed(Astro.locals)('terminal');
       endBtn.disabled = !rowByKey(st.selected);
     }
 
-    function kv(label: string, value: string, mono = false) {
-      const v = value ? (mono ? `<span class="is-mono">${esc(value)}</span>` : esc(value)) : '<span class="text-tertiary">Non renseigné</span>';
-      return `<div class="srow srow--plain"><span class="srow__txt"><span class="srow__title">${esc(label)}</span></span><span class="srow__end">${v}</span></div>`;
-    }
+    // Gabarit construit une seule fois par sélection ; les valeurs sont mises à jour en place (le focus reste sur les boutons).
+    const IDLE = '<p class="text-secondary">Aucun processus sélectionné. Clic droit ou touche Menu sur une ligne pour les actions.</p>';
+    let detailKey: string | null = null;
+    const val = (v: string, mono = false) => (v ? (mono ? `<span class="is-mono">${esc(v)}</span>` : esc(v)) : '<span class="text-tertiary">Non renseigné</span>');
+    const fields = (r: Row): Record<string, string> => ({
+      pid: val(r.pids.slice(0, 12).join(', ') + (r.pids.length > 12 ? '…' : ''), true),
+      user: val(r.user === 'plusieurs' ? 'Plusieurs comptes' : userLabel(r.user)),
+      state: val(stateLabel(r.state) || 'En veille'),
+      cpu: val(`${fmtNum(r.cpu, 1)} %`),
+      mem: val(`${fmtNum(r.mem, 1)} %`),
+      cmd: val(r.command, true),
+    });
+    const LABELS: [string, string][] = [['pid', 'PID'], ['user', 'Utilisateur'], ['state', 'Statut'], ['cpu', 'Processeur'], ['mem', 'Mémoire'], ['cmd', 'Commande']];
+    const act = (label: string, a: string, danger = false) => buttonHTML(label, { variant: danger ? 'danger' : 'secondary', size: 'sm', data: { act: a } });
     function paintDetail() {
       const r = rowByKey(st.selected);
-      if (!r) {
-        detail.innerHTML = '<p class="text-secondary">Aucun processus sélectionné. Clic droit ou touche Menu sur une ligne pour les actions.</p>';
-        return;
-      }
-      detail.innerHTML = `
+      if (!r) { if (detailKey !== null || !detail.firstElementChild) detail.innerHTML = IDLE; detailKey = null; return; }
+      if (detailKey !== r.key) {
+        detailKey = r.key;
+        const f = fields(r);
+        detail.innerHTML = `
         <section class="sgroup"><h2 class="sgroup__title">Détails</h2><div class="sgroup__rows">
           <div class="srow srow--plain"><span class="srow__txt"><span class="srow__title pm-d__name">${esc(r.name)}${r.count > 1 ? ` <span class="pm-n">(${r.count} processus)</span>` : ''}</span></span></div>
-          ${kv('PID', r.pids.slice(0, 12).join(', ') + (r.pids.length > 12 ? '…' : ''), true)}
-          ${kv('Utilisateur', r.user === 'plusieurs' ? 'Plusieurs comptes' : userLabel(r.user))}
-          ${kv('Statut', stateLabel(r.state) || 'En veille')}
-          ${kv('Processeur', `${fmtNum(r.cpu, 1)} %`)}
-          ${kv('Mémoire', `${fmtNum(r.mem, 1)} %`)}
-          ${kv('Commande', r.command, true)}
+          ${LABELS.map(([k, l]) => `<div class="srow srow--plain"><span class="srow__txt"><span class="srow__title">${l}</span></span><span class="srow__end" data-f="${k}">${f[k]}</span></div>`).join('')}
         </div></section>
         <div class="pm-d__actions">
-          <button type="button" class="tbtn tbtn--danger" data-act="end">Fin de tâche</button>
-          <button type="button" class="tbtn tbtn--danger" data-act="kill">Forcer la fermeture</button>
-          <button type="button" class="tbtn" data-act="pid">Copier le PID</button>
-          <button type="button" class="tbtn" data-act="cmd">Copier la commande</button>
+          ${act('Fin de tâche', 'end', true)}${act('Forcer la fermeture', 'kill', true)}${act('Copier le PID', 'pid')}${act('Copier la commande', 'cmd')}
         </div>`;
+        return;
+      }
+      const f = fields(r);
+      detail.querySelectorAll<HTMLElement>('[data-f]').forEach((el) => { const h = f[el.dataset.f!]!; if (el.innerHTML !== h) el.innerHTML = h; });
     }
-    function select(key: string | null) { st.selected = key; paintSelection(); paintDetail(); }
+    const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+    const narrow = matchMedia('(max-width: 1200px)');
+    function select(key: string | null) {
+      st.selected = key; paintSelection(); paintDetail();
+      // Petit écran : le détail est sous la table, hors de vue.
+      if (key && narrow.matches) detail.scrollIntoView({ block: 'nearest', behavior: reduceMotion.matches ? 'auto' : 'smooth' });
+    }
 
     async function copy(text: string, what: string) {
       try { await navigator.clipboard.writeText(text); toast(`${what} copié.`, 'success'); }
@@ -270,6 +282,12 @@ const canTerminal = tabAllowed(Astro.locals)('terminal');
       if (b && r) runAction(b.dataset.act!, r);
     });
 
+    // Pas de réordonnancement sous le pointeur ni pendant un menu ouvert : on évite de cliquer sur la mauvaise ligne.
+    let hover = false;
+    const frozen = () => hover || isMenuOpen();
+    tbody.addEventListener('pointerenter', () => { hover = true; });
+    tbody.addEventListener('pointerleave', () => { hover = false; });
+
     function redraw() {
       const focusKey = (document.activeElement as HTMLElement | null)?.closest?.('tr[data-key]') && tbody.contains(document.activeElement)
         ? (document.activeElement as HTMLElement).closest<HTMLElement>('tr')!.dataset.key : null;
@@ -283,7 +301,6 @@ const canTerminal = tabAllowed(Astro.locals)('terminal');
     groupBtn.addEventListener('click', () => {
       st.grouped = !st.grouped;
       groupBtn.setAttribute('aria-pressed', String(st.grouped));
-      groupBtn.textContent = st.grouped ? 'Dissocier' : 'Grouper par nom';
       st.selected = null;
       redraw();
     });
@@ -311,9 +328,10 @@ const canTerminal = tabAllowed(Astro.locals)('terminal');
         sumCpu.textContent = `${fmtNum(Math.min(100, st.procs.reduce((s, p) => s + (p.cpu || 0), 0) / cores), 0)} %`;
         sumMem.textContent = `${fmtNum(Math.min(100, st.procs.reduce((s, p) => s + (p.mem || 0), 0)), 0)} %`;
         sumCount.textContent = String(st.procs.length);
-        redraw();
+        if (frozen()) { paintSelection(); paintDetail(); }
+        else redraw();
       } catch (err) {
-        if (!st.loaded) table.setError({ title: 'Impossible de lire les processus', detail: String(err), text: 'Nouvelle tentative automatique toutes les 2 secondes.' });
+        if (!st.loaded) table.setError({ title: 'Impossible de lire les processus', detail: String(err), text: 'Nouvelle tentative toutes les 2 secondes.' });
         else staleEl.hidden = false;
       }
     }

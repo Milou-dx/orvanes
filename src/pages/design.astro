@@ -103,7 +103,7 @@ const snippet = {
 ]} />`,
   commands: `import { registerCommands, registerShortcuts } from '../scripts/ui/commands';
 document.addEventListener('astro:page-load', () => {
-  if (!document.getElementById('svc')) return;      // seulement sur cette page
+  if (!document.getElementById('svc')) return;      // uniquement sur cette page
   registerCommands([
     { id: 'svc-reload', title: 'Recharger les services', icon: 'refresh', shortcut: 'r', run: reload },
   ]);
@@ -129,7 +129,7 @@ document.addEventListener('astro:page-load', () => {
     { href: '#commandes', label: 'Commandes' },
   ]} />
 
-  <PageSection id="jetons" title="Jetons" description="Toujours une variable de tokens.css : jamais de couleur hexadécimale ni de taille en pixels dans une page.">
+  <PageSection id="jetons" title="Jetons" description="Utilisez une variable de tokens.css à la place d’une couleur hexadécimale ou d’une taille en pixels.">
     <Card title="Couleurs sémantiques">
       <div class="swatches">
         {COLORS.map(([v, l]) => (
@@ -137,7 +137,7 @@ document.addEventListener('astro:page-load', () => {
         ))}
       </div>
     </Card>
-    <Card title="Teintes" description="--tone-<teinte>-bg / -fg : palette de base des couleurs d’état (succès, avertissement, erreur, information) et des graphes. Jamais pour décorer une icône.">
+    <Card title="Teintes" description="--tone-<teinte>-bg / -fg : palette de base des couleurs d’état (succès, avertissement, erreur, information) et des graphes. Ne l’utilisez pas pour décorer une icône.">
       <div class="tones">
         {TONES.map((t) => <span class="tone" style={`background:var(--tone-${t}-bg);color:var(--tone-${t}-fg)`}>{t}</span>)}
       </div>
@@ -155,7 +155,7 @@ document.addEventListener('astro:page-load', () => {
         </div>
       </Card>
     </div>
-    <Card title="Typographie" description="Inter Variable auto-hébergée (@fontsource-variable/inter, licence OFL).">
+    <Card title="Typographie" description="Police Inter Variable, hébergée par le panel (@fontsource-variable/inter, licence OFL).">
       <div class="types">
         {TYPE.map((t) => (
           <p style={`font-size:var(--${t}-size);line-height:var(--${t}-lh);letter-spacing:var(--${t}-ls)`}>
@@ -207,7 +207,7 @@ document.addEventListener('astro:page-load', () => {
       ]} />
       <div class="gap"></div>
       <Tabs id="demo-tabs" label="Vues d’exemple" tabs={[{ id: 'journaux', label: 'Journaux', icon: 'logs' }, { id: 'stats', label: 'Statistiques', count: 4 }, { id: 'config', label: 'Configuration' }]}>
-        <p slot="journaux" class="text-secondary">Panneau « Journaux ». Le choix est mémorisé pendant l’actualisation automatique.</p>
+        <p slot="journaux" class="text-secondary">Panneau « Journaux ». La page conserve le choix pendant l’actualisation.</p>
         <p slot="stats" class="text-secondary">Panneau « Statistiques ».</p>
         <p slot="config" class="text-secondary">Panneau « Configuration ».</p>
       </Tabs>
@@ -232,7 +232,7 @@ document.addEventListener('astro:page-load', () => {
           <tr>
             <td class="is-mono">{s.name}</td>
             <td data-value={LABEL[s.state]}><StatusBadge raw={s.state} /></td>
-            <td class="al-right" data-value={s.mem}>{s.mem ? `${s.mem.toLocaleString('fr-FR')} Mo` : '—'}</td>
+            <td class="al-right" data-value={s.mem}>{s.mem ? `${s.mem.toLocaleString('fr-FR')} Mo` : '-'}</td>
             <td class="hide-sm" data-value={s.since}>{new Date(s.since).toLocaleDateString('fr-FR')}</td>
             <td class="is-actions"><span class="dt__actions"><ActionButton action="restart" compact /><ActionButton action="stop" compact /></span></td>
           </tr>
@@ -284,7 +284,7 @@ document.addEventListener('astro:page-load', () => {
     </div>
   </PageSection>
 
-  <PageSection id="retours" title="Vide, erreur, chargement" description="Jamais de zone blanche : on explique, on propose l’action suivante.">
+  <PageSection id="retours" title="Vide, erreur, chargement" description="Évitez les zones blanches : expliquez la situation et proposez l’action suivante.">
     <div class="grid2">
       <Card>
         <EmptyState icon="inbox" title="Aucune application" text="Déployez votre première application pour la voir ici.">
@@ -301,7 +301,7 @@ document.addEventListener('astro:page-load', () => {
       <div class="stack">
         <Skeleton width="40%" height="20px" />
         <Skeleton width="85%" /><Skeleton width="70%" />
-        <div class="row"><Spinner label="Chargement" /> <span class="text-secondary">Spinner : actions courtes uniquement ; squelette pour les contenus.</span></div>
+        <div class="row"><Spinner label="Chargement" /> <span class="text-secondary">Spinner pour les actions courtes ; squelette pour les contenus.</span></div>
       </div>
     </Card>
     <pre class="code">{snippet.states}</pre>
@@ -326,7 +326,7 @@ document.addEventListener('astro:page-load', () => {
     </Card>
   </PageSection>
 
-  <PageSection id="commandes" title="Commandes et raccourcis" description="Ctrl+K ouvre la palette ; « ? » liste les raccourcis. Cette page enregistre deux commandes : essayez-les.">
+  <PageSection id="commandes" title="Commandes et raccourcis" description="Ctrl+K ouvre la palette ; « ? » liste les raccourcis. Cette page enregistre deux commandes d’exemple.">
     <Card>
       <p class="row"><Kbd keys="Mod+K" /> palette <Kbd keys="Mod+F" /> recherche de la page <Kbd keys="?" /> aide <Kbd keys="Shift+T" /> commande d’exemple</p>
       <pre class="code">{snippet.commands}</pre>
@@ -377,7 +377,7 @@ document.addEventListener('astro:page-load', () => {
     });
 
     document.getElementById('demo-confirm')!.addEventListener('click', async () => {
-      toast((await confirmDialog({ title: 'Redémarrer le service « caddy » ?', message: 'Les sites seront indisponibles quelques secondes.', confirmLabel: 'Redémarrer' })) ? 'Confirmé' : 'Annulé');
+      toast((await confirmDialog({ title: 'Redémarrer le service « caddy » ?', message: 'Les sites restent indisponibles quelques secondes.', confirmLabel: 'Redémarrer' })) ? 'Confirmé' : 'Annulé');
     });
     document.getElementById('demo-prompt')!.addEventListener('click', async () => {
       const v = await promptDialog({ title: 'Renommer le dossier', value: 'sauvegardes', confirmLabel: 'Renommer' });
@@ -385,7 +385,7 @@ document.addEventListener('astro:page-load', () => {
     });
     document.getElementById('demo-toast')!.addEventListener('click', () => toast('Modifications enregistrées.', 'success'));
     document.getElementById('demo-danger')!.addEventListener('click', async () => {
-      if (await confirmDialog({ title: 'Supprimer le monde « survie » ?', message: 'Cette action est définitive.', confirmLabel: 'Supprimer', danger: true })) toast('Suppression impossible : démonstration.', 'error');
+      if (await confirmDialog({ title: 'Supprimer le monde « survie » ?', message: 'Suppression impossible à annuler.', confirmLabel: 'Supprimer', danger: true })) toast('Suppression impossible : démonstration.', 'error');
     });
 
     registerCommands([

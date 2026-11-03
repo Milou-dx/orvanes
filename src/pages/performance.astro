@@ -6,6 +6,7 @@ import SettingsRow from '../components/ui/SettingsRow.astro';
 import Meter from '../components/ui/Meter.astro';
 import Button from '../components/ui/Button.astro';
 import Icon from '../components/ui/Icon.astro';
+import StatusBadge from '../components/ui/StatusBadge.astro';
 import ErrorState from '../components/ui/ErrorState.astro';
 import { bytes, duration, num, percent } from '../server/core/format';
 import { safe } from '../server/core/safe';
@@ -28,41 +29,41 @@ const [mem, disks, load, cpuPercent, perCore, uptime] = await Promise.all([
 const cores = os.cpus().length || perCore.length || 1;
 const arch = /aarch64|arm64/i.test(os.arch()) ? 'ARM64' : /x64|x86_64|amd64/i.test(os.arch()) ? 'x64' : os.arch();
 const memPct = mem ? percent(mem.usedBytes, mem.totalBytes) : 0;
-const loadLine = load ? load.map((l: number) => num(l, 2)).join(' · ') : '—';
+const loadLine = load ? load.map((l: number) => num(l, 2)).join(' · ') : '-';
 
 type Det = { label: string; value: string; id?: string };
 const DETAILS: Record<string, Det[]> = {
   cpu: [
-    { label: 'Moyenne sur la fenêtre', value: '—', id: 'cpu-avg' },
-    { label: 'Pic sur la fenêtre', value: '—', id: 'cpu-peak' },
+    { label: 'Moyenne sur la fenêtre', value: '-', id: 'cpu-avg' },
+    { label: 'Pic sur la fenêtre', value: '-', id: 'cpu-peak' },
     { label: 'Cœurs logiques', value: String(cores) },
     { label: 'Architecture', value: arch },
   ],
   mem: [
-    { label: 'Mémoire installée', value: mem ? bytes(mem.totalBytes) : '—' },
-    { label: 'Moyenne sur la fenêtre', value: '—', id: 'mem-avg' },
-    { label: 'Pic sur la fenêtre', value: '—', id: 'mem-peak' },
-    { label: 'Taille du fichier d’échange', value: mem ? bytes(mem.swapTotalBytes) : '—' },
+    { label: 'Mémoire installée', value: mem ? bytes(mem.totalBytes) : '-' },
+    { label: 'Moyenne sur la fenêtre', value: '-', id: 'mem-avg' },
+    { label: 'Pic sur la fenêtre', value: '-', id: 'mem-peak' },
+    { label: 'Taille du fichier d’échange', value: mem ? bytes(mem.swapTotalBytes) : '-' },
   ],
   disk: [
-    { label: 'Lecture, moyenne', value: '—', id: 'disk-read-avg' },
-    { label: 'Lecture, pic', value: '—', id: 'disk-read-peak' },
-    { label: 'Écriture, moyenne', value: '—', id: 'disk-write-avg' },
-    { label: 'Écriture, pic', value: '—', id: 'disk-write-peak' },
+    { label: 'Lecture, moyenne', value: '-', id: 'disk-read-avg' },
+    { label: 'Lecture, pic', value: '-', id: 'disk-read-peak' },
+    { label: 'Écriture, moyenne', value: '-', id: 'disk-write-avg' },
+    { label: 'Écriture, pic', value: '-', id: 'disk-write-peak' },
   ],
   net: [
-    { label: 'Réception, moyenne', value: '—', id: 'net-rx-avg' },
-    { label: 'Réception, pic', value: '—', id: 'net-rx-peak' },
-    { label: 'Envoi, moyenne', value: '—', id: 'net-tx-avg' },
-    { label: 'Envoi, pic', value: '—', id: 'net-tx-peak' },
+    { label: 'Réception, moyenne', value: '-', id: 'net-rx-avg' },
+    { label: 'Réception, pic', value: '-', id: 'net-rx-peak' },
+    { label: 'Envoi, moyenne', value: '-', id: 'net-tx-avg' },
+    { label: 'Envoi, pic', value: '-', id: 'net-tx-peak' },
   ],
 };
 
 const TABS = [
-  { id: 'cpu',  name: 'Processeur', sub: cpuPercent != null ? `${num(cpuPercent, 0)} %` : '—' },
-  { id: 'mem',  name: 'Mémoire',    sub: mem ? `${bytes(mem.usedBytes)} / ${bytes(mem.totalBytes)} (${num(memPct, 0)} %)` : '—' },
-  { id: 'disk', name: 'Disque',     sub: '—' },
-  { id: 'net',  name: 'Ethernet',   sub: '—' },
+  { id: 'cpu',  name: 'Processeur', sub: cpuPercent != null ? `${num(cpuPercent, 0)} %` : '-' },
+  { id: 'mem',  name: 'Mémoire',    sub: mem ? `${bytes(mem.usedBytes)} / ${bytes(mem.totalBytes)} (${num(memPct, 0)} %)` : '-' },
+  { id: 'disk', name: 'Disque',     sub: '-' },
+  { id: 'net',  name: 'Ethernet',   sub: '-' },
 ] as const;
 ---
 <PanelLayout title="Performances" refreshMs={null}>
@@ -78,6 +79,7 @@ const TABS = [
     </Button>
   )}
 
+  <div class="tmwrap">
   <div class="perf-error" id="perf-error" hidden>
     <ErrorState compact title="Mesures indisponibles" text="Le panel n’obtient plus de réponse de /api/system/stats. Nouvelle tentative à chaque cycle." />
   </div>
@@ -99,22 +101,23 @@ const TABS = [
     <section class="panel" id="panel-cpu" role="tabpanel" aria-labelledby="tab-cpu" data-res="cpu">
       <header class="panel__head">
         <h2 class="panel__title">Processeur</h2>
+        <StatusBadge class="pbadge" status="warning" label="En pause" size="sm" />
         <span class="panel__model">{cores} cœurs · {arch}</span>
       </header>
       <p class="cap"><span>% d’utilisation sur 3 minutes</span><span>100 %</span></p>
-      <canvas class="big" id="cpu-graph" aria-label="Utilisation du processeur sur 3 minutes"></canvas>
+      <canvas class="big" id="cpu-graph" role="img" aria-describedby="cpu-use" aria-label="Utilisation du processeur sur 3 minutes"></canvas>
       <p class="cap"><span>3 minutes</span><span>0</span></p>
       <div class="cores" id="cpu-cores">
         {Array.from({ length: cores }, (_, i) => (
           <div class="core" data-core={i}>
             <span class="core__label">Cœur {i}</span>
             <div class="core__track"><div class="core__fill" style="width:0%"></div></div>
-            <span class="core__pct">—</span>
+            <span class="core__pct">-</span>
           </div>
         ))}
       </div>
       <dl class="figs">
-        <div class="fig fig--big"><dt>Utilisation</dt><dd id="cpu-use">{cpuPercent != null ? `${num(cpuPercent, 0)} %` : '—'}</dd></div>
+        <div class="fig fig--big"><dt>Utilisation</dt><dd id="cpu-use">{cpuPercent != null ? `${num(cpuPercent, 0)} %` : '-'}</dd></div>
         <div class="fig fig--big"><dt>Durée de fonctionnement</dt><dd>{duration(uptime)}</dd></div>
         <div class="fig"><dt>Charge moyenne (1 · 5 · 15 min)</dt><dd id="cpu-load">{loadLine}</dd></div>
       </dl>
@@ -128,15 +131,16 @@ const TABS = [
     <section class="panel" id="panel-mem" role="tabpanel" aria-labelledby="tab-mem" data-res="mem" hidden>
       <header class="panel__head">
         <h2 class="panel__title">Mémoire</h2>
+        <StatusBadge class="pbadge" status="warning" label="En pause" size="sm" />
         <span class="panel__model">{mem ? `${bytes(mem.totalBytes)} installés` : ''}</span>
       </header>
       <p class="cap"><span>Utilisation de la mémoire</span><span>{mem ? bytes(mem.totalBytes) : '100 %'}</span></p>
-      <canvas class="big" id="mem-graph" aria-label="Mémoire utilisée sur 3 minutes"></canvas>
+      <canvas class="big" id="mem-graph" role="img" aria-describedby="mem-used" aria-label="Mémoire utilisée sur 3 minutes"></canvas>
       <p class="cap"><span>3 minutes</span><span>0</span></p>
       <dl class="figs">
-        <div class="fig fig--big"><dt>En cours d’utilisation</dt><dd id="mem-used">{mem ? bytes(mem.usedBytes) : '—'}</dd></div>
-        <div class="fig fig--big"><dt>Disponible</dt><dd id="mem-avail">{mem ? bytes(mem.availableBytes) : '—'}</dd></div>
-        <div class="fig"><dt>Fichier d’échange</dt><dd id="mem-swap">{mem ? `${bytes(mem.swapUsedBytes)} / ${bytes(mem.swapTotalBytes)}` : '—'}</dd></div>
+        <div class="fig fig--big"><dt>En cours d’utilisation</dt><dd id="mem-used">{mem ? bytes(mem.usedBytes) : '-'}</dd></div>
+        <div class="fig fig--big"><dt>Disponible</dt><dd id="mem-avail">{mem ? bytes(mem.availableBytes) : '-'}</dd></div>
+        <div class="fig"><dt>Fichier d’échange</dt><dd id="mem-swap">{mem ? `${bytes(mem.swapUsedBytes)} / ${bytes(mem.swapTotalBytes)}` : '-'}</dd></div>
         <div class="fig"><dt>Utilisée</dt><dd id="mem-pct">{num(memPct, 0)} %</dd></div>
       </dl>
       <SettingsGroup title="Détails" class="det">
@@ -149,14 +153,15 @@ const TABS = [
     <section class="panel" id="panel-disk" role="tabpanel" aria-labelledby="tab-disk" data-res="disk" hidden>
       <header class="panel__head">
         <h2 class="panel__title">Disque</h2>
+        <StatusBadge class="pbadge" status="warning" label="En pause" size="sm" />
         <span class="panel__model">{disks.length > 1 ? `${disks.length} systèmes de fichiers` : disks[0]?.label ?? ''}</span>
       </header>
       <p class="cap"><span>Vitesse de transfert (lecture · écriture en pointillé)</span><span id="disk-scale"></span></p>
-      <canvas class="big" id="disk-graph" aria-label="Lecture et écriture disque sur 3 minutes"></canvas>
+      <canvas class="big" id="disk-graph" role="img" aria-describedby="disk-read disk-write" aria-label="Lecture et écriture disque sur 3 minutes"></canvas>
       <p class="cap"><span>3 minutes</span><span>0</span></p>
       <dl class="figs">
-        <div class="fig fig--big"><dt>Vitesse de lecture</dt><dd id="disk-read">—</dd></div>
-        <div class="fig fig--big"><dt>Vitesse d’écriture</dt><dd id="disk-write">—</dd></div>
+        <div class="fig fig--big"><dt>Vitesse de lecture</dt><dd id="disk-read">-</dd></div>
+        <div class="fig fig--big"><dt>Vitesse d’écriture</dt><dd id="disk-write">-</dd></div>
       </dl>
       <div class="drives">
         {disks.map((d: any) => (
@@ -174,14 +179,15 @@ const TABS = [
     <section class="panel" id="panel-net" role="tabpanel" aria-labelledby="tab-net" data-res="net" hidden>
       <header class="panel__head">
         <h2 class="panel__title">Ethernet</h2>
+        <StatusBadge class="pbadge" status="warning" label="En pause" size="sm" />
         <span class="panel__model">Toutes les cartes réseau</span>
       </header>
       <p class="cap"><span>Débit (réception · envoi en pointillé)</span><span id="net-scale"></span></p>
-      <canvas class="big" id="net-graph" aria-label="Débit réseau sur 3 minutes"></canvas>
+      <canvas class="big" id="net-graph" role="img" aria-describedby="net-rx net-tx" aria-label="Débit réseau sur 3 minutes"></canvas>
       <p class="cap"><span>3 minutes</span><span>0</span></p>
       <dl class="figs">
-        <div class="fig fig--big"><dt>Réception</dt><dd id="net-rx">—</dd></div>
-        <div class="fig fig--big"><dt>Envoi</dt><dd id="net-tx">—</dd></div>
+        <div class="fig fig--big"><dt>Réception</dt><dd id="net-rx">-</dd></div>
+        <div class="fig fig--big"><dt>Envoi</dt><dd id="net-tx">-</dd></div>
       </dl>
       <SettingsGroup title="Détails" class="det">
         {DETAILS.net.map((d) => (
@@ -189,6 +195,7 @@ const TABS = [
         ))}
       </SettingsGroup>
     </section>
+  </div>
   </div>
 </PanelLayout>
 
@@ -232,6 +239,10 @@ const TABS = [
       try { sessionStorage.setItem('perf-tab', res); } catch {}
       requestAnimationFrame(() => Object.values(big).forEach((g) => g.draw()));
     }
+    const tablist = root.querySelector('.tm__list')!;
+    const mq = matchMedia('(max-width: 900px)');
+    const orient = () => tablist.setAttribute('aria-orientation', mq.matches ? 'horizontal' : 'vertical');
+    orient(); mq.addEventListener('change', orient);
     tabs.forEach((t) => t.addEventListener('click', () => select(t.dataset.res!)));
     root.querySelector('.tm__list')!.addEventListener('keydown', (e) => {
       const ke = e as KeyboardEvent;
@@ -258,8 +269,8 @@ const TABS = [
         sessionStorage.setItem(HIST, JSON.stringify({ at: Date.now(), data: Object.fromEntries(RES.map((r) => [r, big[r].snapshot()])) }));
       } catch {}
     };
-    const pct = (v: number | null) => (v == null ? '—' : `${Math.round(v)} %`);
-    const rt = (v: number | null) => (v == null ? '—' : rate(v));
+    const pct = (v: number | null) => (v == null ? '-' : `${Math.round(v)} %`);
+    const rt = (v: number | null) => (v == null ? '-' : rate(v));
     function paintStats() {
       const c = big.cpu.stats(0), m = big.mem.stats(0), d0 = big.disk.stats(0), d1 = big.disk.stats(1), n0 = big.net.stats(0), n1 = big.net.stats(1);
       set('cpu-avg', pct(c.avg)); set('cpu-peak', pct(c.peak));
@@ -276,6 +287,7 @@ const TABS = [
 
     function setPaused(on: boolean) {
       paused = on;
+      root!.toggleAttribute('data-paused', on);
       pauseBtn.setAttribute('aria-pressed', String(on));
       pauseBtn.lastChild!.textContent = on ? ' Reprendre' : ' Suspendre';
       if (on && timer !== null) { clearTimeout(timer); timer = null; }
@@ -317,7 +329,7 @@ const TABS = [
             if (!core) return;
             const pct = v ?? 0;
             (core.querySelector('.core__fill') as HTMLElement).style.width = `${Math.max(0, Math.min(100, pct))}%`;
-            core.querySelector('.core__pct')!.textContent = v == null ? '—' : `${Math.round(pct)} %`;
+            core.querySelector('.core__pct')!.textContent = v == null ? '-' : `${Math.round(pct)} %`;
           });
         }
         if (s.load) set('cpu-load', s.load.map((l: number) => l.toFixed(2).replace('.', ',')).join(' · '));
@@ -339,7 +351,7 @@ const TABS = [
           set('disk-read', rate(v[0]));
           set('disk-write', rate(v[1]));
           set('disk-scale', rate(big.disk.max()));
-          set('sub-disk', `L ${rate(v[0])} · É ${rate(v[1])}`);
+          set('sub-disk', `Lecture ${rate(v[0])} · Écriture ${rate(v[1])}`);
         }
 
         if (s.network) {
@@ -348,7 +360,7 @@ const TABS = [
           set('net-rx', rate(v[0]));
           set('net-tx', rate(v[1]));
           set('net-scale', rate(big.net.max()));
-          set('sub-net', `R ${rate(v[0])} · E ${rate(v[1])}`);
+          set('sub-net', `Réception ${rate(v[0])} · Envoi ${rate(v[1])}`);
         }
         paintStats();
         persist();
@@ -442,7 +454,10 @@ const TABS = [
   .fig dd { margin: 0; font-size: var(--body-size); line-height: var(--body-lh); font-variant-numeric: tabular-nums; }
   .fig--big dd { font-family: var(--font-display); font-size: var(--section-size); line-height: var(--section-lh); font-weight: 600; }
   :global(.det) { max-width: 560px; margin-top: var(--space-5); }
-  .perf-error { margin-bottom: var(--space-4); }
+  .tmwrap { position: relative; }
+  .perf-error { position: absolute; z-index: 2; inset: var(--space-3) var(--space-3) auto; background: var(--bg-surface); border-radius: var(--radius-card); box-shadow: var(--shadow-md, var(--shadow-xs)); }
+  :global(.pbadge) { display: none; }
+  .tm[data-paused] :global(.pbadge) { display: inline-flex; }
   .perf-error[hidden] { display: none; }
   .drives { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); gap: var(--space-5); margin-top: var(--space-5); }
 
@@ -458,7 +473,7 @@ const TABS = [
     .panel__title { font-size: var(--section-size); line-height: var(--section-lh); }
   }
   @media (max-width: 640px) {
-    .tile__sub { display: none; }
+    .tile__sub { max-width: 9rem; }
     .tile { gap: var(--space-2); }
   }
 </style>

@@ -63,7 +63,7 @@ export const GET: APIRoute = async ({ url }) => {
   } catch (e: any) {
     const code = e?.code === 'EACCES' ? 403 : e?.code === 'ENOENT' ? 404 : 500;
     const msg =
-      code === 403 ? 'Lecture refusée : le panel n’a pas les droits sur ce fichier.'
+      code === 403 ? 'Le panel n’a pas les droits de lecture sur ce fichier.'
       : code === 404 ? 'Fichier introuvable.'
       : e?.message ?? 'Lecture impossible';
     return json({ error: msg }, code);

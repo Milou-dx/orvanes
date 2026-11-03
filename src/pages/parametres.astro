@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import PanelLayout from '../layouts/PanelLayout.astro';
 import SettingsGroup from '../components/ui/SettingsGroup.astro';
 import SettingsRow from '../components/ui/SettingsRow.astro';
+import Button from '../components/ui/Button.astro';
 import Segmented from '../components/ui/Segmented.astro';
 import { PANEL_NAME } from '../server/core/panel';
 import pkg from '../../package.json';
@@ -23,7 +24,7 @@ const build = import.meta.env.BUILD_ID;
           { value: 'system', label: 'Système', icon: 'monitor' },
         ]} />
       </SettingsRow>
-      <SettingsRow icon="panelLeft" title="Menu" desc="Automatique : réduit aux icônes sous 1000 px de large. Mémorisé sur cet appareil.">
+      <SettingsRow icon="panelLeft" title="Menu" desc="Automatique : réduit aux icônes quand la fenêtre est étroite. Mémorisé sur cet appareil.">
         <Segmented label="Largeur du menu" attr="nav-set" selected="auto" options={[
           { value: 'expanded', label: 'Complet' },
           { value: 'compact', label: 'Compact' },
@@ -33,10 +34,10 @@ const build = import.meta.env.BUILD_ID;
     </SettingsGroup>
 
     <SettingsGroup title="Instance">
-      <SettingsRow icon="server" title="Nom du panel" desc="Variable PANEL_NAME.">{PANEL_NAME}</SettingsRow>
+      <SettingsRow icon="server" title="Nom du panel" desc="Nom affiché en haut du menu.">{PANEL_NAME}</SettingsRow>
       <SettingsRow icon="box" title="Version"><span class="mono">{pkg.version}{build ? ` · build ${build}` : ''}</span></SettingsRow>
-      <SettingsRow icon="globe" title="Adresse" desc="Variable PANEL_PUBLIC_URL, sinon l’adresse de cette page."><span class="mono wrap">{publicUrl}</span></SettingsRow>
-      <SettingsRow icon="database" title="Dossier de données" desc="Variable PANEL_DATA_DIR : comptes, modules installés, réglages."><span class="mono wrap">{dataDir}</span></SettingsRow>
+      <SettingsRow icon="globe" title="Adresse" desc="Adresse publique de ce panel."><span class="mono wrap">{publicUrl}</span><Button size="sm" iconOnly icon="copy" label="Copier l’adresse" data-copy={publicUrl} /></SettingsRow>
+      <SettingsRow icon="database" title="Dossier de données" desc="Comptes, modules installés et réglages."><span class="mono wrap">{dataDir}</span><Button size="sm" iconOnly icon="copy" label="Copier le chemin" data-copy={dataDir} /></SettingsRow>
     </SettingsGroup>
 
     <SettingsGroup title="Administration">
@@ -44,7 +45,32 @@ const build = import.meta.env.BUILD_ID;
       <SettingsRow icon="users" title="Utilisateurs" desc="Comptes, droits par onglet et protection par connexion." href="/acces" />
     </SettingsGroup>
   </div>
+  {/* Pose l'état choisi avant le premier rendu (shell.ts le fait trop tard : flash du mauvais choix). */}
+  <script is:inline>
+    (function () {
+      var v = function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } };
+      var t = v('panel-theme'), n = v('panel-nav');
+      t = t === 'light' || t === 'dark' ? t : 'system';
+      n = n === 'compact' || n === 'expanded' ? n : 'auto';
+      document.querySelectorAll('[data-theme-set]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.themeSet === t)); });
+      document.querySelectorAll('[data-nav-set]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.navSet === n)); });
+    })();
+  </script>
 </PanelLayout>
+
+<script>
+  import { toast } from '../scripts/ui/dialog';
+  document.addEventListener('astro:page-load', () => {
+    document.querySelectorAll<HTMLElement>('[data-copy]').forEach((b) => b.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(b.dataset.copy!);
+        toast('Copié.', 'success', 1500);
+      } catch {
+        toast('Le navigateur refuse la copie.', 'error');
+      }
+    }));
+  });
+</script>
 
 <style>
   .settings { display: flex; flex-direction: column; gap: var(--space-6); max-width: 52rem; }

@@ -9,8 +9,8 @@ console.error('[500]', Astro.url.pathname, error);
 Astro.response.status = 500;
 ---
 <AuthLayout title="Erreur">
-  <h1 class="auth__title">Une erreur est survenue</h1>
-  <p class="auth__lead">Cette page n’a pas pu s’afficher. Réessayez dans quelques secondes : si le panel vient d’être mis à jour, il est peut-être en train de redémarrer.</p>
+  <h1 class="auth__title">Erreur du panel</h1>
+  <p class="auth__lead">Le panel n’a pas pu afficher cette page. Réessayez dans quelques secondes : une mise à jour peut faire redémarrer le panel.</p>
   <div class="err__actions">
     <Button variant="primary" id="err-retry">Réessayer</Button>
     <Button variant="secondary" href="/">Retour à l’accueil</Button>

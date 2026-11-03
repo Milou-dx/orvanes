@@ -20,6 +20,8 @@ let failure = '';
 try { all = await svc.listServices(); } catch (e: any) { failure = e?.message ?? 'Lecture impossible'; }
 
 const running = all.filter((s) => s.active === 'active');
+const nStopped = all.filter((s) => toStatus(s.active) === 'stopped').length;
+const nError = all.filter((s) => toStatus(s.active) === 'error').length;
 
 const PROTECTED = svc.protectedUnits().map((p) => p.unit);
 
@@ -64,8 +66,8 @@ const isProtected = (u: string) => PROTECTED.includes(u);
         <Segmented id="svc-states" label="Filtrer par état" attr="state" options={[
           { value: 'all', label: 'Tous', count: all.length },
           { value: 'running', label: 'En cours', count: running.length },
-          { value: 'stopped', label: 'Arrêtés', count: 0 },
-          { value: 'error', label: 'En échec', count: 0 },
+          { value: 'stopped', label: 'Arrêtés', count: nStopped },
+          { value: 'error', label: 'En échec', count: nError },
         ]} />
       </Toolbar>
 
@@ -88,15 +90,20 @@ const isProtected = (u: string) => PROTECTED.includes(u);
   const VERB: Record<string, string> = { start: 'Démarrer', stop: 'Arrêter', restart: 'Redémarrer' };
   const ICON: Record<string, 'play' | 'stop' | 'restart'> = { start: 'play', stop: 'stop', restart: 'restart' };
   const FILTER_KEY = 'svc-state';
+  const PENDING = 'svc-toast';
 
-  const bootLabel = (e: string) => (e === 'enabled' || e === 'enabled-runtime' ? 'Oui' : e === 'disabled' ? 'Non' : e === 'unknown' ? '—' : e);
+  const bootLabel = (e: string) => (e === 'enabled' || e === 'enabled-runtime' ? 'Oui' : e === 'disabled' ? 'Non' : e === 'unknown' ? '-' : e);
 
   const actBtn = (r: Row, action: string) =>
-    `<button type="button" class="svc-act svc-act--${action}" data-unit="${esc(r.name)}" data-action="${action}" aria-label="${VERB[action]} ${esc(r.name)}" title="${VERB[action]}"><span class="svc-act__i">${iconSVG(ICON[action], 16)}</span></button>`;
+    `<button type="button" class="svc-act svc-act--${action}" data-unit="${esc(r.name)}" data-action="${action}" aria-label="${VERB[action]} ${esc(r.name)}" title="${VERB[action]}"><span class="svc-act__i">${iconSVG(ICON[action], 16)}</span><span class="svc-act__t">${VERB[action]}</span></button>`;
 
   document.addEventListener('astro:page-load', () => {
     const dataEl = document.getElementById('svc-data');
     if (!dataEl) return;
+    try {
+      const m = sessionStorage.getItem(PENDING);
+      if (m) { sessionStorage.removeItem(PENDING); toast(m, 'success'); }
+    } catch {}
     const { rows, protectedUnits } = JSON.parse(dataEl.textContent || '{}') as { rows: Row[]; protectedUnits: string[] };
     const locked = new Set(protectedUnits);
 
@@ -115,10 +122,10 @@ const isProtected = (u: string) => PROTECTED.includes(u);
           value: (r: Row) => r.active,
           render: (r: Row) => ({ html: statusBadgeHTML(r.state, r.active === 'active' ? 'Actif' : r.active === 'failed' ? 'Échec' : r.active === 'inactive' ? 'Inactif' : r.active) }) },
         { key: 'enabled', label: 'Au démarrage', sortable: true, hideBelow: 'lg', nowrap: true, render: (r: Row) => bootLabel(r.enabled) },
-        { key: 'pid', label: 'PID', type: 'number', align: 'right', sortable: true, mono: true, muted: true, hideBelow: 'lg', render: (r: Row) => r.pid ?? '—' },
+        { key: 'pid', label: 'PID', type: 'number', align: 'right', sortable: true, mono: true, muted: true, hideBelow: 'lg', render: (r: Row) => r.pid ?? '-' },
         { key: 'actions', label: 'Actions', actions: true, hideLabel: true,
           render: (r: Row) => {
-            if (locked.has(r.name)) return { html: '<span class="t-meta text-tertiary" title="Service protégé : l’arrêter couperait l’accès">protégé</span>' };
+            if (locked.has(r.name)) return { html: '<span class="t-meta text-tertiary" title="Service protégé : l’arrêter couperait l’accès">Protégé : non arrêtable</span>' };
             const acts = r.active === 'active' ? ['restart', 'stop'] : ['start'];
             return { html: `<span class="dt__actions">${acts.map((a) => actBtn(r, a)).join('')}</span>` };
           } },
@@ -150,10 +157,10 @@ const isProtected = (u: string) => PROTECTED.includes(u);
       const unit = btn.dataset.unit!;
       const action = btn.dataset.action!;
       const verb = VERB[action] ?? action;
-      if (!(await confirmDialog({
+      if (action !== 'start' && !(await confirmDialog({
         title: `${verb} le service « ${unit} » ?`,
-        message: action === 'stop' ? 'Les applications qui en dépendent seront interrompues.' : undefined,
-        confirmLabel: verb, danger: action !== 'start',
+        message: action === 'stop' ? 'Les applications qui en dépendent s’arrêteront.' : undefined,
+        confirmLabel: verb, danger: true,
       }))) return;
 
       btn.disabled = true;
@@ -165,8 +172,18 @@ const isProtected = (u: string) => PROTECTED.includes(u);
         });
         const out = await res.json().catch(() => ({}));
         if (!res.ok) { toast(out.error ?? 'Échec', 'error'); done(); return; }
-        toast(`${verb} : « ${unit} » demandé.`, 'success');
-        location.reload();
+        const msg = `Demande envoyée : ${verb.toLowerCase()} « ${unit} ».`;
+        const row = btn.closest('#svc') ? rows.find((x) => x.name === unit) : undefined;
+        if (row) {
+          // Mise à jour en place : systemctl a rendu la main, l'état attendu est atteint.
+          row.active = action === 'stop' ? 'inactive' : 'active';
+          row.state = action === 'stop' ? 'stopped' : 'running';
+          apply(); toast(msg, 'success');
+        } else {
+          // Carte « services importants » rendue côté serveur : rechargement, toast affiché après.
+          try { sessionStorage.setItem(PENDING, msg); } catch {}
+          location.reload();
+        }
       } catch {
         toast('Le panel n’a pas pu joindre le service.', 'error');
         done();
@@ -187,7 +204,8 @@ const isProtected = (u: string) => PROTECTED.includes(u);
 <style>
   #svc-root { display: flex; flex-direction: column; gap: var(--space-4); }
   :global(.svc-act) {
-    display: inline-grid; place-items: center; width: var(--control-h-sm); height: var(--control-h-sm); padding: 0;
+    display: inline-flex; align-items: center; gap: 6px; height: var(--control-h-sm); padding: 0 10px 0 8px;
+    font: 500 var(--meta-size)/var(--meta-lh) var(--font-ui); color: var(--text-primary); white-space: nowrap;
     border: var(--border-width) solid var(--control-stroke); border-radius: var(--radius-sm);
     background: var(--bg-surface); box-shadow: var(--shadow-xs); cursor: pointer;
     transition: background-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
@@ -204,5 +222,6 @@ const isProtected = (u: string) => PROTECTED.includes(u);
     content: ''; width: var(--space-3); height: var(--space-3); border-radius: var(--radius-full);
     border: 2px solid currentColor; border-right-color: transparent; animation: n-spin 0.7s linear infinite;
   }
-  @media (pointer: coarse) { :global(.svc-act) { width: 44px; height: 44px; } }
+  @media (max-width: 900px) { :global(.svc-act__t) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); } :global(.svc-act) { padding: 0; width: var(--control-h-sm); justify-content: center; } }
+  @media (pointer: coarse) { :global(.svc-act) { min-width: 44px; min-height: 44px; } }
 </style>

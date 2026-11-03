@@ -53,7 +53,7 @@ const ifaceIcon = (n: string) =>
   /^tailscale/.test(n) ? 'shield' : /^(br-|docker)/.test(n) ? 'layers' : /^veth/.test(n) ? 'link' : 'network';
 const isUp = (i: any) => i.state !== 'down';
 const upCount = externalIfaces.filter(isUp).length;
-const dnsText = Array.isArray(gw?.dns) ? gw.dns.join(' · ') : (gw?.dns ?? '—');
+const dnsText = Array.isArray(gw?.dns) ? gw.dns.join(' · ') : (gw?.dns ?? '-');
 const sum = (f: (n: string) => number) => externalIfaces.reduce((n: number, i: any) => n + f(i.name), 0);
 const totalRx = sum((n) => totals[n]?.rx ?? 0);
 const totalTx = sum((n) => totals[n]?.tx ?? 0);
@@ -69,8 +69,8 @@ const tcpCount = conns.filter((c: any) => c.protocol === 'tcp').length;
   {dirty && (
     <div class="alert" role="status">
       <Icon name="warning" size={16} class="alert__icon" />
-      <p class="t-meta"><strong>Règles du pare-feu non enregistrées.</strong> Elles seront perdues au prochain redémarrage du serveur.</p>
-      <button type="button" class="mini" data-go="pare-feu">Ouvrir le pare-feu</button>
+      <p class="t-meta"><strong>Le pare-feu a des règles non enregistrées.</strong> Le prochain redémarrage du serveur les efface.</p>
+      <Button size="sm" data-go="pare-feu">Ouvrir le pare-feu</Button>
     </div>
   )}
 
@@ -97,27 +97,28 @@ const tcpCount = conns.filter((c: any) => c.protocol === 'tcp').length;
     { id: 'dns', label: 'DNS et passerelle', icon: 'waypoints' },
   ]}>
     <div slot="apercu" class="stack">
-      <Card title="Débit en temps réel" description="Toutes interfaces, une mesure par seconde. Envoi en pointillé.">
+      <Card title="Débit en temps réel" description="Somme des interfaces, une mesure par seconde. Envoi en pointillé.">
         <div class="graph" transition:persist="reseau-graph">
-          <canvas id="net-live" aria-label="Débit réseau des 3 dernières minutes"></canvas>
+          <canvas id="net-live" role="img" aria-label="Débit réseau des 3 dernières minutes"></canvas>
+          <p id="net-live-err" class="t-meta text-secondary" role="status" hidden>Mesures indisponibles : le panel ne reçoit plus les mesures du réseau. Nouvelle tentative en cours.</p>
         </div>
       </Card>
 
       <div class="duo">
         <Card title="Interfaces" flush>
-          <a slot="actions" class="more" href="#" data-go="interfaces">Tout voir <Icon name="chevronRight" size={14} /></a>
+          <button slot="actions" type="button" class="more" data-go="interfaces">Tout voir <Icon name="chevronRight" size={14} /></button>
           <ul class="list">
             {externalIfaces.slice(0, 4).map((i: any) => (
               <li>
                 <Icon name={ifaceIcon(i.name) as any} size={16} class="list__icon" />
-                <span class="list__main"><span class="list__title">{ifaceLabel(i.name)}</span><span class="list__sub mono">{i.name} · {i.ip ?? '—'}</span></span>
+                <span class="list__main"><span class="list__title">{ifaceLabel(i.name)}</span><span class="list__sub mono">{i.name} · {i.ip ?? '-'}</span></span>
                 <span class="list__side">↓ {bytes(totals[i.name]?.rx)} · ↑ {bytes(totals[i.name]?.tx)}</span>
               </li>
             ))}
           </ul>
         </Card>
         <Card title="Connexions récentes" flush>
-          <a slot="actions" class="more" href="#" data-go="ports">Tout voir <Icon name="chevronRight" size={14} /></a>
+          <button slot="actions" type="button" class="more" data-go="ports">Tout voir <Icon name="chevronRight" size={14} /></button>
           {conns.length === 0 ? (
             <p class="t-meta text-secondary empty">Aucune connexion établie.</p>
           ) : (
@@ -126,7 +127,7 @@ const tcpCount = conns.filter((c: any) => c.protocol === 'tcp').length;
                 <li>
                   <Badge tone={c.protocol === 'tcp' ? 'info' : 'neutral'}>{c.protocol.toUpperCase()}</Badge>
                   <span class="list__main"><span class="list__title mono">{c.peer}</span><span class="list__sub">vers <span class="mono">{c.local}</span></span></span>
-                  <span class="list__side">{c.process ?? '—'}</span>
+                  <span class="list__side">{c.process ?? '-'}</span>
                 </li>
               ))}
             </ul>
@@ -137,7 +138,7 @@ const tcpCount = conns.filter((c: any) => c.protocol === 'tcp').length;
 
     <div slot="interfaces" class="stack">
       {externalIfaces.length === 0 ? (
-        <EmptyState icon="network" title="Aucune interface externe" text="Le système n’a remonté aucune carte réseau." />
+        <EmptyState icon="network" title="Aucune interface externe" text="Aucune carte réseau détectée." />
       ) : externalIfaces.map((i: any) => (
         <Card>
           <div class="iface">
@@ -178,11 +179,11 @@ const tcpCount = conns.filter((c: any) => c.protocol === 'tcp').length;
             <td><Badge tone={c.protocol === 'tcp' ? 'info' : 'neutral'}>{c.protocol.toUpperCase()}</Badge></td>
             <td class="is-mono hide-sm">{c.local}</td>
             <td class="is-mono">{c.peer}</td>
-            <td>{c.process ? <>{c.process} <span class="text-tertiary">({c.pid})</span></> : <span class="text-tertiary">—</span>}</td>
+            <td>{c.process ? <>{c.process} <span class="text-tertiary">({c.pid})</span></> : <span class="text-tertiary">-</span>}</td>
           </tr>
         ))}
       </DataTable>
-      <p class="t-meta text-secondary note">Le processus n’est affiché que pour les programmes lancés par le compte du panel.</p>
+      <p class="t-meta text-secondary note">Le panel affiche le processus des seuls programmes qu’il a lancés.</p>
 
       <h2 class="t-card section">Ports en écoute</h2>
       <Toolbar controls="ports-tbl" search="Filtrer les ports" count>
@@ -193,7 +194,7 @@ const tcpCount = conns.filter((c: any) => c.protocol === 'tcp').length;
         </Select>
       </Toolbar>
       <DataTable id="ports-tbl" caption="Ports en écoute" noun={['port', 'ports']} sort={{ key: 'port' }}
-        empty={{ icon: 'globe', title: 'Aucun port en écoute', text: 'Aucun port en écoute remonté.' }}
+        empty={{ icon: 'globe', title: 'Aucun port en écoute', text: 'Le système ne signale aucun port ouvert.' }}
         columns={[
           { key: 'port', label: 'Port', sortable: true, type: 'number', mono: true },
           { key: 'proto', label: 'Proto', sortable: true, hideBelow: 'sm' },
@@ -211,7 +212,7 @@ const tcpCount = conns.filter((c: any) => c.protocol === 'tcp').length;
                 ? <Badge tone="warning" dot>Toutes interfaces</Badge>
                 : <Badge tone="success" dot>Restreint</Badge>}
             </td>
-            <td>{p.process ?? p.knownAs ?? '—'}</td>
+            <td>{p.process ?? p.knownAs ?? '-'}</td>
           </tr>
         ))}
       </DataTable>
@@ -220,10 +221,10 @@ const tcpCount = conns.filter((c: any) => c.protocol === 'tcp').length;
     <div slot="pare-feu" class="stack">
       <Toolbar controls="fw-rules" search="Filtrer les règles" count>
         <Badge slot="right" tone={dirty ? 'warning' : 'success'} dot>{dirty ? 'Non enregistré' : 'Enregistré'}</Badge>
-        <button slot="right" class="mini" id="fw-save" type="button">Enregistrer</button>
+        <Button slot="right" size="sm" id="fw-save">Enregistrer</Button>
       </Toolbar>
       <DataTable id="fw-rules" caption="Règles du pare-feu" noun={['règle', 'règles']} sort={{ key: 'num' }}
-        empty={{ icon: 'shield', title: 'Aucune règle', text: 'Aucune règle de pare-feu n’a été remontée.' }}
+        empty={{ icon: 'shield', title: 'Aucune règle', text: 'Aucune règle de pare-feu trouvée.' }}
         columns={[
           { key: 'num', label: '#', sortable: true, type: 'number', mono: true },
           { key: 'action', label: 'Action', sortable: true },
@@ -243,22 +244,22 @@ const tcpCount = conns.filter((c: any) => c.protocol === 'tcp').length;
                   ? <Badge tone="danger">Refuser</Badge>
                   : <Badge tone="neutral">{r.target === 'ts-input' ? 'Réseau privé' : r.target}</Badge>}
             </td>
-            <td class="hide-sm">{r.protocol ?? '—'}</td>
-            <td class="is-mono">{r.port ?? '—'}</td>
+            <td class="hide-sm">{r.protocol ?? '-'}</td>
+            <td class="is-mono">{r.port ?? '-'}</td>
             <td class="is-mono hide-sm">{r.source ?? 'toutes'}</td>
-            <td class="al-right is-muted hide-md" data-value={r.packets ?? 0}>{r.packets != null ? r.packets.toLocaleString('fr-FR') : '—'}</td>
+            <td class="al-right is-muted hide-md" data-value={r.packets ?? 0}>{r.packets != null ? r.packets.toLocaleString('fr-FR') : '-'}</td>
             <td class="is-actions">
               {r.protectedReason
                 ? <span class="t-meta text-tertiary" title={r.protectedReason}>protégée</span>
-                : <button type="button" class="mini mini--danger" data-del={r.num}>Supprimer</button>}
+                : <Button size="sm" variant="danger" data-del={r.num}>Supprimer</Button>}
             </td>
           </tr>
         ))}
       </DataTable>
-      <p class="t-meta text-secondary note">Tout ce qui n’est pas autorisé est bloqué. Un port ouvert ici doit aussi l’être chez l’hébergeur.</p>
+      <p class="t-meta text-secondary note">Le pare-feu bloque tout port non autorisé. Un port ouvert ici doit aussi l’être chez l’hébergeur.</p>
 
       {inert.length > 0 && (
-        <p class="t-meta text-secondary note"><strong>{inert.length} anciennes règles sans effet</strong> : placées après « Refuser », elles ne s’appliquent jamais.</p>
+        <p class="t-meta text-secondary note"><strong>{inert.length} anciennes règles sans effet</strong> : elles suivent « Refuser » et n’ont aucun effet.</p>
       )}
 
       <Card eyebrow="Nouvelle règle" title="Autoriser un port">
@@ -272,15 +273,17 @@ const tcpCount = conns.filter((c: any) => c.protocol === 'tcp').length;
           </div>
           <div class="field">
             <label for="fw-port">Port</label>
-            <input id="fw-port" name="port" class="mono" placeholder="8080 ou 8000:8100" required />
+            <input id="fw-port" name="port" class="mono" placeholder="8080 ou 8000:8100" required aria-describedby="fw-port-err" />
+            <small id="fw-port-err" class="field__err" role="alert" hidden></small>
           </div>
           <div class="field">
             <label for="fw-source">Source <span class="text-tertiary">(vide = toutes)</span></label>
-            <input id="fw-source" name="source" class="mono" placeholder="100.64.0.0/10" />
+            <input id="fw-source" name="source" class="mono" placeholder="100.64.0.0/10" aria-describedby="fw-source-err" />
+            <small id="fw-source-err" class="field__err" role="alert" hidden></small>
           </div>
           <div class="field">
             <label for="fw-comment">Commentaire</label>
-            <input id="fw-comment" name="comment" placeholder="Pourquoi cette ouverture ?" />
+            <input id="fw-comment" name="comment" placeholder="Motif de l’ouverture" />
           </div>
           <Button variant="primary" size="md" type="submit">Ajouter</Button>
         </form>
@@ -289,14 +292,14 @@ const tcpCount = conns.filter((c: any) => c.protocol === 'tcp').length;
     </div>
 
     <div slot="dns" class="stack">
-      <SettingsGroup title="Connexion" footer="Lecture seule : ces réglages sont fournis par l’hébergeur (DHCP). Les modifier ici risquerait de couper l’accès au serveur.">
-        <SettingsRow title="Adresse IP locale"><span class="mono">{localIp ?? '—'}</span></SettingsRow>
-        <SettingsRow title="Passerelle"><span class="mono">{gw?.gateway ?? '—'}</span></SettingsRow>
-        <SettingsRow title="Interface par défaut"><span class="mono">{defaultRoute?.dev ?? '—'}</span></SettingsRow>
+      <SettingsGroup title="Connexion" footer="Lecture seule : votre hébergeur fournit ces réglages (DHCP). Les modifier ici peut couper l’accès au serveur.">
+        <SettingsRow title="Adresse IP locale"><span class="mono">{localIp ?? '-'}</span></SettingsRow>
+        <SettingsRow title="Passerelle"><span class="mono">{gw?.gateway ?? '-'}</span></SettingsRow>
+        <SettingsRow title="Interface par défaut"><span class="mono">{defaultRoute?.dev ?? '-'}</span></SettingsRow>
         <SettingsRow title="Serveurs DNS"><span class="mono">{dnsText}</span></SettingsRow>
       </SettingsGroup>
       <DataTable id="routes-tbl" caption="Table de routage" noun={['route', 'routes']}
-        empty={{ icon: 'waypoints', title: 'Aucune route', text: 'La table de routage n’a pas pu être lue.' }}
+        empty={{ icon: 'waypoints', title: 'Aucune route', text: 'Le panel n’a pas pu lire la table de routage.' }}
         columns={[
           { key: 'dest', label: 'Destination', mono: true },
           { key: 'via', label: 'Passerelle', mono: true, hideBelow: 'sm' },
@@ -306,8 +309,8 @@ const tcpCount = conns.filter((c: any) => c.protocol === 'tcp').length;
         {routes.map((r: any) => (
           <tr>
             <td class="is-mono">{r.dest === 'default' ? 'par défaut' : r.dest}</td>
-            <td class="is-mono hide-sm">{r.via ?? '—'}</td>
-            <td class="is-mono">{r.dev ?? '—'}</td>
+            <td class="is-mono hide-sm">{r.via ?? '-'}</td>
+            <td class="is-mono">{r.dev ?? '-'}</td>
             <td>{r.down ? <Badge tone="neutral" dot>Coupé</Badge> : <Badge tone="success" dot>Actif</Badge>}</td>
           </tr>
         ))}
@@ -328,13 +331,17 @@ const tcpCount = conns.filter((c: any) => c.protocol === 'tcp').length;
     if (canvas === liveCanvas) return;
     liveCanvas = canvas;
     const graph = createGraph(canvas, 'net', [{ name: 'Réception' }, { name: 'Envoi', dashed: true }], 'auto');
+    const err = document.getElementById('net-live-err');
+    let fails = 0;
     const tick = async () => {
       if (!canvas.isConnected) { graph.stop(); if (liveCanvas === canvas) liveCanvas = null; return; }
       if (document.visibilityState === 'visible') {
         try {
           const s = await (await fetch('/api/system/stats')).json();
           graph.push([s.network?.rxBytesPerSec ?? 0, s.network?.txBytesPerSec ?? 0]);
-        } catch {}
+          fails = 0;
+        } catch { fails++; }
+        if (err) err.hidden = fails < 3;
       }
       setTimeout(tick, 1000);
     };
@@ -344,6 +351,10 @@ const tcpCount = conns.filter((c: any) => c.protocol === 'tcp').length;
   document.addEventListener('astro:page-load', () => {
     const live = document.getElementById('net-live') as HTMLCanvasElement | null;
     if (live) startLive(live);
+    try {
+      const flash = sessionStorage.getItem('reseau-flash');
+      if (flash) { sessionStorage.removeItem('reseau-flash'); toast(flash, 'success'); }
+    } catch {}
     const goTab = (tab: string) => document.getElementById(`reseau-tab-${tab}`)?.click();
     document.querySelectorAll<HTMLElement>('[data-go]').forEach((el) => el.addEventListener('click', (e) => {
       e.preventDefault();
@@ -364,6 +375,12 @@ const tcpCount = conns.filter((c: any) => c.protocol === 'tcp').length;
       { id: 'reseau-save', title: 'Pare-feu : enregistrer les règles', group: 'Réseau', run: () => document.getElementById('fw-save')?.click() },
     ]);
     const msg = document.getElementById('fw-msg');
+
+    // Toast de succès affiché APRÈS le rechargement (sinon il disparaît avec la page).
+    const reloadWith = (message: string) => {
+      try { sessionStorage.setItem('reseau-flash', message); } catch { toast(message, 'success'); setTimeout(() => location.reload(), 800); return; }
+      location.reload();
+    };
 
     function show(text: string, ok: boolean) {
       if (!msg) return;
@@ -389,7 +406,17 @@ const tcpCount = conns.filter((c: any) => c.protocol === 'tcp').length;
       const source = String(fd.get('source') ?? '').trim();
 
       const invalid = allowError(proto, port, source || null);
-      if (invalid) { show(invalid, false); document.getElementById(invalid.startsWith('Source') ? 'fw-source' : 'fw-port')?.focus(); return; }
+      const portErr = document.getElementById('fw-port-err')!, sourceErr = document.getElementById('fw-source-err')!;
+      const portIn = document.getElementById('fw-port')!, sourceIn = document.getElementById('fw-source')!;
+      const bad = (input: HTMLElement, el: HTMLElement, text: string | null) => {
+        el.textContent = text ?? ''; el.hidden = !text;
+        if (text) input.setAttribute('aria-invalid', 'true'); else input.removeAttribute('aria-invalid');
+      };
+      const onSource = !!invalid && invalid.startsWith('Source');
+      bad(portIn, portErr, invalid && !onSource ? invalid : null);
+      bad(sourceIn, sourceErr, onSource ? invalid : null);
+      if (invalid) { (onSource ? sourceIn : portIn).focus(); return; }
+      if (msg) msg.hidden = true;
       const where = source ? `depuis ${source}` : 'depuis toutes les sources';
       if (!(await confirmDialog({ title: 'Autoriser ce trafic ?', message: `${proto.toUpperCase()} ${port} ${where}.`, confirmLabel: 'Autoriser' }))) return;
 
@@ -398,8 +425,7 @@ const tcpCount = conns.filter((c: any) => c.protocol === 'tcp').length;
           protocol: proto, port, source: source || null, comment: fd.get('comment'),
         });
         if (!ok) { show(data.error ?? 'Échec', false); return; }
-        show(`Règle insérée en position ${data.position}. Pensez à enregistrer.`, true);
-        setTimeout(() => location.reload(), 1200);
+        reloadWith(`Règle ajoutée en position ${data.position}. Enregistrez-la pour qu’elle survive au redémarrage.`);
       } catch {
         show('Le panel n’a pas pu joindre le service.', false);
       }
@@ -413,14 +439,14 @@ const tcpCount = conns.filter((c: any) => c.protocol === 'tcp').length;
       btn.disabled = true;
       const { ok, data } = await call({ op: 'delete', num: Number(num) });
       if (!ok) { toast(data.error ?? 'Échec', 'error'); btn.disabled = false; return; }
-      location.reload();
+      reloadWith(`Règle n° ${num} supprimée.`);
     });
 
     document.getElementById('fw-save')?.addEventListener('click', async () => {
-      if (!(await confirmDialog({ title: 'Écrire les règles actives sur le disque ?', message: 'Elles survivront alors au redémarrage.', confirmLabel: 'Enregistrer' }))) return;
+      // Sans risque : pas de confirmation.
       const { ok, data } = await call({ op: 'persist' });
       if (!ok) { toast(data.error ?? 'Échec', 'error'); return; }
-      location.reload();
+      reloadWith('Règles enregistrées.');
     });
   });
 </script>
@@ -493,6 +519,10 @@ const tcpCount = conns.filter((c: any) => c.protocol === 'tcp').length;
   .field input::placeholder { color: var(--text-tertiary); }
   .field :global(.select) { width: 100%; }
 
+  .field__err { color: var(--danger); font-size: var(--meta-size); }
+  .field input[aria-invalid='true'] { border-color: var(--danger); }
+  .more { background: none; border: 0; padding: 0; font: inherit; font-size: var(--meta-size); cursor: pointer; }
+  .graph > p { margin: var(--space-2) 0 0; }
   .msg { margin-top: var(--space-4); }
   .msg--err { color: var(--danger); }
   .msg--ok { color: var(--success); }

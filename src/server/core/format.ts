@@ -1,5 +1,5 @@
 export function bytes(n: number | null | undefined, digits = 1): string {
-  if (n === null || n === undefined || Number.isNaN(n)) return '—';
+  if (n === null || n === undefined || Number.isNaN(n)) return '-';
   const units = ['o', 'Ko', 'Mo', 'Go', 'To'];
   let v = n;
   let i = 0;
@@ -9,7 +9,7 @@ export function bytes(n: number | null | undefined, digits = 1): string {
 }
 
 export function duration(seconds: number | null | undefined): string {
-  if (seconds === null || seconds === undefined || Number.isNaN(seconds)) return '—';
+  if (seconds === null || seconds === undefined || Number.isNaN(seconds)) return '-';
   const s = Math.floor(seconds);
   const d = Math.floor(s / 86400);
   const h = Math.floor((s % 86400) / 3600);
@@ -21,16 +21,16 @@ export function duration(seconds: number | null | undefined): string {
 }
 
 export function ago(date: Date | string | null | undefined): string {
-  if (!date) return '—';
+  if (!date) return '-';
   const d = typeof date === 'string' ? new Date(date) : date;
-  if (Number.isNaN(d.getTime())) return '—';
+  if (Number.isNaN(d.getTime())) return '-';
   return duration((Date.now() - d.getTime()) / 1000);
 }
 
 export function dateTime(date: Date | string | null | undefined): string {
-  if (!date) return '—';
+  if (!date) return '-';
   const d = typeof date === 'string' ? new Date(date) : date;
-  if (Number.isNaN(d.getTime())) return '—';
+  if (Number.isNaN(d.getTime())) return '-';
   return d.toLocaleString('fr-FR', {
     day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
   });
@@ -42,6 +42,6 @@ export function percent(used: number, total: number): number {
 }
 
 export function num(n: number | null | undefined, digits = 0): string {
-  if (n === null || n === undefined || Number.isNaN(n)) return '—';
+  if (n === null || n === undefined || Number.isNaN(n)) return '-';
   return n.toLocaleString('fr-FR', { minimumFractionDigits: digits, maximumFractionDigits: digits });
 }

@@ -19,7 +19,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     return json({ ok: true, state: 'ok', next: nextPage(String(body.suite ?? ''), user) });
   } catch (e) {
     if (e instanceof AuthError) return json({ error: e.message }, e.status);
-    return json({ error: 'La connexion a échoué. Réessayez, ou consultez le journal du panel.' }, 500);
+    return json({ error: 'Connexion impossible. Réessayez ou consultez le journal du panel.' }, 500);
   }
 };
 

@@ -12,11 +12,17 @@ interface Data { users: User[]; tabs: Tab[]; enabled: boolean; google: boolean }
 async function post(body: object): Promise<any> {
   const r = await fetch('/api/admin/auth', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
   const data = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(data.error ?? 'L’opération a échoué. Consultez le journal du panel.');
+  if (!r.ok) throw new Error(data.error ?? 'Échec de l’opération. Détails dans le journal du panel.');
   return data;
 }
 
 const reload = (ms = 500) => setTimeout(() => location.reload(), ms);
+
+// Le toast de succès est affiché APRÈS le rechargement (sinon il disparaît avec la page).
+function reloadWith(message: string) {
+  try { sessionStorage.setItem('acces-flash', message); } catch { toast(message, 'success'); reload(); return; }
+  location.reload();
+}
 
 function field(label: string, input: HTMLElement): HTMLElement {
   const wrap = document.createElement('label');
@@ -76,7 +82,7 @@ function quickSelect(picker: { el: HTMLElement }): HTMLElement {
   const mk = (label: string, fn: (cb: HTMLInputElement) => boolean) => {
     const b = document.createElement('button');
     b.type = 'button';
-    b.className = 'mini';
+    b.className = 'btn btn--secondary btn--sm';
     b.textContent = label;
     b.addEventListener('click', () => picker.el.querySelectorAll<HTMLInputElement>('input').forEach((cb) => (cb.checked = fn(cb))));
     return b;
@@ -88,12 +94,35 @@ function quickSelect(picker: { el: HTMLElement }): HTMLElement {
 async function showPassword(title: string, password: string) {
   const el = box();
   const p = document.createElement('p');
-  p.textContent = 'Notez ce mot de passe maintenant : il ne sera plus jamais affiché.';
+  p.textContent = 'Notez ce mot de passe : le panel ne l’affichera plus.';
   const code = document.createElement('div');
   code.className = 'acpass';
   code.textContent = password;
-  el.append(p, code);
-  await openModal({ title, body: el, confirmLabel: 'Copier et fermer', cancelLabel: null, onConfirm: async () => { await navigator.clipboard?.writeText(password).catch(() => {}); } });
+  const fail = document.createElement('p');
+  fail.setAttribute('role', 'alert');
+  fail.hidden = true;
+  fail.textContent = 'La copie a échoué. Le mot de passe est sélectionné : copiez-le à la main (Ctrl+C), puis cliquez de nouveau sur le bouton pour fermer.';
+  code.tabIndex = 0;
+  el.append(p, code, fail);
+  // Fermeture seulement par le bouton : après une copie réussie, ou au 2e clic après un échec (copie manuelle).
+  let failed = false;
+  await openModal({
+    title, body: el, confirmLabel: 'Copier et fermer', cancelLabel: null, dismissible: false,
+    onConfirm: async () => {
+      if (failed) return true;
+      try {
+        if (!navigator.clipboard) throw new Error('no clipboard');
+        await navigator.clipboard.writeText(password);
+        return true;
+      } catch {
+        failed = true;
+        fail.hidden = false;
+        code.focus();
+        getSelection()?.selectAllChildren(code);
+        return false;
+      }
+    },
+  });
 }
 
 async function editFlow(data: Data, id: string) {
@@ -129,16 +158,15 @@ async function editFlow(data: Data, id: string) {
     onConfirm: async () => {
       const wasAdmin = u.role === 'admin' && u.status === 'active';
       if (wasAdmin && (role.value !== 'admin' || status.value !== 'active')) {
-        if (!(await confirmDialog({ title: `Retirer les droits d’administrateur à ${u.name} ?`, message: status.value !== 'active' ? 'Le compte sera aussi désactivé et ses sessions fermées.' : 'Ce compte ne verra plus que les onglets que vous lui attribuez.', confirmLabel: 'Retirer', danger: true }))) return false;
+        if (!(await confirmDialog({ title: `Retirer les droits d’administrateur à ${u.name} ?`, message: status.value !== 'active' ? 'Le panel désactivera le compte et fermera ses sessions.' : 'Ce compte ne verra que les onglets que vous lui attribuez.', confirmLabel: 'Retirer', danger: true }))) return false;
       } else if (u.role !== 'admin' && role.value === 'admin') {
-        if (!(await confirmDialog({ title: `Faire de ${u.name} un administrateur ?`, message: 'Ce compte verra tous les onglets (terminal, fichiers, Docker…) et pourra gérer les accès.', confirmLabel: 'Promouvoir', danger: true }))) return false;
+        if (!(await confirmDialog({ title: `Faire de ${u.name} un administrateur ?`, message: 'Ce compte verra l’ensemble des onglets, dont terminal, fichiers et Docker, et pourra gérer les accès.', confirmLabel: 'Promouvoir', danger: true }))) return false;
       } else if (u.status !== 'blocked' && status.value === 'blocked') {
-        if (!(await confirmDialog({ title: `Bloquer ${u.name} ?`, message: 'Ses sessions ouvertes seront fermées et cette personne ne pourra plus entrer.', confirmLabel: 'Bloquer', danger: true }))) return false;
+        if (!(await confirmDialog({ title: `Bloquer ${u.name} ?`, message: 'Le panel fermera ses sessions ouvertes ; cette personne ne pourra plus entrer.', confirmLabel: 'Bloquer', danger: true }))) return false;
       }
       try {
         await post({ action: 'saveUser', id, name: name.value, role: role.value, status: status.value, tabs: picker.value() });
-        toast('Enregistré.', 'success');
-        reload();
+        reloadWith('Enregistré.');
       } catch (e) {
         toast((e as Error).message, 'error');
         return false;
@@ -153,7 +181,14 @@ async function createFlow(data: Data) {
   email.type = 'text';
   email.placeholder = 'camille  ou  camille@exemple.fr';
   email.autocomplete = 'off';
-  email.addEventListener('input', () => email.removeAttribute('aria-invalid'));
+  const emailErr = document.createElement('small');
+  emailErr.id = 'acces-email-err';
+  emailErr.setAttribute('role', 'alert');
+  emailErr.style.color = 'var(--danger)';
+  emailErr.hidden = true;
+  emailErr.textContent = 'Donnez un identifiant ou une adresse e-mail.';
+  email.setAttribute('aria-describedby', emailErr.id);
+  email.addEventListener('input', () => { email.removeAttribute('aria-invalid'); emailErr.hidden = true; });
   const name = document.createElement('input');
   name.type = 'text';
   const password = document.createElement('input');
@@ -166,7 +201,9 @@ async function createFlow(data: Data) {
   role.addEventListener('change', () => { tabsField.hidden = role.value === 'admin'; });
   const r1 = document.createElement('div');
   r1.className = 'acform__row';
-  r1.append(field('Identifiant', email), field('Nom affiché', name));
+  const emailField = field('Identifiant', email);
+  emailField.append(emailErr);
+  r1.append(emailField, field('Nom affiché', name));
   const r2 = document.createElement('div');
   r2.className = 'acform__row';
   r2.append(field('Rôle', role), field('Mot de passe', password));
@@ -174,7 +211,7 @@ async function createFlow(data: Data) {
   if (data.google) {
     const hint = document.createElement('p');
     hint.className = 't-meta text-secondary';
-    hint.textContent = 'Connexion avec Google : mettez l’adresse Gmail comme identifiant, la personne sera reconnue à sa première connexion.';
+    hint.textContent = 'Connexion avec Google : mettez l’adresse Gmail comme identifiant, le panel reconnaîtra la personne à sa première connexion.';
     el.append(hint);
   }
 
@@ -186,11 +223,11 @@ async function createFlow(data: Data) {
     onConfirm: async () => {
       if (!email.value.trim()) {
         email.setAttribute('aria-invalid', 'true');
+        emailErr.hidden = false;
         email.focus();
-        toast('Donnez un identifiant ou une adresse e-mail.', 'error');
         return false;
       }
-      if (role.value === 'admin' && !(await confirmDialog({ title: 'Créer un administrateur ?', message: 'Ce compte verra tous les onglets, terminal et fichiers compris, et pourra gérer les accès.', confirmLabel: 'Créer', danger: true }))) return false;
+      if (role.value === 'admin' && !(await confirmDialog({ title: 'Créer un administrateur ?', message: 'Ce compte verra l’ensemble des onglets, dont terminal et fichiers, et pourra gérer les accès.', confirmLabel: 'Créer', danger: true }))) return false;
       try {
         const r = await post({ action: 'createLocal', email: email.value, name: name.value, role: role.value, password: password.value, tabs: picker.value() });
         toast('Utilisateur créé.', 'success');
@@ -211,7 +248,7 @@ async function passwordFlow(id: string, name: string) {
   input.placeholder = 'Laisser vide pour en générer un';
   input.autocomplete = 'off';
   const p = document.createElement('p');
-  p.textContent = 'Les sessions ouvertes de ce compte seront fermées.';
+  p.textContent = 'Le panel fermera les sessions ouvertes de ce compte.';
   el.append(p, field('Nouveau mot de passe', input));
   await openModal({
     title: `Mot de passe de ${name}`,
@@ -237,8 +274,8 @@ async function linuxFlow(data: Data, id: string) {
   const p = document.createElement('p');
   p.className = 't-meta text-secondary';
   p.textContent = u.linuxUser
-    ? `Claude de ${u.name} tourne sous le compte Linux « ${u.linuxUser} », enfermé dans /home/${u.linuxUser}.`
-    : `Sans compte Linux, Claude ne fait que consulter. Lié à un compte, il écrit dans /home/<compte> (projets, commandes, npm, git) et rien ailleurs.`;
+    ? `Claude de ${u.name} tourne sous le compte Linux « ${u.linuxUser} » et reste limité à /home/${u.linuxUser}.`
+    : `Sans compte Linux, Claude lit sans écrire. Lié à un compte, il écrit dans /home/<compte> (projets, commandes, npm, git), son seul dossier d’écriture.`;
   const actions: [string, string][] = [['create', 'Créer un nouveau compte'], ['link', 'Lier un compte existant']];
   if (u.linuxUser) actions.push(['unlink', 'Délier (le compte et ses fichiers restent)']);
   const how = select(actions, u.linuxUser ? 'link' : 'create');
@@ -260,8 +297,7 @@ async function linuxFlow(data: Data, id: string) {
       try {
         if (how.value === 'unlink') await post({ action: 'unlinkLinux', id });
         else await post({ action: 'linkLinux', id, linuxUser: name.value.trim(), create: how.value === 'create' });
-        toast(how.value === 'unlink' ? 'Compte Linux délié.' : 'Compte Linux enregistré.', 'success');
-        reload();
+        reloadWith(how.value === 'unlink' ? 'Compte Linux délié.' : 'Compte Linux enregistré.');
       } catch (e) {
         toast((e as Error).message, 'error');
         return false;
@@ -273,8 +309,7 @@ async function linuxFlow(data: Data, id: string) {
 async function simple(action: string, id: string, ok: string) {
   try {
     await post({ action, id });
-    toast(ok, 'success');
-    reload();
+    reloadWith(ok);
   } catch (e) {
     toast((e as Error).message, 'error');
   }
@@ -285,16 +320,20 @@ document.addEventListener('astro:page-load', () => {
   if (!raw) return;
   const data: Data = JSON.parse(raw);
 
+  try {
+    const flash = sessionStorage.getItem('acces-flash');
+    if (flash) { sessionStorage.removeItem('acces-flash'); toast(flash, 'success'); }
+  } catch {}
+  document.querySelectorAll<HTMLElement>('[data-password]').forEach((b) => b.addEventListener('click', () => void passwordFlow(b.dataset.password!, b.dataset.name ?? '')));
   document.getElementById('acces-new')?.addEventListener('click', () => void createFlow(data));
   const each = (sel: string, fn: (el: HTMLElement) => void) => document.querySelectorAll<HTMLElement>(sel).forEach(fn);
   each('[data-edit]', (b) => b.addEventListener('click', () => void editFlow(data, b.dataset.edit!)));
-  const revoke = async (id: string, name: string) => {
-    if (await confirmDialog({ title: `Déconnecter ${name} ?`, message: 'Ses sessions ouvertes seront fermées ; elle ou il pourra se reconnecter.', confirmLabel: 'Déconnecter' })) {
-      await simple('revoke', id, 'Sessions fermées.');
-    }
+  const revoke = async (id: string) => {
+    // Réversible (la personne se reconnecte) : pas de confirmation.
+    await simple('revoke', id, 'Sessions fermées.');
   };
   const remove = async (id: string, name: string, admin: boolean) => {
-    if (await confirmDialog({ title: admin ? `Supprimer l’administrateur ${name} ?` : `Supprimer ${name} ?`, message: `${admin ? 'Ce compte a accès à tout le panel. ' : ''}Le compte et ses sessions sont supprimés. Un compte Google pourra refaire une demande d’accès.`, confirmLabel: 'Supprimer', danger: true })) {
+    if (await confirmDialog({ title: admin ? `Supprimer l’administrateur ${name} ?` : `Supprimer ${name} ?`, message: `${admin ? 'Ce compte accède à tous les onglets du panel. ' : ''}Le panel supprime le compte et ses sessions sans retour possible. Un compte Google pourra refaire une demande.`, confirmLabel: 'Supprimer', danger: true })) {
       await simple('delete', id, 'Compte supprimé.');
     }
   };
@@ -306,7 +345,7 @@ document.addEventListener('astro:page-load', () => {
       items: [
         { label: 'Mot de passe', icon: 'key', run: () => void passwordFlow(id, name) },
         ...(b.dataset.linux !== undefined ? [{ label: 'Compte Linux', icon: 'terminal' as const, run: () => void linuxFlow(data, id) }] : []),
-        ...(Number(b.dataset.sessions) > 0 ? [{ label: 'Déconnecter', icon: 'logout' as const, run: () => void revoke(id, name) }] : []),
+        ...(Number(b.dataset.sessions) > 0 ? [{ label: 'Déconnecter', icon: 'logout' as const, run: () => void revoke(id) }] : []),
         'sep' as const,
         { label: 'Supprimer', icon: 'trash' as const, danger: true, run: () => void remove(id, name, b.dataset.admin !== undefined) },
       ],
@@ -314,11 +353,10 @@ document.addEventListener('astro:page-load', () => {
   }));
   each('[data-block]', (b) =>
     b.addEventListener('click', async () => {
-      if (await confirmDialog({ title: `Refuser ${b.dataset.name} ?`, message: 'Le compte sera bloqué : cette personne ne pourra pas entrer.', confirmLabel: 'Refuser', danger: true })) {
+      if (await confirmDialog({ title: `Refuser ${b.dataset.name} ?`, message: 'Le panel bloquera ce compte ; cette personne ne pourra pas entrer.', confirmLabel: 'Refuser', danger: true })) {
         try {
           await post({ action: 'saveUser', id: b.dataset.block, status: 'blocked' });
-          toast('Demande refusée.', 'success');
-          reload();
+          reloadWith('Demande refusée.');
         } catch (e) {
           toast((e as Error).message, 'error');
         }
@@ -377,8 +415,7 @@ document.addEventListener('astro:page-load', () => {
         clientId: (document.getElementById('g-id') as HTMLInputElement).value,
         clientSecret: (document.getElementById('g-secret') as HTMLInputElement).value,
       });
-      toast('Identifiants enregistrés.', 'success');
-      reload();
+      reloadWith('Identifiants enregistrés.');
     } catch (err) {
       say((err as Error).message, true);
     }
@@ -398,8 +435,8 @@ document.addEventListener('astro:page-load', () => {
     const next = toggle.getAttribute('aria-checked') !== 'true';
     const ok = await confirmDialog(
       next
-        ? { title: 'Activer la protection ?', message: 'Dès maintenant, le panel demande une connexion. Vous allez être déconnecté et devrez vous reconnecter avec le compte de secours (identifiant et mot de passe) ou Google.\n\nSi vous êtes enfermé dehors : supprimez le fichier data/auth.json en SSH.', confirmLabel: 'Activer' }
-        : { title: 'Désactiver la protection ?', message: 'Le panel redeviendra ouvert à toute personne qui l’atteint, sans connexion.', confirmLabel: 'Désactiver', danger: true },
+        ? { title: 'Activer la protection ?', message: 'Le panel va demander une connexion et vous déconnecter. Reconnectez-vous avec le compte de secours (identifiant et mot de passe) ou Google.\n\nVerrouillé hors du panel ? Supprimez data/auth.json en SSH.', confirmLabel: 'Activer' }
+        : { title: 'Désactiver la protection ?', message: 'Le panel s’ouvrira à quiconque l’atteint, sans connexion.', confirmLabel: 'Désactiver', danger: true },
     );
     if (!ok) return;
     toggle.disabled = true;

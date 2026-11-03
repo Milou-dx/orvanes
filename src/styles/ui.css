@@ -27,6 +27,7 @@
   transition: color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
 }
 .subnav__link:hover, .ui-tabs__tab:hover { color: var(--text-primary); background: var(--bg-hover); }
+.subnav__link:active, .ui-tabs__tab:active { background: var(--nav-selected); }
 .subnav__link::after, .ui-tabs__tab::after {
   content: ''; position: absolute; left: var(--space-2); right: var(--space-2); bottom: calc(-1 * var(--border-width));
   height: 2px; border-radius: var(--radius-xs) var(--radius-xs) 0 0; background: transparent;
@@ -82,9 +83,10 @@
 .dt__sort:hover { background: var(--bg-hover); color: var(--text-primary); }
 .dt__sort:focus-visible { outline-offset: 0; }
 .dt__arrow { width: 12px; height: 12px; opacity: 0; color: var(--text-tertiary); transition: opacity var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out); }
-.dt__sort:hover .dt__arrow { opacity: 1; }
+.dt__sort:hover .dt__arrow, .dt__sort:focus-visible .dt__arrow { opacity: 1; }
+@media (hover: none) { .dt__arrow { opacity: .5; } }
 th[aria-sort] .dt__sort { color: var(--text-primary); }
-th[aria-sort] .dt__arrow { opacity: 1; color: var(--accent); }
+th[aria-sort] .dt__arrow { opacity: 1; color: var(--accent-text); }
 th[aria-sort='descending'] .dt__arrow { transform: rotate(180deg); }
 
 .tbl tr.is-clickable { cursor: pointer; }
@@ -259,8 +261,9 @@ th[aria-sort='descending'] .dt__arrow { transform: rotate(180deg); }
   transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
 }
 .seg__btn:hover { color: var(--text-primary); }
+.seg__btn:active { background: var(--nav-selected); }
 .seg__btn[aria-pressed='true'], .seg__btn[aria-current='true'], .seg__btn[aria-current='page'] { background: var(--bg-surface); color: var(--text-primary); box-shadow: var(--shadow-xs); }
-.seg__btn:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.seg__btn:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
 .seg__btn--icon { width: var(--control-h-sm); padding-inline: 0; }
 .seg__n { font-size: var(--meta-size); color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
 @media (pointer: coarse) { .seg__btn { min-height: 44px; } .seg__btn--icon { min-width: 44px; } }
@@ -331,7 +334,7 @@ input[aria-invalid='true'], select[aria-invalid='true'], textarea[aria-invalid='
   .sgroup { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
   .sgroup__title {
     margin: 0; padding-left: 14px;
-    font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+    font-size: var(--micro-size); line-height: var(--micro-lh); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
     color: var(--text-tertiary);
   }
   .sgroup__rows {

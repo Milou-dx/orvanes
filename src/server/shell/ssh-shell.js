@@ -71,7 +71,7 @@ export function open(id, opts) {
         channel.on('close', () => {
           session.closed = true;
           sessions.delete(id);
-          opts.onClose('session SSH fermée');
+          opts.onClose('le serveur SSH a fermé la session');
           client.end();
         });
 
@@ -99,7 +99,7 @@ function get(id) {
 
 export function write(id, data) {
   const s = get(id);
-  if (!s || s.closed) throw new Error('Session introuvable ou terminée');
+  if (!s || s.closed) throw new Error('Session introuvable ou close');
   s.channel.write(data);
 }
 

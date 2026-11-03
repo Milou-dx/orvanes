@@ -62,13 +62,13 @@ const { title } = Astro.props;
   .auth__btn:hover:not(:disabled) { background: var(--bg-hover); }
   .auth__btn:disabled { opacity: .55; cursor: not-allowed; }
   .auth__btn--primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg, #fff); }
-  .auth__btn--primary:hover:not(:disabled) { background: var(--accent); filter: brightness(1.08); }
+  .auth__btn--primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
   .auth__error { color: var(--danger); font-size: var(--dense-size); margin: 0; min-height: 18px; text-align: center; }
 
   .wait { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); text-align: center; }
   .wait__avatar { position: relative; width: 84px; height: 84px; display: grid; place-items: center; margin-bottom: var(--space-1); }
   .wait__img { width: 68px; height: 68px; border-radius: 50%; object-fit: cover; background: var(--bg-surface-2, var(--bg-app)); }
-  .wait__initial { display: grid; place-items: center; font-size: 28px; font-weight: 600; color: var(--accent); background: var(--accent-subtle); }
+  .wait__initial { display: grid; place-items: center; font-size: 28px; font-weight: 600; color: var(--accent-text); background: var(--accent-subtle); }
   .wait__ring {
     position: absolute; inset: 0; border-radius: 50%;
     background: conic-gradient(from 0deg, var(--accent) 0 25%, transparent 25% 100%);
@@ -95,7 +95,7 @@ const { title } = Astro.props;
   .wait__steps .is-now .wait__dot::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
   .wait__back { align-self: stretch; margin-top: var(--space-1); }
 
-  :root { --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1); --ease-elastic: cubic-bezier(0.22, 1.6, 0.36, 1); }
+  :root { --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1); }
 
   .mask { display: block; overflow: hidden; padding-bottom: 2px; }
   .mask__in { display: block; }
@@ -108,23 +108,23 @@ const { title } = Astro.props;
     transition: border-color var(--duration-ui) var(--ease), box-shadow var(--duration-ui) var(--ease);
   }
   .field input:hover { border-color: var(--text-secondary); }
-  .field input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-subtle); }
+  .field input:focus { outline: 2px solid var(--focus-ring); outline-offset: 1px; border-color: var(--accent); }
   .field label {
     position: absolute; left: var(--space-3); top: 50%; transform: translateY(-50%); pointer-events: none;
     color: var(--text-secondary); font-size: var(--body-size); transform-origin: left top;
-    transition: top .35s var(--ease-out-expo), transform .35s var(--ease-out-expo), color var(--duration-ui) var(--ease);
+    transition: transform var(--dur-enter) var(--ease-out), color var(--duration-ui) var(--ease);
   }
   .field input:focus + label,
   .field input:not(:placeholder-shown) + label,
-  .field input:-webkit-autofill + label { top: 8px; transform: translateY(0) scale(.85); }
-  .field input:focus + label { color: var(--accent); }
+  .field input:-webkit-autofill + label { transform: translateY(-16px) scale(.85); }
+  .field input:focus + label { color: var(--accent-text); }
   .field.is-error input { border-color: var(--danger); box-shadow: 0 0 0 3px var(--danger-subtle); }
   .field.is-error label { color: var(--danger); }
 
   .go {
     position: relative; overflow: hidden; isolation: isolate; width: 100%; height: 48px;
     display: inline-flex; align-items: center; justify-content: center;
-    border: 0; border-radius: var(--radius-control); background: var(--accent); color: var(--accent-fg, #fff); cursor: pointer;
+    gap: var(--space-2); border: 0; border-radius: var(--radius-control); background: var(--accent); color: var(--accent-fg, #fff); cursor: pointer;
   }
   .go__fill {
     position: absolute; z-index: -1; left: var(--dx, 50%); top: var(--dy, 50%);
@@ -132,16 +132,17 @@ const { title } = Astro.props;
     background: color-mix(in srgb, var(--accent) 60%, #000);
     transform: translate(-50%, -50%) scale(0); transition: transform .55s var(--ease-out-expo);
   }
-  :root[data-theme='dark'] .go__fill { background: color-mix(in srgb, var(--accent) 55%, #fff); }
-  .go:hover:not(:disabled) .go__fill, .go:focus-visible .go__fill { transform: translate(-50%, -50%) scale(1); }
-  .go:focus-visible, .bubble:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .go:hover:not(:disabled) .go__fill, .go:focus-visible .go__fill { transform: translate(-50%, -50%) scale(1); }
+  .go:focus-visible, .bubble:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
   .go__arrow, .go__spin { transition: transform .45s var(--ease-out-expo), opacity .25s var(--ease); }
   .go:hover:not(:disabled) .go__arrow { transform: translateX(4px); }
   .go__spin {
     position: absolute; width: 18px; height: 18px; border-radius: 50%; opacity: 0;
     border: 2px solid color-mix(in srgb, currentColor 30%, transparent); border-top-color: currentColor; transform: scale(.4);
   }
+  .go__label { font-weight: 500; transition: opacity .25s var(--ease); }
   .go.is-loading .go__arrow { opacity: 0; transform: translateX(14px); }
+  .go.is-loading .go__label { opacity: 0; }
   .go.is-loading .go__spin { opacity: 1; transform: scale(1); animation: auth-spin .7s linear infinite; }
   .go:disabled { cursor: progress; }
 
@@ -162,9 +163,6 @@ const { title } = Astro.props;
   }
   .bubble[data-tip]:hover::after, .bubble[data-tip]:focus-visible::after { opacity: 1; transform: translate(0, -50%); }
 
-  .magnetic { transform: translate(var(--mx, 0px), var(--my, 0px)); transition: transform .8s var(--ease-elastic); }
-  .magnetic.is-pulling { transition-duration: .22s; transition-timing-function: var(--ease-out-expo); }
-  .go.magnetic { transition: transform .8s var(--ease-elastic); }
   .go:active:not(:disabled), .bubble:active:not(:disabled) { scale: .96; }
 
   .auth__form > .auth__error { transition: opacity .25s var(--ease); margin-block: calc(var(--space-1) * -1); }
@@ -179,20 +177,20 @@ const { title } = Astro.props;
   @keyframes auth-shake { 20%, 60% { translate: -6px 0; } 40%, 80% { translate: 6px 0; } }
 
   @media (prefers-reduced-motion: no-preference) {
-    .auth__card { animation: auth-rise .8s var(--ease-out-expo) both; }
-    .auth__logo { animation: auth-rise .9s var(--ease-out-expo) .1s both; }
-    .mask__in { animation: auth-mask 1s var(--ease-out-expo) .25s both; }
-    .auth__form .field, .auth__form .go, .auth__alt { animation: auth-rise .8s var(--ease-out-expo) both; animation-delay: calc(.35s + var(--i, 0) * 90ms); }
+    .auth__card { animation: auth-rise .32s var(--ease-out) both; }
+    .auth__logo { animation: auth-rise .32s var(--ease-out) 30ms both; }
+    .mask__in { animation: auth-mask .32s var(--ease-out) 60ms both; }
+    .auth__form .field, .auth__form .go, .auth__alt { animation: auth-rise .32s var(--ease-out) both; animation-delay: calc(90ms + var(--i, 0) * 30ms); }
     .field.is-error { animation: auth-shake .45s var(--ease) both; }
     .wait__ring { animation: wait-spin 2.4s linear infinite; }
-    .wait__badge { animation: wait-pop .6s var(--ease-out-expo) .5s both; }
-    .wait > * { animation: auth-rise .8s var(--ease-out-expo) both; }
-    .wait > :nth-child(2) { animation-delay: .1s; } .wait > :nth-child(3) { animation-delay: .18s; } .wait > :nth-child(4) { animation-delay: .26s; }
-    .wait > :nth-child(5) { animation-delay: .34s; } .wait > :nth-child(6) { animation-delay: .42s; }
+    .wait__badge { animation: wait-pop .32s var(--ease-out) .2s both; }
+    .wait > * { animation: auth-rise .32s var(--ease-out) both; }
+    .wait > :nth-child(2) { animation-delay: 30ms; } .wait > :nth-child(3) { animation-delay: 60ms; } .wait > :nth-child(4) { animation-delay: 90ms; }
+    .wait > :nth-child(5) { animation-delay: 120ms; } .wait > :nth-child(6) { animation-delay: 150ms; }
     .wait__steps .is-now .wait__dot { animation: wait-pulse 1.8s ease-out infinite; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .field label, .go__fill, .go__arrow, .go__spin, .magnetic, .bubble::after { transition: none; }
+    .field label, .go__fill, .go__arrow, .go__spin, .bubble::after { transition: none; }
     .go.is-loading .go__spin { animation: none; }
   }
 </style>

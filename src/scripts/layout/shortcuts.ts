@@ -27,7 +27,7 @@ async function showShortcuts() {
   const group = (title: string, list: Shortcut[]) => (list.length ? `<div><p class="ui-keys__group">${esc(title)}</p>${list.map(row).join('')}</div>` : '');
   const body = document.createElement('div');
   body.className = 'ui-keys';
-  body.innerHTML = group('Cette page', page) + group('Partout dans le panel', [
+  body.innerHTML = group('Cette page', page) + group('Sur toutes les pages', [
     ...global,
     { keys: 'Escape', title: 'Fermer une fenêtre ou un menu', run: () => {} },
   ]);

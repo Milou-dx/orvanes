@@ -1,26 +1,11 @@
 async function post(url: string, body: object): Promise<any> {
   const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
   const data = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(data.error ?? 'La connexion a échoué. Réessayez, ou consultez le journal du panel.');
+  if (!r.ok) throw new Error(data.error ?? 'Connexion impossible. Réessayez ou consultez le journal du panel.');
   return data;
 }
 
 const byId = <T extends HTMLElement>(id: string) => document.getElementById(id) as T | null;
-
-function magnetic(el: HTMLElement) {
-  el.addEventListener('pointerenter', () => el.classList.add('is-pulling'));
-  el.addEventListener('pointermove', (e) => {
-    const r = el.getBoundingClientRect();
-    const pull = (v: number, size: number) => Math.max(-8, Math.min(8, v * 0.22)) * (size > 80 ? 0.6 : 1);
-    el.style.setProperty('--mx', `${pull(e.clientX - (r.left + r.width / 2), r.width)}px`);
-    el.style.setProperty('--my', `${pull(e.clientY - (r.top + r.height / 2), r.width)}px`);
-  });
-  el.addEventListener('pointerleave', () => {
-    el.classList.remove('is-pulling');
-    el.style.setProperty('--mx', '0px');
-    el.style.setProperty('--my', '0px');
-  });
-}
 
 function directional(el: HTMLElement) {
   const at = (e: PointerEvent) => {
@@ -34,7 +19,6 @@ function directional(el: HTMLElement) {
 
 function effects() {
   if (!matchMedia('(hover: hover) and (prefers-reduced-motion: no-preference)').matches) return;
-  document.querySelectorAll<HTMLElement>('.magnetic').forEach(magnetic);
   document.querySelectorAll<HTMLElement>('.go').forEach(directional);
 }
 

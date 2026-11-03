@@ -115,7 +115,7 @@ document.addEventListener('astro:page-load', () => {
       stateEl.hidden = false;
       stateEl.innerHTML = state.query
         ? emptyStateHTML({ icon: 'search', title: 'Aucun résultat', text: `Aucun élément ne correspond à « ${state.query} » dans ce dossier.`, compact: true })
-        : emptyStateHTML({ icon: 'folder', title: 'Ce dossier est vide', text: 'Glisse des fichiers ici ou utilise Nouveau et Téléverser.', compact: true });
+        : emptyStateHTML({ icon: 'folder', title: 'Ce dossier est vide', text: 'Glissez des fichiers ici ou utilisez Nouveau et Téléverser.', compact: true });
     } else if (!state.loading) {
       stateEl.hidden = true;
       stateEl.innerHTML = '';
@@ -311,6 +311,10 @@ document.addEventListener('astro:page-load', () => {
       return { ok: false, data: { error: 'Le serveur ne répond pas.' } };
     }
   }
+  const dirName = (d: string) => (d === '/' ? 'la racine' : `« ${d.split('/').filter(Boolean).pop()} »`);
+  const reportDone = (n: number, verb: string, destDir: string) => {
+    if (n > 0) toast(`${plural(n, 'élément')} ${verb}${n > 1 ? 's' : ''} dans ${dirName(destDir)}.`, 'success');
+  };
   const reportErrors = (data: any) => { if (data?.errors?.length) toast(data.errors.join('\n'), 'error'); };
 
   async function doDelete(paths: string[]) {
@@ -319,8 +323,8 @@ document.addEventListener('astro:page-load', () => {
     const label = paths.length === 1 ? `« ${names[0]} »` : `ces ${paths.length} éléments`;
     const detail = paths.length > 1 ? names.slice(0, 6).join(', ') + (names.length > 6 ? `… (+${names.length - 6})` : '') : '';
     if (!(await confirmDialog({
-      title: `Supprimer définitivement ${label} ?`,
-      message: `${detail ? detail + '. ' : ''}Cette action est irréversible (pas de corbeille).`,
+      title: `Supprimer ${label} ?`,
+      message: `${detail ? detail + '. ' : ''}Sans corbeille, la suppression est irréversible.`,
       confirmLabel: 'Supprimer', danger: true,
     }))) return;
     const { data } = await post('/api/files/delete', { paths });
@@ -341,6 +345,7 @@ document.addEventListener('astro:page-load', () => {
   async function doMove(paths: string[], destDir: string) {
     const { data } = await post('/api/files/move', { paths, destDir });
     reportErrors(data);
+    reportDone(data?.moved?.length ?? 0, 'déplacé', destDir);
     await reload();
   }
   async function doPaste(destDir = state.cwd) {
@@ -348,6 +353,7 @@ document.addEventListener('astro:page-load', () => {
     const cut = state.clipboard.mode === 'cut';
     const { data } = await post(cut ? '/api/files/move' : '/api/files/copy', { paths: state.clipboard.paths, destDir });
     reportErrors(data);
+    reportDone((cut ? data?.moved : data?.copied)?.length ?? 0, cut ? 'déplacé' : 'copié', destDir);
     if (cut) state.clipboard = null;
     await reload();
   }
@@ -512,7 +518,7 @@ document.addEventListener('astro:page-load', () => {
     if (!res.ok) slot.outerHTML = errorStateHTML({ title: 'Lecture impossible', text: data.error ?? 'Fichier illisible.', compact: true });
     else if (data.binary) slot.outerHTML = emptyStateHTML({ icon: 'file', title: 'Fichier binaire', text: 'Aperçu indisponible. Utilisez Télécharger.', compact: true });
     else {
-      slot.outerHTML = `<pre class="fx-code" tabindex="0">${esc(data.content)}</pre>${data.truncated ? '<p class="fx-note">Fichier long : seule la fin est affichée.</p>' : ''}`;
+      slot.outerHTML = `<pre class="fx-code" tabindex="0">${esc(data.content)}</pre>${data.truncated ? '<p class="fx-note">Fichier long : le panel en affiche la fin.</p>' : ''}`;
       history.replaceState(history.state, '', `/fichiers?path=${encodeURIComponent(state.cwd)}&file=${encodeURIComponent(e.path)}`);
     }
   }

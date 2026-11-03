@@ -7,7 +7,7 @@ Astro.response.status = 404;
 ---
 <AuthLayout title="Page introuvable">
   <h1 class="auth__title">Page introuvable</h1>
-  <p class="auth__lead">L’adresse <span class="mono">{Astro.url.pathname}</span> ne correspond à aucune page du panel.</p>
+  <p class="auth__lead">Le panel n’a aucune page à l’adresse <span class="mono">{Astro.url.pathname}</span>.</p>
   <div class="err__actions">
     <Button variant="primary" href="/">Retour à l’accueil</Button>
     <Button variant="secondary" id="err-back">Page précédente</Button>

@@ -16,7 +16,7 @@ Node.js 22.13 ou plus est requis. Si la machine n'en a pas, l'installation tél�
 Connecté en SSH avec le compte qui fera tourner le panel :
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Drasewave/orvane/master/install.sh | bash
+curl -fsSL https://orvanes.tech/install | bash
 ```
 
 Le script installe le panel dans `~/orvane`, le construit, crée le premier compte administrateur et lance le service systemd utilisateur `orvane`. Il affiche à la fin l'identifiant (`admin`) et un mot de passe généré : notez-le, il n'apparaîtra plus.
@@ -31,7 +31,7 @@ Variables facultatives, à placer devant `bash` :
 | `PANEL_HOST`, `PANEL_PORT`, `PANEL_PUBLIC_URL` | `127.0.0.1`, `4321`, vide | Écrits dans le `.env` créé |
 | `ORVANE_NO_SERVICE=1` | | Pas de service systemd (conteneur, essai) |
 
-Exemple : `curl -fsSL …/install.sh | PANEL_PUBLIC_URL=https://panel.example.com bash`.
+Exemple : `curl -fsSL https://orvanes.tech/install | PANEL_PUBLIC_URL=https://panel.example.com bash`.
 
 Docker n'est pas proposé : le panel pilote systemd, les processus et les fichiers de l'hôte, ce qu'un conteneur isolé ne permet pas.
 

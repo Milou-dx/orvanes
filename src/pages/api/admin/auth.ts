@@ -29,7 +29,7 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
     }
   } catch (e) {
     if (e instanceof a.AuthError) return json({ error: e.message }, e.status);
-    return json({ error: 'L’opération a échoué. Consultez le journal du panel.' }, 500);
+    return json({ error: 'Échec de l’opération. Détails dans le journal du panel.' }, 500);
   }
 };
 

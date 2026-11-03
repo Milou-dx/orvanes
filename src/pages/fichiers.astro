@@ -52,7 +52,7 @@ const cwd = Astro.url.searchParams.get('path') ?? '/';
 
     <div class="fx-body">
       <nav class="fx-nav" id="fx-nav" aria-label="Volet de navigation">
-        <p class="fx-nav__h">Ce PC</p>
+        <p class="fx-nav__h">Stockage du serveur</p>
         {disks.map((d: any) => (
           <>
             <button class="fx-disk" type="button" data-path={d.path}>
@@ -135,7 +135,7 @@ const cwd = Astro.url.searchParams.get('path') ?? '/';
   .fx-crumbs { display: flex; align-items: center; gap: var(--space-0-5); padding-inline: var(--space-2); overflow-x: auto; scrollbar-width: none; white-space: nowrap; width: 100%; }
   .fx-crumbs[hidden] { display: none; }
   .fx-crumb { display: inline-flex; align-items: center; padding: var(--space-0-5) var(--space-1-5, var(--space-1)); border-radius: var(--radius-xs); color: var(--text-primary); text-decoration: none; font-size: var(--dense-size); }
-  @media (pointer: coarse) { .fx-crumb { min-height: 44px; padding-inline: var(--space-2); } }
+  @media (pointer: coarse) { .fx-th { min-height: 44px; } .fx-crumb { min-height: 44px; padding-inline: var(--space-2); } }
   .fx-crumb:hover { background: var(--bg-hover); }
   .fx-crumb:focus-visible { outline: 2px solid var(--focus-ring); }
   .fx-crumb[aria-current] { font-weight: var(--weight-semibold); }
@@ -169,7 +169,7 @@ const cwd = Astro.url.searchParams.get('path') ?? '/';
     border: var(--border-width) solid transparent; border-radius: var(--radius-sm); cursor: pointer;
     transition: background-color var(--dur-fast) var(--ease-out);
   }
-  .fx-disk > svg { color: var(--accent); flex-shrink: 0; margin-top: var(--space-0-5); }
+  .fx-disk > svg { color: var(--accent-text); flex-shrink: 0; margin-top: var(--space-0-5); }
   .fx-disk:hover { background: var(--bg-hover); }
   .fx-disk.is-active { background: var(--accent-subtle); border-color: var(--accent-border); }
   .fx-disk:focus-visible, .fx-node:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
@@ -200,7 +200,7 @@ const cwd = Astro.url.searchParams.get('path') ?? '/';
   .fx-th:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
   .fx-table th.al-right .fx-th { justify-content: flex-end; }
   .fx-arrow { display: inline-flex; color: var(--text-secondary); }
-  .fx-table th:hover { background: var(--bg-hover); }
+  .fx-table th[data-sort]:hover { background: var(--bg-hover); }
   .fx-table .fx-chk { width: 2.25rem; text-align: center; padding-inline: var(--space-2); }
   .fx-chk input { margin: 0; accent-color: var(--accent); cursor: pointer; }
   .fx-row { cursor: default; user-select: none; }
@@ -217,10 +217,10 @@ const cwd = Astro.url.searchParams.get('path') ?? '/';
   .fx-edit { height: var(--control-h-sm); padding-inline: var(--space-2); width: 16rem; max-width: 100%; background: var(--control-fill); color: var(--text-primary); border: var(--border-width) solid var(--accent); border-radius: var(--radius-sm); font: inherit; font-size: var(--dense-size); }
   .fx-edit:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
   .fx-retry { display: flex; justify-content: center; gap: var(--space-2); padding-bottom: var(--space-4); }
-  .fx-drop { position: absolute; inset: var(--space-2); z-index: var(--z-pane); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-2); color: var(--accent); background: color-mix(in srgb, var(--bg-surface) 88%, transparent); border: 2px dashed var(--accent); border-radius: var(--radius-md); pointer-events: none; }
+  .fx-drop { position: absolute; inset: var(--space-2); z-index: var(--z-pane); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-2); color: var(--accent-text); background: color-mix(in srgb, var(--bg-surface) 88%, transparent); border: 2px dashed var(--accent); border-radius: var(--radius-md); pointer-events: none; }
   .fx-drop[hidden] { display: none; }
   .fx-status { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-4); border-top: var(--border-width) solid var(--border); font-size: var(--meta-size); color: var(--text-secondary); }
-  .fx-clip { color: var(--accent); }
+  .fx-clip { color: var(--accent-text); }
   .fx-status__keys { margin-left: auto; display: inline-flex; gap: var(--space-1); opacity: 0.8; }
 
   .fx-pv { flex-direction: column; overflow: hidden; max-height: calc(100dvh - 14rem); }

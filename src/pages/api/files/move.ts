@@ -25,7 +25,7 @@ export const POST: APIRoute = async ({ request }) => {
       moved.push(p);
     } catch (e: any) {
       const name = p.split('/').pop() || p;
-      errors.push(`${name} : ${e?.code === 'EEXIST' ? 'existe déjà à destination' : e?.code === 'EACCES' ? 'déplacement refusé' : (e?.message ?? 'échec')}`);
+      errors.push(`${name} : ${e?.code === 'EEXIST' ? 'existe déjà à destination' : e?.code === 'EACCES' ? 'droits insuffisants pour déplacer' : (e?.message ?? 'échec')}`);
     }
   }
   return json({ moved, errors }, errors.length && !moved.length ? 400 : 200);
