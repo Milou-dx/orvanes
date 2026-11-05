@@ -239,6 +239,29 @@ a { color: var(--accent-text); text-underline-offset: 3px; }
 .dlg__body p { margin: 0 0 var(--space-2); white-space: pre-wrap; overflow-wrap: anywhere; }
 .dlg__body p:last-child { margin-bottom: 0; }
 .dlg__input { width: 100%; margin-top: var(--space-2); }
+/* Formulaire de commentaire (scripts/layout/feedback.ts). */
+.fb { display: flex; flex-direction: column; gap: var(--space-3); }
+.fb__kinds { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); }
+.fb__kind {
+  display: flex; flex-direction: column; align-items: center; gap: var(--space-1); padding: var(--space-3) var(--space-2);
+  border: var(--border-width) solid var(--border); border-radius: var(--radius-md); background: var(--bg-surface);
+  color: var(--text-secondary); font: inherit; font-size: var(--dense-size); cursor: pointer; transition: border-color 120ms, background-color 120ms;
+}
+.fb__kind:hover { background: var(--bg-hover); }
+.fb__kind[aria-checked='true'] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); color: var(--text-primary); }
+.fb__kind[aria-checked='true'] > svg { color: var(--accent); }
+.fb__ctx { display: flex; align-items: center; gap: var(--space-1); margin: 0 !important; padding: var(--space-1) var(--space-2); border-radius: var(--radius-sm); background: var(--bg-hover); font-size: var(--meta-size); color: var(--text-secondary); white-space: nowrap !important; }
+.fb__ctx > span { overflow: hidden; text-overflow: ellipsis; }
+.fb__ctx > svg { flex: none; }
+.fb__text {
+  width: 100%; min-height: 8.5rem; resize: vertical; padding: var(--space-2) var(--space-3); box-sizing: border-box;
+  border: var(--border-width) solid var(--border); border-radius: var(--radius-md); background: var(--bg-surface);
+  color: var(--text-primary); font: inherit; font-size: var(--body-size); line-height: var(--body-lh);
+}
+.fb__text:focus, .dlg .fb__text:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
+.fb__text[aria-invalid='true'] { border-color: var(--danger); }
+.fb__foot { display: flex; justify-content: space-between; margin: 0 !important; font-size: var(--micro-size); color: var(--text-tertiary); }
+.fb__foot kbd { font-family: inherit; padding: 0 4px; border: var(--border-width) solid var(--border); border-radius: 4px; }
 .dlg__actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-2); }
 .dlg__btn {
   min-height: 32px; padding: 0 var(--space-4); border-radius: var(--radius-control); cursor: pointer;
@@ -415,3 +438,7 @@ a { color: var(--accent-text); text-underline-offset: 3px; }
   .mini:active:not(:disabled), .tbtn:active:not(:disabled) { transform: none; }
   :root[data-ui='notion'] .dlg__btn:active:not(:disabled) { transform: none; }
 }
+
+/* Grands écrans : pas d'agrandissement (le zoom rendait tout trop gros), la zone de contenu s'élargit pour occuper l'écran. */
+@media (min-width: 1800px) { .window { --content-max: 1760px; } }
+@media (min-width: 2400px) { .window { --content-max: 2240px; } }

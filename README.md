@@ -21,6 +21,8 @@ curl -fsSL https://orvanes.tech/install | bash
 
 Le script installe le panel dans `~/orvane`, le construit, crée le premier compte administrateur et lance le service systemd utilisateur `orvane`. Il affiche à la fin l'identifiant (`admin`) et un mot de passe généré : notez-le, il n'apparaîtra plus.
 
+Si `orvanes.tech` ne répond pas : `curl -fsSL https://raw.githubusercontent.com/Milou-dx/orvanes/master/install.sh | bash`. Le catalogue d'intégrations reste servi par `magasin.orvanes.tech` (autre source : `ORVANE_MAGASIN_URL`) ; le panel lui-même continue de fonctionner sans lui.
+
 Variables facultatives, à placer devant `bash` :
 
 | Variable | Défaut | Rôle |
@@ -53,11 +55,23 @@ Le panel écoute sur `http://127.0.0.1:4321`, joignable depuis la machine seulem
 
 N'exposez jamais le panel en HTTP sur une adresse publique : il donne la main sur la machine, terminal compris. Il refuse de démarrer sur une autre adresse que `127.0.0.1` tant que la protection par mot de passe est désactivée.
 
-Connectez-vous avec le compte administrateur. La page **Accès** gère les autres comptes, leurs onglets et la connexion Google. Mot de passe perdu :
+Connectez-vous avec le compte administrateur. La page **Utilisateurs** gère les autres comptes, leurs onglets et la connexion Google. Mot de passe perdu :
 
 ```bash
 cd ~/orvane && node scripts/admin.mjs reset admin
 ```
+
+**Double authentification.** Activez-la dans **Paramètres**, surtout pour les administrateurs : le panel donne un terminal sur la machine. Elle s'applique à la connexion par mot de passe ; la connexion Google suit la protection de votre compte Google. `admin.mjs reset` la retire si le téléphone est perdu.
+
+Reverse proxy sur une autre machine ou une autre adresse que `127.0.0.1` : déclarez son adresse dans `PANEL_TRUSTED_PROXIES`, sinon tous les clients partagent le même compteur d'essais de connexion.
+
+## Sauvegarde
+
+```bash
+~/orvane/scripts/backup.sh [dossier]    # data/ et .env, défaut ~/orvane-sauvegardes ; coupure de quelques secondes
+```
+
+Restauration, sur un panel installé : `systemctl --user stop orvane`, `tar -xzf <archive> -C ~/orvane`, puis `systemctl --user start orvane`. L'archive contient vos secrets : copiez-la hors du serveur.
 
 ## Configuration
 
@@ -87,7 +101,7 @@ Après une modification, redémarrez : `systemctl --user restart orvane`. `PANEL
 | Minecraft | Serveur Minecraft Java : état, mods, propriétés, sauvegardes, joueurs, console RCON. |
 | Tailscale | Machines, utilisateurs, ACL, DNS et réglages du nœud. |
 
-Ouvrez l'onglet **Modules**, cliquez sur **Installer** : le panel vérifie les commandes requises (par exemple `docker`), lance le script d'installation du module et affiche l'onglet. Sans redémarrage. Renseignez ensuite ses variables dans `.env` s'il en a. La structure d'un module et la façon d'en écrire un sont décrites dans [docs/MODULES.md](docs/MODULES.md).
+Ouvrez l'onglet **Magasin**, cliquez sur **Installer** : le panel vérifie les commandes requises (par exemple `docker`), lance le script d'installation du module, se reconstruit et redémarre (environ une minute, une installation à la fois). Renseignez ensuite ses variables dans `.env` s'il en a. Le jeton Claude partagé avec les comptes Linux liés (`ORVANE_CLAUDE_SHARED_TOKEN_FILE`) engage votre abonnement : vérifiez que les conditions de votre offre autorisent ce partage. La structure d'un module et la façon d'en écrire un sont décrites dans [docs/MODULES.md](docs/MODULES.md).
 
 ## Mise à jour
 
@@ -113,7 +127,7 @@ Le script récupère le code, réinstalle les dépendances si elles ont changé,
 | « Refus de démarrer » dans le journal | `PANEL_HOST` vise une adresse réseau sans protection : `node scripts/admin.mjs init` |
 | Actions refusées (403) derrière le proxy | `PANEL_PUBLIC_URL` absent ou différent de l'adresse du navigateur, puis `scripts/update.sh` |
 | Construction échouée à l'installation | `~/orvane/.cache/build.log` |
-| Module qui ne s'installe pas | sa sortie s'affiche dans **Modules** ; vérifiez `requires.commands` dans son `module.json` |
+| Module qui ne s'installe pas | sa sortie s'affiche dans **Magasin** ; vérifiez `requires.commands` dans son `module.json` |
 
 ## Développement
 
@@ -161,3 +175,7 @@ Conventions :
 - Node 22 charge directement les `.ts` importés par `serve.mjs` (suppression des types seulement) : ces fichiers et ceux qu'ils importent gardent l'extension `.ts` ou `.js` dans leurs imports relatifs.
 - Le code serveur résout `data/`, `scripts/` et `modules/<id>/` depuis le dossier de travail (racine du projet) : l'unité systemd fixe `WorkingDirectory`.
 - Les composants d'interface viennent de `src/components/ui/` ; voir `docs/DESIGN-SYSTEM.md`.
+
+## Licence
+
+[AGPL-3.0](LICENSE). Failles de sécurité : voir [SECURITY.md](SECURITY.md). Historique : [CHANGELOG.md](CHANGELOG.md).

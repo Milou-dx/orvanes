@@ -38,10 +38,11 @@ export function createGraph(canvas: HTMLCanvasElement, res: Res, series: Series[
   }
 
   function resize() {
-    const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
-    canvas.width = Math.max(1, Math.round(rect.width * dpr));
-    canvas.height = Math.max(1, Math.round(rect.height * dpr));
+    // Le zoom CSS des grands écrans agrandit rect mais pas clientWidth (unité du dessin) : on en tient compte.
+    const dpr = (window.devicePixelRatio || 1) * (canvas.clientWidth ? rect.width / canvas.clientWidth : 1);
+    canvas.width = Math.max(1, Math.round(rect.width * (window.devicePixelRatio || 1)));
+    canvas.height = Math.max(1, Math.round(rect.height * (window.devicePixelRatio || 1)));
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     draw();
   }

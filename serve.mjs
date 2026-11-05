@@ -6,12 +6,15 @@ import { loadEnv } from './src/server/core/env.js';
 import { existsSync, mkdirSync, realpathSync, unlinkSync, writeFileSync } from 'node:fs';
 import zlib, { brotliCompressSync, gzipSync } from 'node:zlib';
 import { readFile } from 'node:fs/promises';
-import { extname, join } from 'node:path';
+import { delimiter, dirname, extname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+// Le Node téléchargé par install.sh n'est pas dans le PATH du service : les modules doivent le trouver.
+process.env.PATH = `${dirname(process.execPath)}${delimiter}${process.env.PATH ?? ''}`;
 const DIST = realpathSync(process.env.ORVANE_DIST ?? fileURLToPath(new URL('./dist/', import.meta.url)));
 const { handler } = await import(pathToFileURL(join(DIST, 'server/entry.mjs')).href);
 const { attachShellWebSocket } = await import('./src/server/shell/ws-shell.js');
 const { closeUnclaimedUpgrade, handleHookRequest } = await import('./src/server/modules/request-hooks.js');
+const { clientIp } = await import('./src/server/core/client-ip.js');
 const { allowUpgrade, isEnabled: isAuthEnabled } = await import('./src/server/auth/auth-core.js');
 const modules = (await import('./src/server/modules/registry.js')).default;
 
@@ -81,6 +84,7 @@ async function serveAsset(req, res) {
 
 const hooks = [];
 const server = http.createServer((req, res) => {
+  req.headers['x-forwarded-for'] = clientIp(req.socket.remoteAddress, req.headers['x-forwarded-for']);
   if (handleHookRequest(hooks, (id) => modules.isInstalled(id), req, res)) return;
   serveAsset(req, res).then(
     (served) => { if (!served) handler(req, res); },

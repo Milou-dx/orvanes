@@ -1,14 +1,11 @@
 ---
 import PanelLayout from '../layouts/PanelLayout.astro';
-import Card from '../components/ui/Card.astro';
-import Button from '../components/ui/Button.astro';
-import DataTable from '../components/ui/DataTable.astro';
-import Toolbar from '../components/ui/Toolbar.astro';
-import Select from '../components/ui/Select.astro';
-import Kbd from '../components/ui/Kbd.astro';
+import Icon from '../components/ui/Icon.astro';
+import '../styles/vault.css';
 import os from 'node:os';
 import { tabAllowed } from '../layouts/nav';
 
+/** Recomposé avec les blocs du Vault (dashboardblocks, MIT) : stat-group-01 (chiffres clés), leaderboard-05 (plus gourmands), metric-list-03 (barres), data-table-01 (liste), dashboard-header (filtres). */
 export const prerender = false;
 
 const cores = os.cpus().length || 1;
@@ -16,39 +13,103 @@ const panelUser = os.userInfo().username;
 const canTerminal = tabAllowed(Astro.locals)('terminal');
 ---
 <PanelLayout title="Processus" refreshMs={null}>
-  {canTerminal && <Button slot="actions" variant="secondary" icon="terminal" href="/terminal">Ouvrir le terminal</Button>}
-  <Button slot="actions" variant="danger" icon="dismiss" id="pm-end" disabled>Fin de tâche</Button>
+  {canTerminal && <a slot="actions" class="v-btn v-btn--outline" href="/terminal"><Icon name="terminal" size={16} />Ouvrir le terminal</a>}
+  <button slot="actions" type="button" class="v-btn v-btn--outline v-btn--danger" id="pm-end" disabled><Icon name="dismiss" size={16} />Fin de tâche</button>
 
-  <div id="pm-root" data-cores={cores} data-user={panelUser}>
-    <Toolbar controls="pm" search="Rechercher un nom, un utilisateur ou un PID" topSearch count label="Filtres des processus">
-      <Select slot="left" id="pm-user" label="Filtrer par utilisateur">
-        <option value="">Tous les utilisateurs</option>
-        <option value="system">SYSTÈME</option>
-        <option value="user">Panel</option>
-        <option value="other">Autres comptes</option>
-      </Select>
-      <Button slot="left" variant="secondary" size="sm" icon="layers" id="pm-group" aria-pressed="false">Grouper par nom</Button>
-      <Button slot="right" variant="ghost" size="sm" icon="refresh" id="pm-refresh">Actualiser</Button>
-    </Toolbar>
+  <div id="pm-root" class="v-page v-page--wide" data-cores={cores} data-user={panelUser}>
+    <div class="v-alert v-alert--warn" id="pm-stale" role="status" hidden>
+      <strong>Données non actualisées</strong>
+      <span>Nouvelle tentative en cours.</span>
+    </div>
 
-    <p class="pm-sum">
-      <span><span class="pm-sum__k">Processeur</span> <strong id="pm-cpu">-</strong></span>
-      <span><span class="pm-sum__k">Mémoire</span> <strong id="pm-mem">-</strong></span>
-      <span><span class="pm-sum__k">Processus</span> <strong id="pm-count">-</strong></span>
-      <span class="pm-sum__stale" id="pm-stale" role="status" hidden>Données non actualisées : nouvelle tentative en cours</span>
-    </p>
+    <section class="v-card" aria-label="Résumé des processus">
+      <div class="stats">
+        <div class="stat">
+          <span class="stat__l">Processeur</span>
+          <strong class="stat__v" id="pm-cpu">-</strong>
+          <span class="pm-meter" aria-hidden="true"><i id="pm-cpu-bar"></i></span>
+          <span class="stat__c">{`sur ${cores} ${cores > 1 ? 'cœurs' : 'cœur'}`}</span>
+        </div>
+        <div class="stat">
+          <span class="stat__l">Mémoire</span>
+          <strong class="stat__v" id="pm-mem">-</strong>
+          <span class="pm-meter" aria-hidden="true"><i id="pm-mem-bar"></i></span>
+          <span class="stat__c">utilisée par les processus</span>
+        </div>
+        <div class="stat">
+          <span class="stat__l">Processus</span>
+          <strong class="stat__v" id="pm-count">-</strong>
+          <span class="stat__c" id="pm-run">en cours d’exécution</span>
+        </div>
+        <div class="stat">
+          <span class="stat__l">Plus gourmand</span>
+          <strong class="stat__v stat__v--txt" id="pm-top">-</strong>
+          <span class="stat__c" id="pm-top-note">en processeur</span>
+        </div>
+      </div>
+    </section>
 
     <div class="pm-grid">
-      <Card flush>
-        <DataTable id="pm" client density="compact" skeletonRows={10} maxHeight="640px" caption="Processus en cours d’exécution"
-          columns={[{ key: 'name', label: 'Nom' }]} />
-      </Card>
-
-      <aside class="pm-detail" aria-label="Détails du processus">
-        <div id="pm-detail-body">
-          <p class="text-secondary">Aucun processus sélectionné. <Kbd keys="Delete" /> termine la sélection, clic droit ou touche Menu pour les autres actions.</p>
+      <section class="v-card">
+        <header class="v-card__head">
+          <div class="v-card__titles">
+            <h2 class="v-card__title">Tous les processus</h2>
+            <p class="v-card__desc">Triez par colonne, groupez par nom, ou ouvrez le menu d’une ligne pour terminer un processus.</p>
+          </div>
+        </header>
+        <div class="v-toolbar" role="group" aria-label="Filtres des processus">
+          <input class="v-input" type="search" id="pm-search" placeholder="Rechercher un nom, un utilisateur ou un PID" aria-label="Rechercher un nom, un utilisateur ou un PID"
+                 autocomplete="off" spellcheck="false" data-table-filter="pm" aria-controls="pm-table" data-search-target />
+          <select class="v-select" id="pm-user" aria-label="Filtrer par utilisateur">
+            <option value="">Tous les utilisateurs</option>
+            <option value="system">SYSTÈME</option>
+            <option value="user">Panel</option>
+            <option value="other">Autres comptes</option>
+          </select>
+          <button type="button" class="v-btn v-btn--sm v-btn--outline" id="pm-group" aria-pressed="false"><Icon name="layers" size={16} />Grouper par nom</button>
+          <button type="button" class="v-btn v-btn--sm v-btn--outline pm-refresh" id="pm-refresh"><Icon name="refresh" size={16} />Actualiser</button>
         </div>
-      </aside>
+        <div id="pm" class="v-table-wrap" data-dt="pm" data-dt-client data-noun="processus|processus" data-skeleton="10">
+          <table class="v-table" id="pm-table" aria-busy="true">
+            <caption class="visually-hidden">Processus en cours d’exécution</caption>
+            <thead><tr></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="v-card__foot" data-table-count="pm" aria-live="polite"></p>
+      </section>
+
+      <div class="pm-side">
+        <section class="v-card" aria-label="Plus gros consommateurs">
+          <header class="v-card__head">
+            <div class="v-card__titles">
+              <h2 class="v-card__title">Les plus gourmands</h2>
+              <p class="v-card__desc">Cinq noms de processus en tête, regroupés.</p>
+            </div>
+          </header>
+          <div class="v-toolbar">
+            <div class="v-tabs" id="pm-top-by" role="group" aria-label="Classer par">
+              <button type="button" class="v-tab" data-by="cpu" aria-pressed="true">Processeur</button>
+              <button type="button" class="v-tab" data-by="mem" aria-pressed="false">Mémoire</button>
+            </div>
+          </div>
+          <ul class="v-list" id="pm-lb" aria-live="off"></ul>
+        </section>
+
+        <aside class="v-card" aria-label="Détails du processus">
+          <header class="v-card__head">
+            <div class="v-card__titles">
+              <h2 class="v-card__title">Détails</h2>
+            </div>
+          </header>
+          <div id="pm-detail-body">
+            <div class="v-empty">
+              <p class="v-empty__title">Aucun processus sélectionné</p>
+              <p class="v-empty__text"><kbd class="pm-kbd">Suppr</kbd> termine la sélection, clic droit ou touche Menu pour les autres actions.</p>
+            </div>
+          </div>
+        </aside>
+      </div>
     </div>
   </div>
 
@@ -56,7 +117,7 @@ const canTerminal = tabAllowed(Astro.locals)('terminal');
 
 <script>
   import { mountTable } from '../scripts/ui/table';
-  import { esc, buttonHTML } from '../scripts/ui/html';
+  import { esc, iconSVG } from '../scripts/ui/html';
   import { openMenu as openUiMenu, closeMenu, isMenuOpen } from '../scripts/ui/menu';
   import { registerCommands } from '../scripts/ui/commands';
   import { confirmDialog, toast } from '../scripts/ui/dialog';
@@ -70,6 +131,8 @@ const canTerminal = tabAllowed(Astro.locals)('terminal');
   let panelUser = '';
   const userLabel = (u: string) => (u === 'root' ? 'SYSTÈME' : u);
   const isKernelThread = (p: Proc) => /^\[.*\]$/.test(String(p.command ?? '').trim());
+  const STATE_TONE: Record<string, string> = { R: 'good', D: 'warning', Z: 'bad', T: 'warning', t: 'warning' };
+  const stateHTML = (st: string) => { const l = stateLabel(st); return l ? `<span class="v-status v-status--${STATE_TONE[st[0]] ?? 'info'}">${l}</span>` : ''; };
   const heat = (v: number, scale: number) => Math.max(0, Math.min(1, v / scale)).toFixed(2);
 
   document.addEventListener('astro:page-load', () => {
@@ -113,7 +176,7 @@ const canTerminal = tabAllowed(Astro.locals)('terminal');
       columns: [
         { key: 'name', label: 'Nom', sortable: true, nowrap: true,
           render: (r: Row) => ({ html: `<span title="${esc(r.command)}">${esc(r.name)}</span>${r.count > 1 ? ` <span class="pm-n">(${r.count})</span>` : ''}` }) },
-        { key: 'state', label: 'Statut', sortable: true, muted: true, nowrap: true, hideBelow: 'lg', render: (r: Row) => stateLabel(r.state) },
+        { key: 'state', label: 'Statut', sortable: true, nowrap: true, hideBelow: 'lg', render: (r: Row) => ({ html: stateHTML(r.state) }) },
         { key: 'cpu', label: 'Processeur', type: 'number', align: 'right', sortable: true,
           render: (r: Row) => ({ html: `<span data-h="${heat(r.cpu, 25)}">${esc(fmtNum(r.cpu, 1))} %</span>` }) },
         { key: 'mem', label: 'Mémoire', type: 'number', align: 'right', sortable: true,
@@ -123,7 +186,7 @@ const canTerminal = tabAllowed(Astro.locals)('terminal');
         { key: 'user', label: 'Utilisateur', sortable: true, muted: true, hideBelow: 'lg',
           render: (r: Row) => userLabel(r.user) },
         { key: 'actions', label: 'Actions', actions: true, hideLabel: true,
-          render: (r: Row) => ({ html: buttonHTML(`Actions pour ${r.name}`, { variant: 'ghost', size: 'sm', icon: 'more', iconOnly: true, className: 'pm-more', data: { key: r.key } }).replace('<button ', '<button aria-haspopup="menu" aria-expanded="false" ') }) },
+          render: (r: Row) => ({ html: `<button type="button" class="v-btn v-btn--ghost v-btn--icon pm-more" aria-haspopup="menu" aria-expanded="false" aria-label="Actions pour ${esc(r.name)}" title="Actions pour ${esc(r.name)}" data-key="${esc(r.key)}">${iconSVG('more', 16)}</button>` }) },
       ],
       rowKey: 'key',
       sort: { key: 'cpu', dir: 'desc' },
@@ -154,19 +217,19 @@ const canTerminal = tabAllowed(Astro.locals)('terminal');
     }
 
     // Gabarit construit une seule fois par sélection ; les valeurs sont mises à jour en place (le focus reste sur les boutons).
-    const IDLE = '<p class="text-secondary">Aucun processus sélectionné. Clic droit ou touche Menu sur une ligne pour les actions.</p>';
+    const IDLE = '<div class="v-empty"><p class="v-empty__title">Aucun processus sélectionné</p><p class="v-empty__text">Clic droit ou touche Menu sur une ligne pour les actions.</p></div>';
     let detailKey: string | null = null;
-    const val = (v: string, mono = false) => (v ? (mono ? `<span class="is-mono">${esc(v)}</span>` : esc(v)) : '<span class="text-tertiary">Non renseigné</span>');
+    const val = (v: string, mono = false) => (v ? (mono ? `<span class="v-mono">${esc(v)}</span>` : esc(v)) : '<span class="v-muted">Non renseigné</span>');
     const fields = (r: Row): Record<string, string> => ({
       pid: val(r.pids.slice(0, 12).join(', ') + (r.pids.length > 12 ? '…' : ''), true),
       user: val(r.user === 'plusieurs' ? 'Plusieurs comptes' : userLabel(r.user)),
-      state: val(stateLabel(r.state) || 'En veille'),
+      state: stateHTML(r.state) || val('En veille'),
       cpu: val(`${fmtNum(r.cpu, 1)} %`),
       mem: val(`${fmtNum(r.mem, 1)} %`),
       cmd: val(r.command, true),
     });
     const LABELS: [string, string][] = [['pid', 'PID'], ['user', 'Utilisateur'], ['state', 'Statut'], ['cpu', 'Processeur'], ['mem', 'Mémoire'], ['cmd', 'Commande']];
-    const act = (label: string, a: string, danger = false) => buttonHTML(label, { variant: danger ? 'danger' : 'secondary', size: 'sm', data: { act: a } });
+    const act = (label: string, a: string, danger = false) => `<button type="button" class="v-btn v-btn--sm v-btn--outline${danger ? ' v-btn--danger' : ''}" data-act="${a}">${esc(label)}</button>`;
     function paintDetail() {
       const r = rowByKey(st.selected);
       if (!r) { if (detailKey !== null || !detail.firstElementChild) detail.innerHTML = IDLE; detailKey = null; return; }
@@ -174,10 +237,11 @@ const canTerminal = tabAllowed(Astro.locals)('terminal');
         detailKey = r.key;
         const f = fields(r);
         detail.innerHTML = `
-        <section class="sgroup"><h2 class="sgroup__title">Détails</h2><div class="sgroup__rows">
-          <div class="srow srow--plain"><span class="srow__txt"><span class="srow__title pm-d__name">${esc(r.name)}${r.count > 1 ? ` <span class="pm-n">(${r.count} processus)</span>` : ''}</span></span></div>
-          ${LABELS.map(([k, l]) => `<div class="srow srow--plain"><span class="srow__txt"><span class="srow__title">${l}</span></span><span class="srow__end" data-f="${k}">${f[k]}</span></div>`).join('')}
-        </div></section>
+        <div class="pm-d__id"><span class="v-avatar" aria-hidden="true">${esc((r.name[0] ?? '?').toUpperCase())}</span>
+          <div class="v-who"><span class="v-who__name pm-d__name">${esc(r.name)}</span><span class="v-who__sub">${r.count > 1 ? `${r.count} processus` : 'Processus'}</span></div></div>
+        <ul class="v-list">
+          ${LABELS.map(([k, l]) => `<li><span class="v-label">${l}</span><span class="pm-d__v" data-f="${k}">${f[k]}</span></li>`).join('')}
+        </ul>
         <div class="pm-d__actions">
           ${act('Fin de tâche', 'end', true)}${act('Forcer la fermeture', 'kill', true)}${act('Copier le PID', 'pid')}${act('Copier la commande', 'cmd')}
         </div>`;
@@ -317,6 +381,35 @@ const canTerminal = tabAllowed(Astro.locals)('terminal');
     document.addEventListener('keydown', onKey);
 
     const sumCpu = document.getElementById('pm-cpu')!, sumMem = document.getElementById('pm-mem')!, sumCount = document.getElementById('pm-count')!;
+    const cpuBar = document.getElementById('pm-cpu-bar')!, memBar = document.getElementById('pm-mem-bar')!;
+    const runEl = document.getElementById('pm-run')!, topEl = document.getElementById('pm-top')!, topNote = document.getElementById('pm-top-note')!;
+    const lb = document.getElementById('pm-lb')!, byTabs = document.getElementById('pm-top-by')!;
+    let by: 'cpu' | 'mem' = 'cpu';
+
+    // Classement (leaderboard-05) : noms regroupés, barre relative au premier.
+    function renderTop() {
+      const g = new Map<string, { cpu: number; mem: number; n: number; command: string }>();
+      for (const p of st.procs) {
+        const e = g.get(p.name) ?? { cpu: 0, mem: 0, n: 0, command: p.command };
+        e.cpu += (p.cpu || 0) / cores; e.mem += p.mem || 0; e.n++; g.set(p.name, e);
+      }
+      const rank = (k: 'cpu' | 'mem') => [...g].sort((a, b) => b[1][k] - a[1][k]);
+      const list = rank(by).slice(0, 5);
+      const max = list[0]?.[1][by] || 1;
+      lb.innerHTML = list.length ? list.map(([name, e], i) =>
+        `<li style="--v:${Math.max(2, (e[by] / max) * 100).toFixed(0)}%" title="${esc(e.command)}"><span class="pm-rk">${i + 1}</span><span class="v-who"><span class="v-who__name">${esc(name)}</span>${e.n > 1 ? `<span class="v-who__sub">${e.n} processus</span>` : ''}</span><span class="v-num pm-lb__v">${esc(fmtNum(e[by], 1))} %</span></li>`).join('')
+        : '<li class="v-muted">Aucune donnée.</li>';
+      const [tn, te] = rank('cpu')[0] ?? ['-', { cpu: 0 }];
+      topEl.textContent = tn; topEl.title = tn;
+      topNote.textContent = tn === '-' ? 'en processeur' : `${fmtNum(te.cpu, 1)} % du processeur`;
+    }
+    byTabs.addEventListener('click', (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-by]');
+      if (!b) return;
+      by = b.dataset.by === 'mem' ? 'mem' : 'cpu';
+      byTabs.querySelectorAll<HTMLElement>('[data-by]').forEach((t) => t.setAttribute('aria-pressed', String(t === b)));
+      renderTop();
+    });
     async function refresh() {
       try {
         const res = await fetch('/api/processes/list', { cache: 'no-store' });
@@ -325,9 +418,14 @@ const canTerminal = tabAllowed(Astro.locals)('terminal');
         st.procs = ((data.processes ?? []) as Proc[]).filter((p) => !isKernelThread(p));
         st.loaded = true;
         staleEl.hidden = true;
-        sumCpu.textContent = `${fmtNum(Math.min(100, st.procs.reduce((s, p) => s + (p.cpu || 0), 0) / cores), 0)} %`;
-        sumMem.textContent = `${fmtNum(Math.min(100, st.procs.reduce((s, p) => s + (p.mem || 0), 0)), 0)} %`;
+        const cpuTot = Math.min(100, st.procs.reduce((s, p) => s + (p.cpu || 0), 0) / cores);
+        const memTot = Math.min(100, st.procs.reduce((s, p) => s + (p.mem || 0), 0));
+        sumCpu.textContent = `${fmtNum(cpuTot, 0)} %`;
+        sumMem.textContent = `${fmtNum(memTot, 0)} %`;
+        cpuBar.style.width = `${cpuTot}%`; memBar.style.width = `${memTot}%`;
         sumCount.textContent = String(st.procs.length);
+        runEl.textContent = `dont ${st.procs.filter((p) => p.state.startsWith('R')).length} en cours`;
+        renderTop();
         if (frozen()) { paintSelection(); paintDetail(); }
         else redraw();
       } catch (err) {
@@ -364,22 +462,87 @@ const canTerminal = tabAllowed(Astro.locals)('terminal');
 </script>
 
 <style>
-  .pm-sum { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-6); margin: var(--space-3) 0; font-size: var(--dense-size); line-height: var(--dense-lh); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
-  .pm-sum strong { color: var(--text-primary); font-weight: var(--weight-semibold); }
-  .pm-sum__stale { color: var(--warning); }
-  .pm-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: var(--space-4); align-items: start; }
-  .pm-detail { position: sticky; top: var(--space-4); min-width: 0; }
+  .pm-grid { display: grid; grid-template-columns: minmax(0, 1fr) 21rem; gap: 1.5rem; align-items: start; }
+  .pm-side { position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 1.5rem; min-width: 0; }
+  .v-alert[hidden] { display: none; }
 
-  #pm-root :global(.pm-n) { color: var(--text-secondary); }
-  #pm-root :global(td.pm-heat) { background: color-mix(in srgb, var(--heat-hi) calc(var(--h) * 100%), var(--heat-lo)); font-variant-numeric: tabular-nums; }
-  #pm-root :global(tr.pm-sel td),
-  #pm-root :global(tr.pm-sel td.pm-heat) { background: var(--accent-subtle); }
-  #pm-root :global(.pm-d__name) { font-weight: var(--weight-semibold); overflow-wrap: anywhere; }
-  #pm-root :global(.pm-d__actions) { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-4); }
-  #pm-root :global(.srow__end) { overflow-wrap: anywhere; text-align: right; min-width: 0; }
+  /* stat-group-01 */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 1.5rem 0; }
+  .v-card > .stats { padding-inline: 0; }
+  .stat { display: flex; flex-direction: column; gap: 0.25rem; padding-inline: 1.5rem; min-width: 0; }
+  .stat + .stat { border-left: 1px solid var(--border); }
+  .stat__l { font-size: 0.875rem; color: var(--text-secondary); }
+  .stat__v { font-size: 2rem; line-height: 1.1; font-weight: 300; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+  .stat__v--txt { font-size: 1.375rem; line-height: 1.6; font-weight: 500; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .stat__c { font-size: 0.75rem; color: var(--text-secondary); }
+  /* metric-list-03 : barre fine */
+  .pm-meter { display: block; height: 0.375rem; border-radius: 999px; background: var(--bg-hover); overflow: hidden; }
+  .pm-meter > i { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--accent); transition: width 400ms ease; }
+
+  /* tableau (data-table-01) */
+  .v-card > .v-table-wrap { padding-inline: 0; border-top: 1px solid var(--border); margin-top: -0.5rem; }
+  .v-card > .v-toolbar { padding-block: 0; }
+  .v-toolbar > .v-select { flex: none; }
+  .v-toolbar .pm-refresh { margin-left: auto; }
+  #pm-group[aria-pressed='true'] { background: var(--accent-subtle); border-color: var(--accent); color: var(--accent-text); }
+  #pm.v-table-wrap { max-height: 640px; overflow: auto; }
+  #pm .v-table thead :global(th) { position: sticky; top: 0; z-index: 1; background: var(--bg-surface); }
+  .v-card__foot:empty { display: none; }
+  .pm-kbd { padding: 0 0.3rem; border: 1px solid var(--border); border-radius: 0.25rem; font: 0.75rem var(--font-mono); }
+
+  /* leaderboard-05 : barre derrière la ligne */
+  #pm-lb > :global(li) { position: relative; isolation: isolate; padding-inline: 0.5rem; }
+  #pm-lb > :global(li)::before { content: ''; position: absolute; inset: 0.125rem 0; width: var(--v, 0); z-index: -1; border-radius: 0.375rem; background: color-mix(in srgb, var(--accent) 20%, transparent); transition: width 400ms ease; }
+  #pm-lb > :global(li):first-child::before { background: color-mix(in srgb, var(--accent) 32%, transparent); }
+  #pm-lb :global(.pm-rk) { width: 1.25rem; text-align: center; font-size: 0.75rem; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+  #pm-lb :global(.pm-lb__v) { min-width: 3.5rem; font-size: 0.8125rem; }
+
+  /* détail du processus */
+  #pm-detail-body :global(.pm-d__id) { display: flex; align-items: center; gap: 0.75rem; padding-bottom: 1rem; }
+  #pm-detail-body :global(.pm-d__name) { overflow-wrap: anywhere; white-space: normal; }
+  #pm-detail-body :global(.v-list > li) { align-items: baseline; justify-content: space-between; }
+  #pm-detail-body :global(.pm-d__v) { min-width: 0; font-size: 0.875rem; overflow-wrap: anywhere; text-align: right; }
+  #pm-detail-body :global(.pm-d__actions) { display: flex; flex-wrap: wrap; gap: 0.5rem; padding-top: 1rem; }
+
+  /* lignes générées par scripts/ui/table.ts et pm */
+  :global(#pm .v-table td.is-mono) { font-family: var(--font-mono); font-size: 0.8125rem; font-variant-ligatures: none; }
+  :global(#pm .v-table td.is-muted) { color: var(--text-secondary); }
+  :global(#pm .v-table td.is-nowrap) { white-space: nowrap; }
+  :global(#pm .v-table th.al-right), :global(#pm .v-table td.al-right) { text-align: right; }
+  :global(#pm .v-table td.is-actions) { width: 1%; white-space: nowrap; text-align: right; }
+  :global(#pm .v-table tr.is-clickable) { cursor: pointer; }
+  :global(#pm .v-table tr.is-clickable:focus-visible) { outline: 2px solid var(--accent); outline-offset: -2px; }
+  :global(#pm .pm-n) { color: var(--text-secondary); }
+  :global(#pm tr.pm-sel td) { background: var(--accent-subtle); }
+  :global(#pm td.pm-heat) { position: relative; padding-bottom: 0.875rem; font-variant-numeric: tabular-nums; }
+  :global(#pm td.pm-heat::after) {
+    content: ''; position: absolute; left: 0.5rem; right: 0.5rem; bottom: 0.3125rem; height: 3px; border-radius: 2px;
+    background: linear-gradient(90deg, color-mix(in srgb, var(--danger) calc(var(--h) * 100%), var(--accent)) calc(var(--h) * 100%), var(--bg-hover) 0);
+  }
+  :global(#pm .dt__sort) { display: inline-flex; align-items: center; gap: 0.25rem; margin: 0 -0.25rem; padding: 0.125rem 0.25rem; border: 0; border-radius: 0.375rem; background: transparent; color: inherit; font: inherit; cursor: pointer; white-space: nowrap; }
+  :global(#pm .al-right > .dt__sort) { flex-direction: row-reverse; }
+  :global(#pm .dt__sort:hover) { background: var(--bg-hover); color: var(--text-primary); }
+  :global(#pm .dt__arrow) { width: 0.75rem; height: 0.75rem; opacity: 0; transition: opacity 150ms, transform 150ms; }
+  :global(#pm .dt__sort:hover .dt__arrow), :global(#pm .dt__sort:focus-visible .dt__arrow) { opacity: 0.6; }
+  :global(#pm th[aria-sort] .dt__sort) { color: var(--text-primary); }
+  :global(#pm th[aria-sort] .dt__arrow) { opacity: 1; color: var(--accent-text); }
+  :global(#pm th[aria-sort='descending'] .dt__arrow) { transform: rotate(180deg); }
+  :global(#pm .dt__state td) { padding: 0; }
+  :global(#pm .dt__state:hover) { background: transparent; }
+  :global(#pm .ui-state) { display: grid; justify-items: center; gap: 0.5rem; padding: 2.5rem 1rem; text-align: center; }
+  :global(#pm .ui-state__icon) { color: var(--text-secondary); }
+  :global(#pm .ui-state__title) { margin: 0; font-size: 0.875rem; font-weight: 500; color: var(--text-primary); }
+  :global(#pm .ui-state__text) { margin: 0; max-width: 36ch; font-size: 0.875rem; color: var(--text-secondary); }
+  :global(#pm .ui-state__detail) { margin: 0; max-width: 100%; overflow: auto; font: 0.75rem var(--font-mono); color: var(--text-secondary); }
+  :global(#pm .dt__skel td) { height: 2.5rem; }
+  @media (max-width: 1200px) { :global(#pm .hide-lg) { display: none; } }
 
   @media (max-width: 1200px) {
     .pm-grid { grid-template-columns: minmax(0, 1fr); }
-    .pm-detail { position: static; }
+    .pm-side { position: static; }
+  }
+  @media (max-width: 640px) {
+    .stats { grid-template-columns: 1fr 1fr; }
+    .stat, .stat + .stat { border-left: 0; padding-inline: 1rem; }
   }
 </style>

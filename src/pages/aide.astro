@@ -1,0 +1,153 @@
+---
+/**
+ * Centre d'aide, sur le modèle des pages d'aide de Stripe et Vercel : recherche en tête,
+ * cartes par sujet, questions fréquentes dépliables, raccourcis, puis un appel à écrire.
+ */
+import PanelLayout from '../layouts/PanelLayout.astro';
+import Icon from '../components/ui/Icon.astro';
+import '../styles/vault.css';
+
+export const prerender = false;
+
+const TOPICS = [
+  { href: '/', icon: 'house', label: 'Vue d’ensemble', desc: 'L’état du serveur en un coup d’œil : processeur, mémoire, disque, alertes.' },
+  { href: '/performance', icon: 'gauge', label: 'Performances', desc: 'Courbes en direct du processeur, de la mémoire, du disque et du réseau.' },
+  { href: '/processus', icon: 'clipboardList', label: 'Processus', desc: 'Les programmes en cours, triés par consommation. Arrêtez-en un depuis son menu.' },
+  { href: '/services', icon: 'server', label: 'Services', desc: 'Démarrer, arrêter ou redémarrer un service et lire ses journaux.' },
+  { href: '/fichiers', icon: 'folder', label: 'Fichiers', desc: 'Parcourir, modifier, envoyer et télécharger les fichiers du serveur.' },
+  { href: '/terminal', icon: 'terminal', label: 'Terminal', desc: 'Un shell dans le navigateur, avec les droits du serveur.' },
+  { href: '/logs', icon: 'logs', label: 'Journaux', desc: 'Chercher dans les journaux système, par service et par niveau.' },
+  { href: '/reseau', icon: 'network', label: 'Réseau', desc: 'Ports ouverts et pare-feu. Enregistrez une règle pour qu’elle survive au redémarrage.' },
+  { href: '/modules', icon: 'store', label: 'Magasin', desc: 'Installer, mettre à jour ou retirer des intégrations, chacune avec ses onglets.' },
+  { href: '/acces', icon: 'users', label: 'Utilisateurs', desc: 'Comptes, onglets autorisés par personne, connexion Google, sessions.' },
+] as const;
+
+const FAQ = [
+  ['Je ne vois pas un onglet dont j’ai besoin.', 'Chaque compte n’a accès qu’aux onglets que l’administrateur lui a ouverts. Demandez-lui de l’ajouter dans Utilisateurs.'],
+  ['Comment passer en thème sombre ?', 'Cliquez sur votre nom en bas du menu, puis choisissez Clair, Sombre ou Système. Le choix est gardé dans ce navigateur.'],
+  ['Les chiffres ne bougent plus.', 'L’actualisation se met en pause quand une fenêtre ou un menu est ouvert, et quand l’onglet du navigateur est caché. L’indicateur en haut à droite affiche l’état.'],
+  ['Ma règle de pare-feu a disparu après un redémarrage.', 'Une règle ajoutée dans Réseau s’applique tout de suite mais doit être enregistrée pour rester après un redémarrage du serveur.'],
+  ['Comment me déconnecter de tous mes appareils ?', 'Un administrateur peut fermer vos sessions depuis Utilisateurs, dans le menu de votre compte.'],
+  ['Comment signaler un bug précis ?', 'Surlignez le texte concerné sur la page, puis ouvrez « Envoyer un commentaire » : la sélection est jointe au message.'],
+];
+const KEYS = [['Ctrl/⌘', 'K', 'Palette de commandes : aller à une page, lancer une action'], ['?', '', 'Liste de tous les raccourcis'], ['/', '', 'Rechercher dans la page'], ['Échap', '', 'Fermer une fenêtre ou un menu']];
+---
+<PanelLayout title="Aide" subtitle="Comment se servir du panel" refreshMs={null}>
+  <div class="v-page help">
+    <section class="help__hero">
+      <h2 class="help__title">Comment pouvons-nous vous aider ?</h2>
+      <label class="help__search">
+        <Icon name="search" size={16} />
+        <input type="search" data-help-search placeholder="Rechercher : pare-feu, thème, services…" aria-label="Rechercher dans l’aide" autocomplete="off" />
+      </label>
+    </section>
+
+    <section aria-labelledby="h-topics">
+      <h2 id="h-topics" class="help__h">Par onglet</h2>
+      <div class="help__grid">
+        {TOPICS.map((t) => (
+          <a class="help__card" href={t.href} data-help-item data-astro-prefetch="hover">
+            <span class="help__icon"><Icon name={t.icon} size={18} /></span>
+            <span class="help__card-t">{t.label}</span>
+            <span class="help__card-d">{t.desc}</span>
+          </a>
+        ))}
+      </div>
+    </section>
+
+    <section aria-labelledby="h-faq">
+      <h2 id="h-faq" class="help__h">Questions fréquentes</h2>
+      <div class="v-card help__faq">
+        {FAQ.map(([q, a]) => (
+          <details data-help-item><summary>{q}<Icon name="chevronDown" size={16} /></summary><p>{a}</p></details>
+        ))}
+      </div>
+    </section>
+    <p class="help__none" data-help-none hidden>Aucun résultat. Écrivez-nous plutôt, on vous répond.</p>
+
+    <section aria-labelledby="h-keys">
+      <h2 id="h-keys" class="help__h">Raccourcis clavier</h2>
+      <div class="v-card help__keys">
+        {KEYS.map(([a, b, desc]) => (
+          <div class="v-row"><span>{desc}</span><span class="help__kbd"><kbd>{a}</kbd>{b && <kbd>{b}</kbd>}</span></div>
+        ))}
+      </div>
+    </section>
+
+    <section class="v-card help__cta">
+      <span class="help__icon"><Icon name="message" size={18} /></span>
+      <div class="help__cta-txt">
+        <h2 class="v-card__title">Vous n’avez pas trouvé ?</h2>
+        <p class="v-card__desc">Décrivez le problème ou proposez une amélioration, l’administrateur le reçoit dans Paramètres.</p>
+      </div>
+      <button type="button" class="v-btn v-btn--outline" data-feedback="bug"><Icon name="warning" size={16} />Signaler un bug</button>
+      <button type="button" class="v-btn" data-feedback="idee"><Icon name="spark" size={16} />Proposer une idée</button>
+    </section>
+  </div>
+</PanelLayout>
+
+<script>
+  document.addEventListener('astro:page-load', () => {
+    const input = document.querySelector<HTMLInputElement>('[data-help-search]');
+    if (!input) return;
+    const norm = (v: string) => v.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+    const items = [...document.querySelectorAll<HTMLElement>('[data-help-item]')];
+    input.addEventListener('input', () => {
+      const q = norm(input.value.trim());
+      let shown = 0;
+      for (const it of items) {
+        const hit = !q || norm(it.textContent ?? '').includes(q);
+        it.hidden = !hit;
+        if (hit) shown++;
+        if (it instanceof HTMLDetailsElement) it.open = !!q && hit;
+      }
+      document.querySelectorAll<HTMLElement>('.help section[aria-labelledby]').forEach((s) => { s.hidden = !!q && !s.querySelector('[data-help-item]:not([hidden])') && !!s.querySelector('[data-help-item]'); });
+      document.querySelector<HTMLElement>('[data-help-none]')!.hidden = shown > 0;
+    });
+  });
+</script>
+
+<style>
+  .help { gap: 2rem; }
+  .help__hero {
+    display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 2.5rem 1.5rem; text-align: center;
+    border-radius: 0.875rem; border: 1px solid var(--border);
+    background: var(--bg-surface);
+  }
+  .help__title { margin: 0; font: 600 1.5rem/1.2 var(--font-ui); letter-spacing: -0.02em; color: var(--text-primary); text-wrap: balance; }
+  .help__search {
+    display: flex; align-items: center; gap: 0.5rem; width: min(32rem, 100%); height: 2.75rem; padding: 0 0.875rem;
+    border: 1px solid var(--border); border-radius: 0.625rem; background: var(--bg-surface); color: var(--text-tertiary); box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
+  }
+  .help__search:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
+  .help__search input { flex: 1; min-width: 0; border: 0; background: none; outline: none; color: var(--text-primary); font: 0.9375rem var(--font-ui); }
+  .help__h { margin: 0 0 0.75rem; font: 500 0.8125rem/1 var(--font-ui); color: var(--text-tertiary); }
+  .help__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 0.75rem; }
+  .help__card {
+    display: grid; grid-template-columns: auto 1fr; gap: 0.25rem 0.75rem; padding: 1rem; text-decoration: none;
+    border: 1px solid var(--border); border-radius: 0.75rem; background: var(--bg-surface); transition: border-color 150ms, transform 150ms, box-shadow 150ms;
+  }
+  .help__card:hover { border-color: var(--border-strong); box-shadow: 0 4px 12px rgb(0 0 0 / 0.06); transform: translateY(-1px); }
+  .help__card:focus-visible { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent); }
+  .help__card[hidden] { display: none; }
+  .help__icon { grid-row: span 2; display: inline-grid; place-items: center; width: 2.25rem; height: 2.25rem; border-radius: 0.5rem; background: var(--bg-hover); color: var(--text-secondary); flex: none; }
+  .help__card-t { font: 600 0.9375rem/1.3 var(--font-ui); color: var(--text-primary); }
+  .help__card-d { font-size: 0.8125rem; line-height: 1.45; color: var(--text-secondary); }
+  .help__faq, .help__keys { padding-block: 0.25rem; gap: 0; }
+  .help__faq details + details { border-top: 1px solid var(--border); }
+  .help__faq details[hidden] { display: none; }
+  .help__faq summary { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 0; cursor: pointer; list-style: none; font: 500 0.9375rem/1.4 var(--font-ui); color: var(--text-primary); }
+  .help__faq summary::-webkit-details-marker { display: none; }
+  .help__faq summary :global(svg) { flex: none; color: var(--text-tertiary); transition: transform 200ms; }
+  .help__faq details[open] summary :global(svg) { transform: rotate(180deg); }
+  .help__faq p { margin: 0 0 1rem; font-size: 0.875rem; line-height: 1.55; color: var(--text-secondary); max-width: 60ch; }
+  .help__keys .v-row { padding-inline: 1.5rem; font-size: 0.875rem; color: var(--text-primary); }
+  .help__kbd { display: inline-flex; gap: 0.25rem; }
+  .help__kbd kbd { min-width: 1.75rem; padding: 0.125rem 0.5rem; text-align: center; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 0.375rem; background: var(--bg-surface); font: 500 0.75rem/1.4 var(--font-ui); color: var(--text-secondary); }
+  .help__none { margin: 0; text-align: center; color: var(--text-secondary); }
+  .help__cta { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 1rem; padding: 1.25rem 1.5rem; }
+  .help__cta > :not(.v-btn) { padding-inline: 0; }
+  .help__cta .help__icon { grid-row: auto; }
+  .help__cta-txt { flex: 1 1 16rem; display: flex; flex-direction: column; gap: 0.25rem; }
+  @media (prefers-reduced-motion: reduce) { .help__card, .help__faq summary :global(svg) { transition: none; } .help__card:hover { transform: none; } }
+</style>

@@ -1,18 +1,14 @@
 ---
 import os from 'node:os';
 import PanelLayout from '../layouts/PanelLayout.astro';
-import SettingsGroup from '../components/ui/SettingsGroup.astro';
-import SettingsRow from '../components/ui/SettingsRow.astro';
-import Meter from '../components/ui/Meter.astro';
-import Button from '../components/ui/Button.astro';
 import Icon from '../components/ui/Icon.astro';
-import StatusBadge from '../components/ui/StatusBadge.astro';
-import ErrorState from '../components/ui/ErrorState.astro';
+import '../styles/vault.css';
 import { bytes, duration, num, percent } from '../server/core/format';
 import { safe } from '../server/core/safe';
 import * as sys from '../server/system/system.js';
 import { tabAllowed } from '../layouts/nav';
 
+/** Recomposé avec les blocs du Vault (dashboardblocks, MIT) : metric-list-03 (ressources à choisir), realtime-02 (courbe en direct), stat-group-01 (chiffres), usage-meter-05 (disques), settings (détails). */
 export const prerender = false;
 
 const can = tabAllowed(Astro.locals);
@@ -67,135 +63,188 @@ const TABS = [
 ] as const;
 ---
 <PanelLayout title="Performances" refreshMs={null}>
-  <Button slot="actions" variant="secondary" icon="pause" id="perf-pause" aria-pressed="false">Suspendre</Button>
+  <button slot="actions" type="button" class="v-btn v-btn--outline" id="perf-pause" aria-pressed="false"><Icon name="pause" size={16} /><span class="lbl">Suspendre</span></button>
   {can('processus') && (
-    <Button slot="actions" variant="secondary" href="/processus">
-      <Icon name="activity" size={16} /> Processus
-    </Button>
+    <a slot="actions" class="v-btn v-btn--outline" href="/processus"><Icon name="activity" size={16} />Processus</a>
   )}
   {can('reseau') && (
-    <Button slot="actions" variant="secondary" href="/reseau">
-      <Icon name="network" size={16} /> Détail réseau
-    </Button>
+    <a slot="actions" class="v-btn v-btn--outline" href="/reseau"><Icon name="network" size={16} />Détail réseau</a>
   )}
 
-  <div class="tmwrap">
-  <div class="perf-error" id="perf-error" hidden>
-    <ErrorState compact title="Mesures indisponibles" text="Le panel n’obtient plus de réponse de /api/system/stats. Nouvelle tentative à chaque cycle." />
-  </div>
-
-  <div class="tm" id="tm">
-    <div class="tm__list" role="tablist" aria-label="Ressources" aria-orientation="vertical">
-      {TABS.map((t, i) => (
-        <button type="button" class="tile" role="tab" id={`tab-${t.id}`} data-res={t.id}
-                aria-selected={i === 0 ? 'true' : 'false'} aria-controls={`panel-${t.id}`} tabindex={i === 0 ? 0 : -1}>
-          <canvas class="spark" data-spark={t.id} aria-hidden="true"></canvas>
-          <span class="tile__txt">
-            <span class="tile__name">{t.name}</span>
-            <span class="tile__sub" id={`sub-${t.id}`}>{t.sub}</span>
-          </span>
-        </button>
-      ))}
+  <div class="v-page v-page--wide">
+    <div class="v-alert v-alert--warn" id="perf-error" role="status" hidden>
+      <strong>Mesures indisponibles</strong>
+      <span>Le panel n’obtient plus de réponse de /api/system/stats. Nouvelle tentative à chaque cycle.</span>
     </div>
 
-    <section class="panel" id="panel-cpu" role="tabpanel" aria-labelledby="tab-cpu" data-res="cpu">
-      <header class="panel__head">
-        <h2 class="panel__title">Processeur</h2>
-        <StatusBadge class="pbadge" status="warning" label="En pause" size="sm" />
-        <span class="panel__model">{cores} cœurs · {arch}</span>
-      </header>
-      <p class="cap"><span>% d’utilisation sur 3 minutes</span><span>100 %</span></p>
-      <canvas class="big" id="cpu-graph" role="img" aria-describedby="cpu-use" aria-label="Utilisation du processeur sur 3 minutes"></canvas>
-      <p class="cap"><span>3 minutes</span><span>0</span></p>
-      <div class="cores" id="cpu-cores">
-        {Array.from({ length: cores }, (_, i) => (
-          <div class="core" data-core={i}>
-            <span class="core__label">Cœur {i}</span>
-            <div class="core__track"><div class="core__fill" style="width:0%"></div></div>
-            <span class="core__pct">-</span>
+    <div class="tm" id="tm">
+      <section class="v-card" aria-label="Ressources">
+        <header class="v-card__head">
+          <div class="v-card__titles">
+            <h2 class="v-card__title">Ressources</h2>
+            <p class="v-card__desc">Choisir la mesure à tracer.</p>
           </div>
-        ))}
+          <span class="v-status v-status--good live">En direct</span>
+          <span class="v-status v-status--warning pbadge">En pause</span>
+        </header>
+        <div class="tm__list" role="tablist" aria-label="Ressources" aria-orientation="vertical">
+          {TABS.map((t, i) => (
+            <button type="button" class="tile" role="tab" id={`tab-${t.id}`} data-res={t.id}
+                    aria-selected={i === 0 ? 'true' : 'false'} aria-controls={`panel-${t.id}`} tabindex={i === 0 ? 0 : -1}>
+              <canvas class="spark" data-spark={t.id} aria-hidden="true"></canvas>
+              <span class="v-who">
+                <span class="v-who__name">{t.name}</span>
+                <span class="v-who__sub" id={`sub-${t.id}`}>{t.sub}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <div class="tm__main">
+        <div class="rpanel" id="panel-cpu" role="tabpanel" aria-labelledby="tab-cpu" data-res="cpu">
+          <section class="v-card">
+            <header class="v-card__head">
+              <div class="v-card__titles">
+                <h2 class="v-card__title ttl">Processeur</h2>
+                <p class="v-card__desc">{cores} cœurs · {arch}</p>
+              </div>
+            </header>
+            <dl class="stats">
+              <div class="stat"><dt class="stat__l">Utilisation</dt><dd class="stat__v" id="cpu-use">{cpuPercent != null ? `${num(cpuPercent, 0)} %` : '-'}</dd></div>
+              <div class="stat"><dt class="stat__l">Durée de fonctionnement</dt><dd class="stat__v">{duration(uptime)}</dd></div>
+              <div class="stat"><dt class="stat__l">Charge moyenne (1 · 5 · 15 min)</dt><dd class="stat__v stat__v--sm" id="cpu-load">{loadLine}</dd></div>
+            </dl>
+            <div class="graph">
+              <p class="cap"><span>% d’utilisation sur 3 minutes</span><span>100 %</span></p>
+              <canvas class="big" id="cpu-graph" role="img" aria-describedby="cpu-use" aria-label="Utilisation du processeur sur 3 minutes"></canvas>
+              <p class="cap"><span>3 minutes</span><span>0</span></p>
+            </div>
+          </section>
+          <div class="duo">
+            <section class="v-card">
+              <header class="v-card__head"><div class="v-card__titles"><h3 class="v-card__title">Par cœur</h3></div></header>
+              <div class="cores" id="cpu-cores">
+                {Array.from({ length: cores }, (_, i) => (
+                  <div class="core" data-core={i}>
+                    <span class="core__label">Cœur {i}</span>
+                    <div class="core__track"><div class="core__fill" style="width:0%"></div></div>
+                    <span class="core__pct">-</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+            <section class="v-card">
+              <header class="v-card__head"><div class="v-card__titles"><h3 class="v-card__title">Détails</h3></div></header>
+              <ul class="v-list">
+                {DETAILS.cpu.map((d) => (<li><span class="v-muted">{d.label}</span><span class="val" id={d.id}>{d.value}</span></li>))}
+              </ul>
+            </section>
+          </div>
+        </div>
+
+        <div class="rpanel" id="panel-mem" role="tabpanel" aria-labelledby="tab-mem" data-res="mem" hidden>
+          <section class="v-card">
+            <header class="v-card__head">
+              <div class="v-card__titles">
+                <h2 class="v-card__title ttl">Mémoire</h2>
+                <p class="v-card__desc">{mem ? `${bytes(mem.totalBytes)} installés` : ''}</p>
+              </div>
+            </header>
+            <dl class="stats">
+              <div class="stat"><dt class="stat__l">En cours d’utilisation</dt><dd class="stat__v" id="mem-used">{mem ? bytes(mem.usedBytes) : '-'}</dd></div>
+              <div class="stat"><dt class="stat__l">Disponible</dt><dd class="stat__v" id="mem-avail">{mem ? bytes(mem.availableBytes) : '-'}</dd></div>
+              <div class="stat"><dt class="stat__l">Utilisée</dt><dd class="stat__v" id="mem-pct">{num(memPct, 0)} %</dd></div>
+              <div class="stat"><dt class="stat__l">Fichier d’échange</dt><dd class="stat__v stat__v--sm" id="mem-swap">{mem ? `${bytes(mem.swapUsedBytes)} / ${bytes(mem.swapTotalBytes)}` : '-'}</dd></div>
+            </dl>
+            <div class="graph">
+              <p class="cap"><span>Utilisation de la mémoire</span><span>{mem ? bytes(mem.totalBytes) : '100 %'}</span></p>
+              <canvas class="big" id="mem-graph" role="img" aria-describedby="mem-used" aria-label="Mémoire utilisée sur 3 minutes"></canvas>
+              <p class="cap"><span>3 minutes</span><span>0</span></p>
+            </div>
+          </section>
+          <section class="v-card">
+            <header class="v-card__head"><div class="v-card__titles"><h3 class="v-card__title">Détails</h3></div></header>
+            <ul class="v-list">
+              {DETAILS.mem.map((d) => (<li><span class="v-muted">{d.label}</span><span class="val" id={d.id}>{d.value}</span></li>))}
+            </ul>
+          </section>
+        </div>
+
+        <div class="rpanel" id="panel-disk" role="tabpanel" aria-labelledby="tab-disk" data-res="disk" hidden>
+          <section class="v-card">
+            <header class="v-card__head">
+              <div class="v-card__titles">
+                <h2 class="v-card__title ttl">Disque</h2>
+                <p class="v-card__desc">{disks.length > 1 ? `${disks.length} systèmes de fichiers` : disks[0]?.label ?? ''}</p>
+              </div>
+            </header>
+            <dl class="stats">
+              <div class="stat"><dt class="stat__l">Vitesse de lecture</dt><dd class="stat__v" id="disk-read">-</dd></div>
+              <div class="stat"><dt class="stat__l">Vitesse d’écriture</dt><dd class="stat__v" id="disk-write">-</dd></div>
+            </dl>
+            <div class="graph">
+              <p class="cap"><span class="keys"><span class="key"><i class="sw"></i>Lecture</span><span class="key"><i class="sw sw--dash"></i>Écriture</span></span><span id="disk-scale"></span></p>
+              <canvas class="big" id="disk-graph" role="img" aria-describedby="disk-read disk-write" aria-label="Lecture et écriture disque sur 3 minutes"></canvas>
+              <p class="cap"><span>3 minutes</span><span>0</span></p>
+            </div>
+          </section>
+          <div class="duo">
+            <section class="v-card">
+              <header class="v-card__head"><div class="v-card__titles"><h3 class="v-card__title">Espace disque</h3></div></header>
+              {disks.length === 0 ? (
+                <div class="v-empty"><p class="v-empty__title">Aucun disque détecté</p></div>
+              ) : (
+                <ul class="v-list drives">
+                  {disks.map((d: any) => {
+                    const pc = percent(d.usedBytes, d.totalBytes);
+                    return (
+                      <li>
+                        <div class="drive__top"><span class="v-who__name">{d.label}</span><span class="v-muted">{num(pc, 0)} %</span></div>
+                        <div class:list={['bar', pc >= 90 && 'bar--hot']} role="progressbar" aria-label={d.label} aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(pc)}><i style={`width:${Math.max(0, Math.min(100, pc))}%`}></i></div>
+                        <span class="v-who__sub">{bytes(d.freeBytes)} libres sur {bytes(d.totalBytes)}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </section>
+            <section class="v-card">
+              <header class="v-card__head"><div class="v-card__titles"><h3 class="v-card__title">Détails</h3></div></header>
+              <ul class="v-list">
+                {DETAILS.disk.map((d) => (<li><span class="v-muted">{d.label}</span><span class="val" id={d.id}>{d.value}</span></li>))}
+              </ul>
+            </section>
+          </div>
+        </div>
+
+        <div class="rpanel" id="panel-net" role="tabpanel" aria-labelledby="tab-net" data-res="net" hidden>
+          <section class="v-card">
+            <header class="v-card__head">
+              <div class="v-card__titles">
+                <h2 class="v-card__title ttl">Ethernet</h2>
+                <p class="v-card__desc">Toutes les cartes réseau</p>
+              </div>
+            </header>
+            <dl class="stats">
+              <div class="stat"><dt class="stat__l">Réception</dt><dd class="stat__v" id="net-rx">-</dd></div>
+              <div class="stat"><dt class="stat__l">Envoi</dt><dd class="stat__v" id="net-tx">-</dd></div>
+            </dl>
+            <div class="graph">
+              <p class="cap"><span class="keys"><span class="key"><i class="sw"></i>Réception</span><span class="key"><i class="sw sw--dash"></i>Envoi</span></span><span id="net-scale"></span></p>
+              <canvas class="big" id="net-graph" role="img" aria-describedby="net-rx net-tx" aria-label="Débit réseau sur 3 minutes"></canvas>
+              <p class="cap"><span>3 minutes</span><span>0</span></p>
+            </div>
+          </section>
+          <section class="v-card">
+            <header class="v-card__head"><div class="v-card__titles"><h3 class="v-card__title">Détails</h3></div></header>
+            <ul class="v-list">
+              {DETAILS.net.map((d) => (<li><span class="v-muted">{d.label}</span><span class="val" id={d.id}>{d.value}</span></li>))}
+            </ul>
+          </section>
+        </div>
       </div>
-      <dl class="figs">
-        <div class="fig fig--big"><dt>Utilisation</dt><dd id="cpu-use">{cpuPercent != null ? `${num(cpuPercent, 0)} %` : '-'}</dd></div>
-        <div class="fig fig--big"><dt>Durée de fonctionnement</dt><dd>{duration(uptime)}</dd></div>
-        <div class="fig"><dt>Charge moyenne (1 · 5 · 15 min)</dt><dd id="cpu-load">{loadLine}</dd></div>
-      </dl>
-      <SettingsGroup title="Détails" class="det">
-        {DETAILS.cpu.map((d) => (
-          <SettingsRow title={d.label}><span id={d.id}>{d.value}</span></SettingsRow>
-        ))}
-      </SettingsGroup>
-    </section>
-
-    <section class="panel" id="panel-mem" role="tabpanel" aria-labelledby="tab-mem" data-res="mem" hidden>
-      <header class="panel__head">
-        <h2 class="panel__title">Mémoire</h2>
-        <StatusBadge class="pbadge" status="warning" label="En pause" size="sm" />
-        <span class="panel__model">{mem ? `${bytes(mem.totalBytes)} installés` : ''}</span>
-      </header>
-      <p class="cap"><span>Utilisation de la mémoire</span><span>{mem ? bytes(mem.totalBytes) : '100 %'}</span></p>
-      <canvas class="big" id="mem-graph" role="img" aria-describedby="mem-used" aria-label="Mémoire utilisée sur 3 minutes"></canvas>
-      <p class="cap"><span>3 minutes</span><span>0</span></p>
-      <dl class="figs">
-        <div class="fig fig--big"><dt>En cours d’utilisation</dt><dd id="mem-used">{mem ? bytes(mem.usedBytes) : '-'}</dd></div>
-        <div class="fig fig--big"><dt>Disponible</dt><dd id="mem-avail">{mem ? bytes(mem.availableBytes) : '-'}</dd></div>
-        <div class="fig"><dt>Fichier d’échange</dt><dd id="mem-swap">{mem ? `${bytes(mem.swapUsedBytes)} / ${bytes(mem.swapTotalBytes)}` : '-'}</dd></div>
-        <div class="fig"><dt>Utilisée</dt><dd id="mem-pct">{num(memPct, 0)} %</dd></div>
-      </dl>
-      <SettingsGroup title="Détails" class="det">
-        {DETAILS.mem.map((d) => (
-          <SettingsRow title={d.label}><span id={d.id}>{d.value}</span></SettingsRow>
-        ))}
-      </SettingsGroup>
-    </section>
-
-    <section class="panel" id="panel-disk" role="tabpanel" aria-labelledby="tab-disk" data-res="disk" hidden>
-      <header class="panel__head">
-        <h2 class="panel__title">Disque</h2>
-        <StatusBadge class="pbadge" status="warning" label="En pause" size="sm" />
-        <span class="panel__model">{disks.length > 1 ? `${disks.length} systèmes de fichiers` : disks[0]?.label ?? ''}</span>
-      </header>
-      <p class="cap"><span>Vitesse de transfert (lecture · écriture en pointillé)</span><span id="disk-scale"></span></p>
-      <canvas class="big" id="disk-graph" role="img" aria-describedby="disk-read disk-write" aria-label="Lecture et écriture disque sur 3 minutes"></canvas>
-      <p class="cap"><span>3 minutes</span><span>0</span></p>
-      <dl class="figs">
-        <div class="fig fig--big"><dt>Vitesse de lecture</dt><dd id="disk-read">-</dd></div>
-        <div class="fig fig--big"><dt>Vitesse d’écriture</dt><dd id="disk-write">-</dd></div>
-      </dl>
-      <div class="drives">
-        {disks.map((d: any) => (
-          <Meter label={d.label} value={`${bytes(d.freeBytes)} libres sur ${bytes(d.totalBytes)}`}
-                 percent={percent(d.usedBytes, d.totalBytes)} />
-        ))}
-      </div>
-      <SettingsGroup title="Détails" class="det">
-        {DETAILS.disk.map((d) => (
-          <SettingsRow title={d.label}><span id={d.id}>{d.value}</span></SettingsRow>
-        ))}
-      </SettingsGroup>
-    </section>
-
-    <section class="panel" id="panel-net" role="tabpanel" aria-labelledby="tab-net" data-res="net" hidden>
-      <header class="panel__head">
-        <h2 class="panel__title">Ethernet</h2>
-        <StatusBadge class="pbadge" status="warning" label="En pause" size="sm" />
-        <span class="panel__model">Toutes les cartes réseau</span>
-      </header>
-      <p class="cap"><span>Débit (réception · envoi en pointillé)</span><span id="net-scale"></span></p>
-      <canvas class="big" id="net-graph" role="img" aria-describedby="net-rx net-tx" aria-label="Débit réseau sur 3 minutes"></canvas>
-      <p class="cap"><span>3 minutes</span><span>0</span></p>
-      <dl class="figs">
-        <div class="fig fig--big"><dt>Réception</dt><dd id="net-rx">-</dd></div>
-        <div class="fig fig--big"><dt>Envoi</dt><dd id="net-tx">-</dd></div>
-      </dl>
-      <SettingsGroup title="Détails" class="det">
-        {DETAILS.net.map((d) => (
-          <SettingsRow title={d.label}><span id={d.id}>{d.value}</span></SettingsRow>
-        ))}
-      </SettingsGroup>
-    </section>
-  </div>
+    </div>
   </div>
 </PanelLayout>
 
@@ -235,7 +284,7 @@ const TABS = [
         t.tabIndex = on ? 0 : -1;
         if (on && focus) t.focus();
       }
-      root!.querySelectorAll<HTMLElement>('.panel').forEach((p) => { p.hidden = p.dataset.res !== res; });
+      root!.querySelectorAll<HTMLElement>('.rpanel').forEach((p) => { p.hidden = p.dataset.res !== res; });
       try { sessionStorage.setItem('perf-tab', res); } catch {}
       requestAnimationFrame(() => Object.values(big).forEach((g) => g.draw()));
     }
@@ -289,7 +338,7 @@ const TABS = [
       paused = on;
       root!.toggleAttribute('data-paused', on);
       pauseBtn.setAttribute('aria-pressed', String(on));
-      pauseBtn.lastChild!.textContent = on ? ' Reprendre' : ' Suspendre';
+      pauseBtn.querySelector('.lbl')!.textContent = on ? 'Reprendre' : 'Suspendre';
       if (on && timer !== null) { clearTimeout(timer); timer = null; }
       else if (!on && timer === null && !stopped) tick().then(() => schedule());
     }
@@ -388,92 +437,77 @@ const TABS = [
 </script>
 
 <style>
-  .tm {
-    display: grid; grid-template-columns: 260px minmax(0, 1fr);
-    background: var(--bg-surface);
-    border: var(--border-width) solid var(--border); border-radius: var(--radius-card);
-    box-shadow: var(--shadow-xs);
-    min-height: 560px; overflow: hidden;
-  }
-  .tm__list {
-    display: flex; flex-direction: column; gap: 2px; padding: var(--space-2);
-    border-right: var(--border-width) solid var(--border); background: var(--bg-mica);
-  }
-  .tile {
-    position: relative;
-    display: flex; align-items: center; gap: var(--space-3); width: 100%;
-    padding: var(--space-2); border: 0; border-radius: var(--radius-control);
-    background: transparent; text-align: left; cursor: pointer; color: var(--text-primary);
-    transition: background-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
-  }
-  .tile:hover { background: var(--nav-hover); }
-  .tile:active { transform: scale(var(--press-scale)); }
-  .tile[aria-selected='true'] { background: var(--nav-selected); }
-  .tile[aria-selected='true'] .tile__name { font-weight: 600; }
-  .spark { width: 72px; height: 46px; flex: none; border: var(--border-width) solid; border-radius: var(--radius-sm); overflow: hidden; }
-  .tile[data-res='cpu']  .spark { border-color: var(--res-cpu-grid); background: var(--res-cpu-fill); }
-  .tile[data-res='mem']  .spark { border-color: var(--res-mem-grid); background: var(--res-mem-fill); }
-  .tile[data-res='disk'] .spark { border-color: var(--res-disk-grid); background: var(--res-disk-fill); }
-  .tile[data-res='net']  .spark { border-color: var(--res-net-grid); background: var(--res-net-fill); }
-  .tile__txt { display: flex; flex-direction: column; min-width: 0; }
-  .tile__name { font-size: var(--dense-size); line-height: var(--dense-lh); font-weight: 500; }
-  .tile__sub {
-    font-size: var(--meta-size); line-height: var(--meta-lh); color: var(--text-secondary);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums;
-  }
+  .tm { display: grid; grid-template-columns: 20rem minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+  .tm > .v-card { position: sticky; top: 1rem; }
+  .tm__main, .rpanel { display: flex; flex-direction: column; gap: 1.5rem; min-width: 0; }
+  .rpanel[hidden], .v-alert[hidden] { display: none; }
+  .duo { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr)); gap: 1.5rem; }
+  .duo > .v-card { min-width: 0; }
 
-  .panel { padding: var(--space-5) var(--space-6) var(--space-6); display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
-  .panel__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-2); }
-  .panel__title { font-family: var(--font-display); font-size: 24px; line-height: 32px; font-weight: 700; letter-spacing: -0.015em; }
-  .panel__model { font-size: var(--dense-size); color: var(--text-secondary); }
-  .cap { display: flex; justify-content: space-between; gap: var(--space-2); font-size: var(--meta-size); line-height: var(--meta-lh); color: var(--text-secondary); }
-  .big {
-    width: 100%; height: clamp(200px, 38vh, 340px); display: block; cursor: crosshair;
-    border: var(--border-width) solid; border-radius: var(--radius-card);
-  }
-  .panel[data-res='cpu']  .big { border-color: var(--res-cpu-grid); }
-  .panel[data-res='mem']  .big { border-color: var(--res-mem-grid); }
-  .panel[data-res='disk'] .big { border-color: var(--res-disk-grid); }
-  .panel[data-res='net']  .big { border-color: var(--res-net-grid); }
+  /* Couleur de série par ressource */
+  [data-res='cpu']  { --c: var(--res-cpu); }
+  [data-res='mem']  { --c: var(--res-mem); }
+  [data-res='disk'] { --c: var(--res-disk); }
+  [data-res='net']  { --c: var(--res-net); }
 
-  .cores {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(min(180px, 100%), 1fr));
-    gap: var(--space-2) var(--space-5); margin-top: var(--space-3);
-  }
-  .core { display: flex; align-items: center; gap: var(--space-2); font-size: var(--meta-size); font-variant-numeric: tabular-nums; }
-  .core__label { color: var(--text-secondary); width: 52px; flex: none; }
-  .core__track { flex: 1; height: 6px; border-radius: var(--radius-pill); background: var(--bg-hover); overflow: hidden; }
-  .core__fill { height: 100%; border-radius: inherit; background: var(--res-cpu); transition: width var(--dur-base) var(--ease-out); }
-  .core__pct { width: 40px; text-align: right; flex: none; }
+  /* metric-list-03 : une ligne par ressource, sa courbe à côté */
+  .tm__list { display: flex; flex-direction: column; gap: 0.25rem; padding-inline: 0.75rem; }
+  .tile { display: flex; align-items: center; gap: 0.75rem; width: 100%; padding: 0.5rem 0.75rem 0.5rem 0.5rem; border: 1px solid transparent; border-left: 3px solid var(--c); border-radius: 0.5rem; background: transparent; color: var(--text-primary); text-align: left; cursor: pointer; transition: background-color 150ms, border-color 150ms; }
+  .tile:hover { background: var(--bg-hover); }
+  .tile:focus-visible { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent); }
+  .tile[aria-selected='true'] { background: var(--bg-hover); border-color: var(--border); border-left-color: var(--c); }
+  .tile[aria-selected='true'] .v-who__name { font-weight: 600; }
+  .spark { width: 5rem; height: 2.75rem; flex: none; border-radius: 0.375rem; border: 1px solid var(--border); }
+  .tile .v-who__sub { font-variant-numeric: tabular-nums; }
 
-  .figs {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(min(15rem, 100%), 1fr));
-    gap: var(--space-4) var(--space-6); margin-top: var(--space-5);
-  }
-  .fig dt { font-size: var(--meta-size); line-height: var(--meta-lh); color: var(--text-secondary); }
-  .fig dd { margin: 0; font-size: var(--body-size); line-height: var(--body-lh); font-variant-numeric: tabular-nums; }
-  .fig--big dd { font-family: var(--font-display); font-size: var(--section-size); line-height: var(--section-lh); font-weight: 600; }
-  :global(.det) { max-width: 560px; margin-top: var(--space-5); }
-  .tmwrap { position: relative; }
-  .perf-error { position: absolute; z-index: 2; inset: var(--space-3) var(--space-3) auto; background: var(--bg-surface); border-radius: var(--radius-card); box-shadow: var(--shadow-md, var(--shadow-xs)); }
-  :global(.pbadge) { display: none; }
-  .tm[data-paused] :global(.pbadge) { display: inline-flex; }
-  .perf-error[hidden] { display: none; }
-  .drives { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); gap: var(--space-5); margin-top: var(--space-5); }
+  /* En direct / En pause */
+  .pbadge { display: none; }
+  .tm[data-paused] .pbadge { display: inline-flex; }
+  .tm[data-paused] .live { display: none; }
+  .ttl::before { content: ''; display: inline-block; width: 0.625rem; height: 0.625rem; margin-right: 0.5rem; border-radius: 50%; background: var(--c); }
+
+  /* stat-group-01 */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 1.5rem 0; margin: 0; }
+  .v-card > .stats { padding-inline: 0; }
+  .stat { display: flex; flex-direction: column; gap: 0.25rem; padding-inline: 1.5rem; min-width: 0; }
+  .stat + .stat { border-left: 1px solid var(--border); }
+  .stat__l { font-size: 0.875rem; color: var(--text-secondary); }
+  .stat__v { margin: 0; font-size: 2rem; line-height: 1.1; font-weight: 300; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--text-primary); overflow-wrap: anywhere; }
+  .stat__v--sm { font-size: 1.25rem; line-height: 1.6; font-weight: 400; letter-spacing: 0; }
+
+  /* realtime-02 */
+  .graph { display: flex; flex-direction: column; gap: 0.5rem; }
+  .cap { margin: 0; display: flex; justify-content: space-between; gap: 0.5rem; font-size: 0.75rem; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .big { display: block; width: 100%; height: clamp(200px, 38vh, 340px); cursor: crosshair; border: 1px solid var(--border); border-radius: 0.5rem; }
+  .keys { display: inline-flex; gap: 1rem; }
+  .key { display: inline-flex; align-items: center; gap: 0.375rem; }
+  .sw { width: 1.25rem; height: 0; border-top: 2px solid var(--c); }
+  .sw--dash { border-top-style: dashed; }
+
+  /* par cœur */
+  .cores { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(11rem, 100%), 1fr)); gap: 0.75rem 1.5rem; }
+  .core { display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+  .core__label { color: var(--text-secondary); width: 3.25rem; flex: none; }
+  .core__track { flex: 1; height: 0.375rem; border-radius: 999px; background: var(--bg-hover); overflow: hidden; }
+  .core__fill { height: 100%; border-radius: inherit; background: var(--res-cpu); transition: width 200ms; }
+  .core__pct { width: 2.5rem; text-align: right; flex: none; }
+
+  /* settings : libellé à gauche, valeur à droite */
+  .val { margin-left: auto; font-size: 0.875rem; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+
+  /* usage-meter-05 : espace disque */
+  .drives > li { flex-direction: column; align-items: stretch; gap: 0.375rem; padding: 0.75rem 0; }
+  .drive__top { display: flex; justify-content: space-between; gap: 0.5rem; }
+  .bar { height: 0.5rem; border-radius: 999px; background: var(--bg-hover); overflow: hidden; }
+  .bar > i { display: block; height: 100%; border-radius: inherit; background: var(--res-disk); }
+  .bar--hot > i { background: var(--danger); }
 
   @media (max-width: 900px) {
-    .tm { grid-template-columns: minmax(0, 1fr); min-height: 0; }
-    .tm__list {
-      flex-direction: row; overflow-x: auto; border-right: 0;
-      border-bottom: var(--border-width) solid var(--border);
-    }
+    .tm { grid-template-columns: minmax(0, 1fr); }
+    .tm > .v-card { position: static; }
+    .tm__list { flex-direction: row; overflow-x: auto; }
     .tile { width: auto; flex: 0 0 auto; }
-    .spark { width: 56px; height: 36px; }
-    .panel { padding: var(--space-4); }
-    .panel__title { font-size: var(--section-size); line-height: var(--section-lh); }
-  }
-  @media (max-width: 640px) {
-    .tile__sub { max-width: 9rem; }
-    .tile { gap: var(--space-2); }
+    .tile .v-who { max-width: 12rem; }
+    .stat { padding-inline: 1rem; }
   }
 </style>

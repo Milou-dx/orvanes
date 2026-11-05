@@ -1,25 +1,15 @@
 ---
 import PanelLayout from '../layouts/PanelLayout.astro';
-import SettingsGroup from '../components/ui/SettingsGroup.astro';
-import SettingsRow from '../components/ui/SettingsRow.astro';
-import EmptyState from '../components/ui/EmptyState.astro';
-import Tabs from '../components/ui/Tabs.astro';
-import Toolbar from '../components/ui/Toolbar.astro';
-import DataTable from '../components/ui/DataTable.astro';
-import Card from '../components/ui/Card.astro';
-import Badge from '../components/ui/Badge.astro';
-import Button from '../components/ui/Button.astro';
-import Select from '../components/ui/Select.astro';
-import Stat from '../components/ui/Stat.astro';
-import StatGrid from '../components/ui/StatGrid.astro';
-import KeyValue from '../components/ui/KeyValue.astro';
 import Icon from '../components/ui/Icon.astro';
+import '../styles/vault.css';
 import * as net from '../server/network/network.js';
 import * as sys from '../server/system/system.js';
 import * as fw from '../server/network/firewall';
 import { safe } from '../server/core/safe';
 import { bytes } from '../server/core/format';
+import { esc, iconSVG } from '../scripts/ui/html';
 
+/** Recomposé avec les blocs du Vault (dashboardblocks, MIT) : stat-group-01 (chiffres), realtime-02 (débit en direct), status-01 (interfaces), data-table-01 (connexions, ports, règles, routes), alerts-01 (pare-feu non enregistré), settings (connexion). */
 export const prerender = false;
 
 const [ports, conns, routes, gw, localIp, ifaces, traffic, rules, dirty] = await Promise.all([
@@ -62,261 +52,391 @@ const rateTx = sum((n) => rates[n]?.txBytesPerSec ?? 0);
 const isDeny = (r: any) => r.target === 'REJECT' || r.target === 'DROP';
 const defaultRoute = routes.find((r: any) => r.dest === 'default');
 const tcpCount = conns.filter((c: any) => c.protocol === 'tcp').length;
+
+const stats = [
+  { label: 'Réception', value: `${bytes(rateRx)}/s`, id: 'net-rx-now', note: `↓ ${bytes(totalRx)} au total` },
+  { label: 'Envoi', value: `${bytes(rateTx)}/s`, id: 'net-tx-now', note: `↑ ${bytes(totalTx)} au total` },
+  { label: 'Interfaces', value: `${upCount}`, unit: upCount > 1 ? 'actives' : 'active', note: externalIfaces.length === upCount ? 'Toutes actives' : `${externalIfaces.length - upCount} sur ${externalIfaces.length} inactives` },
+  { label: 'Connexions', value: `${conns.length}`, unit: 'établies', note: `${sortedPorts.length} ports en écoute · TCP ${tcpCount} · UDP ${conns.length - tcpCount}` },
+];
+const TABS = [
+  { id: 'apercu', label: 'Vue d’ensemble' },
+  { id: 'interfaces', label: 'Interfaces', count: externalIfaces.length },
+  { id: 'ports', label: 'Connexions', count: conns.length },
+  { id: 'pare-feu', label: 'Pare-feu', count: active.length },
+  { id: 'dns', label: 'DNS et passerelle' },
+];
+
+type Col = { key: string; label: string; sortable?: boolean; type?: string; cls?: string; hideLabel?: boolean };
+/** En-tête lu par scripts/ui/table.ts : th[data-key][data-type][data-sortable] + button.dt__sort[data-sort]. */
+const head = (cols: Col[]) => cols.map((c) => {
+  const lab = c.hideLabel ? `<span class="visually-hidden">${esc(c.label)}</span>` : esc(c.label);
+  const inner = c.sortable
+    ? `<button type="button" class="dt__sort" data-sort="${c.key}">${lab}${iconSVG('arrowUp', 16).replace('class="icon"', 'class="icon dt__arrow"')}</button>`
+    : lab;
+  return `<th scope="col" data-key="${c.key}" data-type="${c.type ?? 'text'}"${c.sortable ? ' data-sortable' : ''}${c.cls ? ` class="${c.cls}"` : ''}>${inner}</th>`;
+}).join('');
+const connCols: Col[] = [
+  { key: 'proto', label: 'Proto', sortable: true },
+  { key: 'local', label: 'Adresse locale', sortable: true, cls: 'hide-sm' },
+  { key: 'peer', label: 'Adresse distante', sortable: true },
+  { key: 'proc', label: 'Processus', sortable: true },
+];
+const portCols: Col[] = [
+  { key: 'port', label: 'Port', sortable: true, type: 'number' },
+  { key: 'proto', label: 'Proto', sortable: true, cls: 'hide-sm' },
+  { key: 'address', label: 'Adresse', sortable: true, cls: 'hide-sm' },
+  { key: 'expo', label: 'Exposition', sortable: true },
+  { key: 'proc', label: 'Processus', sortable: true },
+];
+const fwCols: Col[] = [
+  { key: 'num', label: '#', sortable: true, type: 'number' },
+  { key: 'action', label: 'Action', sortable: true },
+  { key: 'proto', label: 'Proto', sortable: true, cls: 'hide-sm' },
+  { key: 'port', label: 'Port', sortable: true },
+  { key: 'source', label: 'Source', sortable: true, cls: 'hide-sm' },
+  { key: 'packets', label: 'Paquets', sortable: true, type: 'number', cls: 'al-right hide-md' },
+  { key: 'act', label: 'Actions', hideLabel: true, cls: 'is-actions' },
+];
+const routeCols: Col[] = [
+  { key: 'dest', label: 'Destination' },
+  { key: 'via', label: 'Passerelle', cls: 'hide-sm' },
+  { key: 'dev', label: 'Interface' },
+  { key: 'state', label: 'Lien' },
+];
 ---
 <PanelLayout title="Réseau" subtitle={localIp ? `IP locale ${localIp}` : undefined}>
-  <Button slot="actions" variant="secondary" icon="refresh" href="/reseau">Actualiser</Button>
+  <a slot="actions" class="v-btn v-btn--outline" href="/reseau"><Icon name="refresh" size={16} />Actualiser</a>
 
-  {dirty && (
-    <div class="alert" role="status">
-      <Icon name="warning" size={16} class="alert__icon" />
-      <p class="t-meta"><strong>Le pare-feu a des règles non enregistrées.</strong> Le prochain redémarrage du serveur les efface.</p>
-      <Button size="sm" data-go="pare-feu">Ouvrir le pare-feu</Button>
-    </div>
-  )}
+  <div class="v-page v-page--wide net">
+    {dirty && (
+      <div class="v-alert v-alert--warn" role="status">
+        <strong>Le pare-feu a des règles non enregistrées.</strong>
+        <span>Le prochain redémarrage du serveur les efface.</span>
+        <div><button type="button" class="v-btn v-btn--sm v-btn--outline" data-go="pare-feu">Ouvrir le pare-feu</button></div>
+      </div>
+    )}
 
-  <StatGrid cols={4}>
-    <Stat label="Réception" value={`${bytes(rateRx)}/s`}>
-      <p slot="trend" class="t-meta text-tertiary">↓ {bytes(totalRx)} au total</p>
-    </Stat>
-    <Stat label="Envoi" value={`${bytes(rateTx)}/s`}>
-      <p slot="trend" class="t-meta text-tertiary">↑ {bytes(totalTx)} au total</p>
-    </Stat>
-    <Stat label="Interfaces" value={String(upCount)} unit={upCount > 1 ? 'actives' : 'active'}>
-      <p slot="trend" class="t-meta text-tertiary">{externalIfaces.length === upCount ? 'Toutes actives' : `${externalIfaces.length - upCount} sur ${externalIfaces.length} inactives`}</p>
-    </Stat>
-    <Stat label="Connexions" value={String(conns.length)} unit="établies">
-      <p slot="trend" class="t-meta text-tertiary">{sortedPorts.length} ports en écoute · TCP {tcpCount} · UDP {conns.length - tcpCount}</p>
-    </Stat>
-  </StatGrid>
+    <section class="v-card" aria-label="Résumé du réseau">
+      <div class="stats">
+        {stats.map((st) => (
+          <div class="stat">
+            <span class="stat__l">{st.label}</span>
+            <span class="stat__v"><span id={st.id}>{st.value}</span>{st.unit && <span class="stat__u"> {st.unit}</span>}</span>
+            <span class="stat__c">{st.note}</span>
+          </div>
+        ))}
+      </div>
+    </section>
 
-  <Tabs id="reseau" label="Sections réseau" tabs={[
-    { id: 'apercu', label: 'Vue d’ensemble', icon: 'activity' },
-    { id: 'interfaces', label: 'Interfaces', icon: 'network', count: externalIfaces.length },
-    { id: 'ports', label: 'Connexions', icon: 'globe', count: conns.length },
-    { id: 'pare-feu', label: 'Pare-feu', icon: 'shield', count: active.length },
-    { id: 'dns', label: 'DNS et passerelle', icon: 'waypoints' },
-  ]}>
-    <div slot="apercu" class="stack">
-      <Card title="Débit en temps réel" description="Somme des interfaces, une mesure par seconde. Envoi en pointillé.">
-        <div class="graph" transition:persist="reseau-graph">
-          <canvas id="net-live" role="img" aria-label="Débit réseau des 3 dernières minutes"></canvas>
-          <p id="net-live-err" class="t-meta text-secondary" role="status" hidden>Mesures indisponibles : le panel ne reçoit plus les mesures du réseau. Nouvelle tentative en cours.</p>
+    <div class="net-tabs" data-tabs="reseau">
+      <nav class="v-tabs" aria-label="Sections réseau">
+        {TABS.map((t, i) => (
+          <button type="button" class="v-tab" id={`reseau-tab-${t.id}`} data-tab={t.id} aria-controls={`reseau-panel-${t.id}`} aria-pressed={i === 0 ? 'true' : 'false'}>
+            {t.label}{t.count !== undefined && <span class="v-tag">{t.count}</span>}
+          </button>
+        ))}
+      </nav>
+
+      <div class="rpanel" id="reseau-panel-apercu">
+        <section class="v-card">
+          <header class="v-card__head">
+            <div class="v-card__titles">
+              <h2 class="v-card__title">Débit en temps réel</h2>
+              <p class="v-card__desc">Somme des interfaces, une mesure par seconde. Envoi en pointillé.</p>
+            </div>
+            <span class="v-status v-status--good">En direct</span>
+          </header>
+          <div class="graph" transition:persist="reseau-graph">
+            <canvas id="net-live" role="img" aria-label="Débit réseau des 3 dernières minutes"></canvas>
+            <p id="net-live-err" class="v-muted" role="status" hidden>Mesures indisponibles : le panel ne reçoit plus les mesures du réseau. Nouvelle tentative en cours.</p>
+          </div>
+        </section>
+
+        <div class="duo">
+          <section class="v-card">
+            <header class="v-card__head">
+              <div class="v-card__titles"><h2 class="v-card__title">Interfaces</h2></div>
+              <button type="button" class="v-btn v-btn--ghost v-btn--sm" data-go="interfaces">Tout voir<Icon name="chevronRight" size={14} /></button>
+            </header>
+            {externalIfaces.length === 0 ? (
+              <div class="v-empty"><p class="v-empty__title">Aucune interface externe</p></div>
+            ) : (
+              <ul class="v-list">
+                {externalIfaces.slice(0, 4).map((i: any) => (
+                  <li>
+                    <span class="v-avatar"><Icon name={ifaceIcon(i.name) as any} size={16} /></span>
+                    <div class="v-who">
+                      <span class="v-who__name">{ifaceLabel(i.name)}</span>
+                      <span class="v-who__sub v-mono">{i.name} · {i.ip ?? '-'}</span>
+                    </div>
+                    <span class="side">↓ {bytes(totals[i.name]?.rx)} · ↑ {bytes(totals[i.name]?.tx)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+          <section class="v-card">
+            <header class="v-card__head">
+              <div class="v-card__titles"><h2 class="v-card__title">Connexions récentes</h2></div>
+              <button type="button" class="v-btn v-btn--ghost v-btn--sm" data-go="ports">Tout voir<Icon name="chevronRight" size={14} /></button>
+            </header>
+            {conns.length === 0 ? (
+              <div class="v-empty"><p class="v-empty__title">Aucune connexion établie</p></div>
+            ) : (
+              <ul class="v-list">
+                {conns.slice(0, 4).map((c: any) => (
+                  <li>
+                    <span class="v-badge">{c.protocol.toUpperCase()}</span>
+                    <div class="v-who">
+                      <span class="v-who__name v-mono">{c.peer}</span>
+                      <span class="v-who__sub">vers <span class="v-mono">{c.local}</span></span>
+                    </div>
+                    <span class="side">{c.process ?? '-'}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
         </div>
-      </Card>
+      </div>
 
-      <div class="duo">
-        <Card title="Interfaces" flush>
-          <button slot="actions" type="button" class="more" data-go="interfaces">Tout voir <Icon name="chevronRight" size={14} /></button>
-          <ul class="list">
-            {externalIfaces.slice(0, 4).map((i: any) => (
-              <li>
-                <Icon name={ifaceIcon(i.name) as any} size={16} class="list__icon" />
-                <span class="list__main"><span class="list__title">{ifaceLabel(i.name)}</span><span class="list__sub mono">{i.name} · {i.ip ?? '-'}</span></span>
-                <span class="list__side">↓ {bytes(totals[i.name]?.rx)} · ↑ {bytes(totals[i.name]?.tx)}</span>
-              </li>
-            ))}
-          </ul>
-        </Card>
-        <Card title="Connexions récentes" flush>
-          <button slot="actions" type="button" class="more" data-go="ports">Tout voir <Icon name="chevronRight" size={14} /></button>
-          {conns.length === 0 ? (
-            <p class="t-meta text-secondary empty">Aucune connexion établie.</p>
-          ) : (
-            <ul class="list">
-              {conns.slice(0, 4).map((c: any) => (
-                <li>
-                  <Badge tone={c.protocol === 'tcp' ? 'info' : 'neutral'}>{c.protocol.toUpperCase()}</Badge>
-                  <span class="list__main"><span class="list__title mono">{c.peer}</span><span class="list__sub">vers <span class="mono">{c.local}</span></span></span>
-                  <span class="list__side">{c.process ?? '-'}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
+      <div class="rpanel" id="reseau-panel-interfaces" hidden>
+        {externalIfaces.length === 0 ? (
+          <section class="v-card"><div class="v-empty"><p class="v-empty__title">Aucune interface externe</p><p class="v-empty__text">Aucune carte réseau détectée.</p></div></section>
+        ) : externalIfaces.map((i: any) => (
+          <section class="v-card">
+            <header class="v-card__head iface">
+              <span class="v-avatar"><Icon name={ifaceIcon(i.name) as any} size={16} /></span>
+              <div class="v-card__titles">
+                <h2 class="v-card__title">{ifaceLabel(i.name)}</h2>
+                <span class="v-muted v-mono">{i.name}</span>
+              </div>
+              {i.name === defaultRoute?.dev && <span class="v-badge">Principale</span>}
+              <span class:list={['v-status', isUp(i) && 'v-status--good']}>{isUp(i) ? 'Active' : 'Inactive'}</span>
+            </header>
+            <dl class="kv">
+              <div><dt>Adresse IP</dt><dd class="v-mono">{i.ip || '-'}</dd></div>
+              <div><dt>Masque</dt><dd class="v-mono">{i.netmask || '-'}</dd></div>
+              <div><dt>Adresse MAC</dt><dd class="v-mono">{i.mac || '-'}</dd></div>
+              <div><dt>MTU</dt><dd class="v-mono">{i.mtu ? `${i.mtu} octets` : '-'}</dd></div>
+            </dl>
+            <p class="v-card__foot traffic">
+              <span><Icon name="arrowDown" size={14} /> Reçu <strong>{bytes(totals[i.name]?.rx)}</strong>{rates[i.name] && <span class="v-muted"> · {bytes(rates[i.name].rxBytesPerSec)}/s</span>}</span>
+              <span><Icon name="arrowUp" size={14} /> Émis <strong>{bytes(totals[i.name]?.tx)}</strong>{rates[i.name] && <span class="v-muted"> · {bytes(rates[i.name].txBytesPerSec)}/s</span>}</span>
+            </p>
+          </section>
+        ))}
+      </div>
+
+      <div class="rpanel" id="reseau-panel-ports" hidden>
+        <section class="v-card">
+          <header class="v-card__head">
+            <div class="v-card__titles">
+              <h2 class="v-card__title">Connexions établies</h2>
+              <p class="v-card__desc">Le panel affiche le processus des seuls programmes qu’il a lancés.</p>
+            </div>
+          </header>
+          <div class="v-toolbar">
+            <input class="v-input" type="search" id="conns-tbl-search" placeholder="Filtrer par adresse ou processus" aria-label="Filtrer par adresse ou processus"
+                   autocomplete="off" spellcheck="false" data-table-filter="conns-tbl" aria-controls="conns-tbl-table" />
+          </div>
+          <div id="conns-tbl" class="v-table-wrap" data-dt="conns-tbl" data-noun="connexion|connexions" data-sort-key="peer"
+               data-empty-title="Aucune connexion établie" data-empty-text="Aucune connexion ouverte en ce moment." data-empty-icon="globe">
+            <table class="v-table" id="conns-tbl-table">
+              <caption class="visually-hidden">Connexions établies</caption>
+              <thead><tr set:html={head(connCols)} /></thead>
+              <tbody>
+                {conns.map((c: any) => (
+                  <tr>
+                    <td><span class="v-badge">{c.protocol.toUpperCase()}</span></td>
+                    <td class="is-mono hide-sm">{c.local}</td>
+                    <td class="is-mono">{c.peer}</td>
+                    <td>{c.process ? <>{c.process} <span class="v-muted">({c.pid})</span></> : <span class="v-muted">-</span>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p class="v-card__foot" data-table-count="conns-tbl" aria-live="polite"></p>
+        </section>
+
+        <section class="v-card">
+          <header class="v-card__head">
+            <div class="v-card__titles">
+              <h2 class="v-card__title">Ports en écoute</h2>
+              <p class="v-card__desc">Un port exposé sur toutes les interfaces est joignable depuis l’extérieur.</p>
+            </div>
+          </header>
+          <div class="v-toolbar">
+            <input class="v-input" type="search" id="ports-tbl-search" placeholder="Filtrer les ports" aria-label="Filtrer les ports"
+                   autocomplete="off" spellcheck="false" data-table-filter="ports-tbl" aria-controls="ports-tbl-table" />
+            <select class="v-select" id="ports-expo" aria-label="Exposition">
+              <option value="">Toutes expositions</option>
+              <option value="Toutes interfaces">Toutes interfaces</option>
+              <option value="Restreint">Restreint</option>
+            </select>
+          </div>
+          <div id="ports-tbl" class="v-table-wrap" data-dt="ports-tbl" data-noun="port|ports" data-sort-key="port"
+               data-empty-title="Aucun port en écoute" data-empty-text="Le système ne signale aucun port ouvert." data-empty-icon="globe">
+            <table class="v-table" id="ports-tbl-table">
+              <caption class="visually-hidden">Ports en écoute</caption>
+              <thead><tr set:html={head(portCols)} /></thead>
+              <tbody>
+                {sortedPorts.map((p: any) => (
+                  <tr>
+                    <td class="is-mono" data-value={p.port}>{p.port}</td>
+                    <td class="hide-sm">{p.protocol}</td>
+                    <td class="is-mono hide-sm">{p.address}</td>
+                    <td>
+                      {isPublic(p.address)
+                        ? <span class="v-status v-status--warning">Toutes interfaces</span>
+                        : <span class="v-status v-status--good">Restreint</span>}
+                    </td>
+                    <td>{p.process ?? p.knownAs ?? '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p class="v-card__foot" data-table-count="ports-tbl" aria-live="polite"></p>
+        </section>
+      </div>
+
+      <div class="rpanel" id="reseau-panel-pare-feu" hidden>
+        <section class="v-card">
+          <header class="v-card__head">
+            <div class="v-card__titles">
+              <h2 class="v-card__title">Règles du pare-feu</h2>
+              <p class="v-card__desc">Le pare-feu bloque tout port non autorisé. Un port ouvert ici doit aussi l’être chez l’hébergeur.</p>
+            </div>
+            <span class:list={['v-status', dirty ? 'v-status--warning' : 'v-status--good']}>{dirty ? 'Non enregistré' : 'Enregistré'}</span>
+            <button type="button" class="v-btn v-btn--sm" id="fw-save">Enregistrer</button>
+          </header>
+          <div class="v-toolbar">
+            <input class="v-input" type="search" id="fw-rules-search" placeholder="Filtrer les règles" aria-label="Filtrer les règles"
+                   autocomplete="off" spellcheck="false" data-table-filter="fw-rules" aria-controls="fw-rules-table" />
+          </div>
+          <div id="fw-rules" class="v-table-wrap" data-dt="fw-rules" data-noun="règle|règles" data-sort-key="num"
+               data-empty-title="Aucune règle" data-empty-text="Aucune règle de pare-feu trouvée." data-empty-icon="shield">
+            <table class="v-table" id="fw-rules-table">
+              <caption class="visually-hidden">Règles du pare-feu</caption>
+              <thead><tr set:html={head(fwCols)} /></thead>
+              <tbody>
+                {active.map((r: any) => (
+                  <tr class:list={[isDeny(r) && 'row-deny']}>
+                    <td class="is-mono is-muted">{r.num}</td>
+                    <td>
+                      {r.target === 'ACCEPT'
+                        ? <span class="v-status v-status--good">Autoriser</span>
+                        : isDeny(r)
+                          ? <span class="v-status v-status--bad">Refuser</span>
+                          : <span class="v-badge">{r.target === 'ts-input' ? 'Réseau privé' : r.target}</span>}
+                    </td>
+                    <td class="hide-sm">{r.protocol ?? '-'}</td>
+                    <td class="is-mono">{r.port ?? '-'}</td>
+                    <td class="is-mono hide-sm">{r.source ?? 'toutes'}</td>
+                    <td class="al-right is-muted hide-md" data-value={r.packets ?? 0}>{r.packets != null ? r.packets.toLocaleString('fr-FR') : '-'}</td>
+                    <td class="is-actions">
+                      {r.protectedReason
+                        ? <span class="v-badge" title={r.protectedReason}>protégée</span>
+                        : <button type="button" class="v-btn v-btn--sm v-btn--outline v-btn--danger" data-del={r.num}>Supprimer</button>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p class="v-card__foot" data-table-count="fw-rules" aria-live="polite"></p>
+        </section>
+
+        {inert.length > 0 && (
+          <div class="v-alert" role="status">
+            <strong>{inert.length} anciennes règles sans effet</strong>
+            <span>Elles suivent « Refuser » et n’ont aucun effet.</span>
+          </div>
+        )}
+
+        <section class="v-card">
+          <header class="v-card__head">
+            <div class="v-card__titles">
+              <h2 class="v-card__title">Autoriser un port</h2>
+              <p class="v-card__desc">Nouvelle règle d’entrée, ajoutée avant « Refuser ».</p>
+            </div>
+          </header>
+          <form id="fw-form" class="form" novalidate>
+            <div class="field">
+              <label class="v-label" for="fw-proto">Protocole</label>
+              <select class="v-select" id="fw-proto" name="protocol">
+                <option value="tcp">TCP</option>
+                <option value="udp">UDP</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="v-label" for="fw-port">Port</label>
+              <input id="fw-port" name="port" class="v-input v-mono" placeholder="8080 ou 8000:8100" required aria-describedby="fw-port-err" />
+              <small id="fw-port-err" class="field__err" role="alert" hidden></small>
+            </div>
+            <div class="field">
+              <label class="v-label" for="fw-source">Source <span class="v-muted">(vide = toutes)</span></label>
+              <input id="fw-source" name="source" class="v-input v-mono" placeholder="100.64.0.0/10" aria-describedby="fw-source-err" />
+              <small id="fw-source-err" class="field__err" role="alert" hidden></small>
+            </div>
+            <div class="field">
+              <label class="v-label" for="fw-comment">Commentaire</label>
+              <input id="fw-comment" name="comment" class="v-input" placeholder="Motif de l’ouverture" />
+            </div>
+            <button type="submit" class="v-btn">Ajouter</button>
+          </form>
+          <p id="fw-msg" class="t-meta msg" role="status" hidden></p>
+        </section>
+      </div>
+
+      <div class="rpanel" id="reseau-panel-dns" hidden>
+        <section class="v-card">
+          <header class="v-card__head">
+            <div class="v-card__titles">
+              <h2 class="v-card__title">Connexion</h2>
+              <p class="v-card__desc">Lecture seule : votre hébergeur fournit ces réglages (DHCP). Les modifier ici peut couper l’accès au serveur.</p>
+            </div>
+          </header>
+          <div>
+            <div class="v-row"><div class="v-row__txt"><span class="v-row__label">Adresse IP locale</span></div><div class="v-row__ctl"><span class="v-mono">{localIp ?? '-'}</span></div></div>
+            <div class="v-row"><div class="v-row__txt"><span class="v-row__label">Passerelle</span></div><div class="v-row__ctl"><span class="v-mono">{gw?.gateway ?? '-'}</span></div></div>
+            <div class="v-row"><div class="v-row__txt"><span class="v-row__label">Interface par défaut</span></div><div class="v-row__ctl"><span class="v-mono">{defaultRoute?.dev ?? '-'}</span></div></div>
+            <div class="v-row"><div class="v-row__txt"><span class="v-row__label">Serveurs DNS</span></div><div class="v-row__ctl"><span class="v-mono">{dnsText}</span></div></div>
+          </div>
+        </section>
+
+        <section class="v-card">
+          <header class="v-card__head">
+            <div class="v-card__titles">
+              <h2 class="v-card__title">Table de routage</h2>
+              <p class="v-card__desc">Routes connues du système, de la plus générale à la plus précise.</p>
+            </div>
+          </header>
+          <div id="routes-tbl" class="v-table-wrap" data-dt="routes-tbl" data-noun="route|routes"
+               data-empty-title="Aucune route" data-empty-text="Le panel n’a pas pu lire la table de routage." data-empty-icon="waypoints">
+            <table class="v-table" id="routes-tbl-table">
+              <caption class="visually-hidden">Table de routage</caption>
+              <thead><tr set:html={head(routeCols)} /></thead>
+              <tbody>
+                {routes.map((r: any) => (
+                  <tr>
+                    <td class="is-mono">{r.dest === 'default' ? 'par défaut' : r.dest}</td>
+                    <td class="is-mono hide-sm">{r.via ?? '-'}</td>
+                    <td class="is-mono">{r.dev ?? '-'}</td>
+                    <td>{r.down ? <span class="v-status">Coupé</span> : <span class="v-status v-status--good">Actif</span>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p class="v-card__foot" data-table-count="routes-tbl" aria-live="polite"></p>
+        </section>
       </div>
     </div>
-
-    <div slot="interfaces" class="stack">
-      {externalIfaces.length === 0 ? (
-        <EmptyState icon="network" title="Aucune interface externe" text="Aucune carte réseau détectée." />
-      ) : externalIfaces.map((i: any) => (
-        <Card>
-          <div class="iface">
-            <span class="iface__icon"><Icon name={ifaceIcon(i.name) as any} size={18} /></span>
-            <div class="iface__head">
-              <h3 class="iface__title">{ifaceLabel(i.name)}</h3>
-              <span class="t-meta text-secondary mono">{i.name}</span>
-            </div>
-            {i.name === defaultRoute?.dev && <Badge tone="accent">Principale</Badge>}
-            {isUp(i) ? <Badge tone="success" dot>Active</Badge> : <Badge tone="neutral" dot>Inactive</Badge>}
-          </div>
-          <KeyValue cols={2} mono items={[
-            { label: 'Adresse IP', value: i.ip },
-            { label: 'Masque', value: i.netmask },
-            { label: 'Adresse MAC', value: i.mac },
-            { label: 'MTU', value: i.mtu ? `${i.mtu} octets` : null },
-          ]} />
-          <p class="traffic t-meta">
-            <span><Icon name="arrowDown" size={14} /> Reçu <strong>{bytes(totals[i.name]?.rx)}</strong>{rates[i.name] && <span class="text-tertiary"> · {bytes(rates[i.name].rxBytesPerSec)}/s</span>}</span>
-            <span><Icon name="arrowUp" size={14} /> Émis <strong>{bytes(totals[i.name]?.tx)}</strong>{rates[i.name] && <span class="text-tertiary"> · {bytes(rates[i.name].txBytesPerSec)}/s</span>}</span>
-          </p>
-        </Card>
-      ))}
-    </div>
-
-    <div slot="ports" class="stack">
-      <Toolbar controls="conns-tbl" search="Filtrer par adresse ou processus" count />
-      <DataTable id="conns-tbl" caption="Connexions établies" noun={['connexion', 'connexions']} sort={{ key: 'peer' }}
-        empty={{ icon: 'globe', title: 'Aucune connexion établie', text: 'Aucune connexion ouverte en ce moment.' }}
-        columns={[
-          { key: 'proto', label: 'Proto', sortable: true },
-          { key: 'local', label: 'Adresse locale', sortable: true, mono: true, hideBelow: 'sm' },
-          { key: 'peer', label: 'Adresse distante', sortable: true, mono: true },
-          { key: 'proc', label: 'Processus', sortable: true },
-        ]}>
-        {conns.map((c: any) => (
-          <tr>
-            <td><Badge tone={c.protocol === 'tcp' ? 'info' : 'neutral'}>{c.protocol.toUpperCase()}</Badge></td>
-            <td class="is-mono hide-sm">{c.local}</td>
-            <td class="is-mono">{c.peer}</td>
-            <td>{c.process ? <>{c.process} <span class="text-tertiary">({c.pid})</span></> : <span class="text-tertiary">-</span>}</td>
-          </tr>
-        ))}
-      </DataTable>
-      <p class="t-meta text-secondary note">Le panel affiche le processus des seuls programmes qu’il a lancés.</p>
-
-      <h2 class="t-card section">Ports en écoute</h2>
-      <Toolbar controls="ports-tbl" search="Filtrer les ports" count>
-        <Select slot="left" id="ports-expo" label="Exposition">
-          <option value="">Toutes expositions</option>
-          <option value="Toutes interfaces">Toutes interfaces</option>
-          <option value="Restreint">Restreint</option>
-        </Select>
-      </Toolbar>
-      <DataTable id="ports-tbl" caption="Ports en écoute" noun={['port', 'ports']} sort={{ key: 'port' }}
-        empty={{ icon: 'globe', title: 'Aucun port en écoute', text: 'Le système ne signale aucun port ouvert.' }}
-        columns={[
-          { key: 'port', label: 'Port', sortable: true, type: 'number', mono: true },
-          { key: 'proto', label: 'Proto', sortable: true, hideBelow: 'sm' },
-          { key: 'address', label: 'Adresse', sortable: true, mono: true, hideBelow: 'sm' },
-          { key: 'expo', label: 'Exposition', sortable: true },
-          { key: 'proc', label: 'Processus', sortable: true },
-        ]}>
-        {sortedPorts.map((p: any) => (
-          <tr>
-            <td class="is-mono" data-value={p.port}>{p.port}</td>
-            <td class="hide-sm">{p.protocol}</td>
-            <td class="is-mono hide-sm">{p.address}</td>
-            <td>
-              {isPublic(p.address)
-                ? <Badge tone="warning" dot>Toutes interfaces</Badge>
-                : <Badge tone="success" dot>Restreint</Badge>}
-            </td>
-            <td>{p.process ?? p.knownAs ?? '-'}</td>
-          </tr>
-        ))}
-      </DataTable>
-    </div>
-
-    <div slot="pare-feu" class="stack">
-      <Toolbar controls="fw-rules" search="Filtrer les règles" count>
-        <Badge slot="right" tone={dirty ? 'warning' : 'success'} dot>{dirty ? 'Non enregistré' : 'Enregistré'}</Badge>
-        <Button slot="right" size="sm" id="fw-save">Enregistrer</Button>
-      </Toolbar>
-      <DataTable id="fw-rules" caption="Règles du pare-feu" noun={['règle', 'règles']} sort={{ key: 'num' }}
-        empty={{ icon: 'shield', title: 'Aucune règle', text: 'Aucune règle de pare-feu trouvée.' }}
-        columns={[
-          { key: 'num', label: '#', sortable: true, type: 'number', mono: true },
-          { key: 'action', label: 'Action', sortable: true },
-          { key: 'proto', label: 'Proto', sortable: true, hideBelow: 'sm' },
-          { key: 'port', label: 'Port', sortable: true, mono: true },
-          { key: 'source', label: 'Source', sortable: true, mono: true, hideBelow: 'sm' },
-          { key: 'packets', label: 'Paquets', sortable: true, type: 'number', align: 'right', hideBelow: 'md' },
-          { key: 'act', label: 'Actions', hideLabel: true, actions: true },
-        ]}>
-        {active.map((r: any) => (
-          <tr class:list={[isDeny(r) && 'row-deny']}>
-            <td class="is-mono is-muted">{r.num}</td>
-            <td>
-              {r.target === 'ACCEPT'
-                ? <Badge tone="success">Autoriser</Badge>
-                : isDeny(r)
-                  ? <Badge tone="danger">Refuser</Badge>
-                  : <Badge tone="neutral">{r.target === 'ts-input' ? 'Réseau privé' : r.target}</Badge>}
-            </td>
-            <td class="hide-sm">{r.protocol ?? '-'}</td>
-            <td class="is-mono">{r.port ?? '-'}</td>
-            <td class="is-mono hide-sm">{r.source ?? 'toutes'}</td>
-            <td class="al-right is-muted hide-md" data-value={r.packets ?? 0}>{r.packets != null ? r.packets.toLocaleString('fr-FR') : '-'}</td>
-            <td class="is-actions">
-              {r.protectedReason
-                ? <span class="t-meta text-tertiary" title={r.protectedReason}>protégée</span>
-                : <Button size="sm" variant="danger" data-del={r.num}>Supprimer</Button>}
-            </td>
-          </tr>
-        ))}
-      </DataTable>
-      <p class="t-meta text-secondary note">Le pare-feu bloque tout port non autorisé. Un port ouvert ici doit aussi l’être chez l’hébergeur.</p>
-
-      {inert.length > 0 && (
-        <p class="t-meta text-secondary note"><strong>{inert.length} anciennes règles sans effet</strong> : elles suivent « Refuser » et n’ont aucun effet.</p>
-      )}
-
-      <Card eyebrow="Nouvelle règle" title="Autoriser un port">
-        <form id="fw-form" class="form" novalidate>
-          <div class="field">
-            <label for="fw-proto">Protocole</label>
-            <Select id="fw-proto" name="protocol">
-              <option value="tcp">TCP</option>
-              <option value="udp">UDP</option>
-            </Select>
-          </div>
-          <div class="field">
-            <label for="fw-port">Port</label>
-            <input id="fw-port" name="port" class="mono" placeholder="8080 ou 8000:8100" required aria-describedby="fw-port-err" />
-            <small id="fw-port-err" class="field__err" role="alert" hidden></small>
-          </div>
-          <div class="field">
-            <label for="fw-source">Source <span class="text-tertiary">(vide = toutes)</span></label>
-            <input id="fw-source" name="source" class="mono" placeholder="100.64.0.0/10" aria-describedby="fw-source-err" />
-            <small id="fw-source-err" class="field__err" role="alert" hidden></small>
-          </div>
-          <div class="field">
-            <label for="fw-comment">Commentaire</label>
-            <input id="fw-comment" name="comment" placeholder="Motif de l’ouverture" />
-          </div>
-          <Button variant="primary" size="md" type="submit">Ajouter</Button>
-        </form>
-        <p id="fw-msg" class="t-meta msg" role="status" hidden></p>
-      </Card>
-    </div>
-
-    <div slot="dns" class="stack">
-      <SettingsGroup title="Connexion" footer="Lecture seule : votre hébergeur fournit ces réglages (DHCP). Les modifier ici peut couper l’accès au serveur.">
-        <SettingsRow title="Adresse IP locale"><span class="mono">{localIp ?? '-'}</span></SettingsRow>
-        <SettingsRow title="Passerelle"><span class="mono">{gw?.gateway ?? '-'}</span></SettingsRow>
-        <SettingsRow title="Interface par défaut"><span class="mono">{defaultRoute?.dev ?? '-'}</span></SettingsRow>
-        <SettingsRow title="Serveurs DNS"><span class="mono">{dnsText}</span></SettingsRow>
-      </SettingsGroup>
-      <DataTable id="routes-tbl" caption="Table de routage" noun={['route', 'routes']}
-        empty={{ icon: 'waypoints', title: 'Aucune route', text: 'Le panel n’a pas pu lire la table de routage.' }}
-        columns={[
-          { key: 'dest', label: 'Destination', mono: true },
-          { key: 'via', label: 'Passerelle', mono: true, hideBelow: 'sm' },
-          { key: 'dev', label: 'Interface', mono: true },
-          { key: 'state', label: 'Lien' },
-        ]}>
-        {routes.map((r: any) => (
-          <tr>
-            <td class="is-mono">{r.dest === 'default' ? 'par défaut' : r.dest}</td>
-            <td class="is-mono hide-sm">{r.via ?? '-'}</td>
-            <td class="is-mono">{r.dev ?? '-'}</td>
-            <td>{r.down ? <Badge tone="neutral" dot>Coupé</Badge> : <Badge tone="success" dot>Actif</Badge>}</td>
-          </tr>
-        ))}
-      </DataTable>
-    </div>
-  </Tabs>
+  </div>
 </PanelLayout>
 
 <script>
@@ -325,6 +445,7 @@ const tcpCount = conns.filter((c: any) => c.protocol === 'tcp').length;
   import { getTable } from '../scripts/ui/table';
   import { allowError } from '../server/network/firewall-check';
   import { createGraph } from '../scripts/ui/graph';
+  import { bytes } from '../server/core/format';
 
   let liveCanvas: HTMLCanvasElement | null = null;
   function startLive(canvas: HTMLCanvasElement) {
@@ -332,6 +453,7 @@ const tcpCount = conns.filter((c: any) => c.protocol === 'tcp').length;
     liveCanvas = canvas;
     const graph = createGraph(canvas, 'net', [{ name: 'Réception' }, { name: 'Envoi', dashed: true }], 'auto');
     const err = document.getElementById('net-live-err');
+    const rxNow = document.getElementById('net-rx-now'), txNow = document.getElementById('net-tx-now');
     let fails = 0;
     const tick = async () => {
       if (!canvas.isConnected) { graph.stop(); if (liveCanvas === canvas) liveCanvas = null; return; }
@@ -339,6 +461,8 @@ const tcpCount = conns.filter((c: any) => c.protocol === 'tcp').length;
         try {
           const s = await (await fetch('/api/system/stats')).json();
           graph.push([s.network?.rxBytesPerSec ?? 0, s.network?.txBytesPerSec ?? 0]);
+          if (rxNow) rxNow.textContent = `${bytes(s.network?.rxBytesPerSec ?? 0)}/s`;
+          if (txNow) txNow.textContent = `${bytes(s.network?.txBytesPerSec ?? 0)}/s`;
           fails = 0;
         } catch { fails++; }
         if (err) err.hidden = fails < 3;
@@ -355,6 +479,35 @@ const tcpCount = conns.filter((c: any) => c.protocol === 'tcp').length;
       const flash = sessionStorage.getItem('reseau-flash');
       if (flash) { sessionStorage.removeItem('reseau-flash'); toast(flash, 'success'); }
     } catch {}
+    // Onglets (v-tabs) : bouton actif en aria-pressed, panneau correspondant affiché, choix gardé par page.
+    const tabs = document.querySelector<HTMLElement>('[data-tabs="reseau"]');
+    const TAB_KEY = `tabs:${location.pathname}:reseau`;
+    const select = (id: string) => {
+      if (!tabs) return;
+      for (const b of tabs.querySelectorAll<HTMLButtonElement>('[data-tab]')) {
+        const on = b.dataset.tab === id;
+        b.setAttribute('aria-pressed', String(on));
+        const panel = document.getElementById(`reseau-panel-${b.dataset.tab}`);
+        if (panel) panel.hidden = !on;
+      }
+      try { sessionStorage.setItem(TAB_KEY, id); } catch {}
+    };
+    tabs?.addEventListener('click', (e) => {
+      const b = (e.target as Element).closest<HTMLElement>('[data-tab]');
+      if (b) select(b.dataset.tab!);
+    });
+    // Flèches gauche/droite entre les onglets, comme l'ancien composant Tabs.
+    tabs?.addEventListener('keydown', (e) => {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      const all = [...tabs.querySelectorAll<HTMLButtonElement>('[data-tab]')];
+      const i = all.indexOf(document.activeElement as HTMLButtonElement);
+      if (i < 0) return;
+      const next = all[(i + (e.key === 'ArrowRight' ? 1 : all.length - 1)) % all.length]!;
+      next.focus();
+      select(next.dataset.tab!);
+      e.preventDefault();
+    });
+    try { const saved = sessionStorage.getItem(TAB_KEY); if (saved && document.getElementById(`reseau-tab-${saved}`)) select(saved); } catch {}
     const goTab = (tab: string) => document.getElementById(`reseau-tab-${tab}`)?.click();
     document.querySelectorAll<HTMLElement>('[data-go]').forEach((el) => el.addEventListener('click', (e) => {
       e.preventDefault();
@@ -452,78 +605,81 @@ const tcpCount = conns.filter((c: any) => c.protocol === 'tcp').length;
 </script>
 
 <style>
-  .stack { display: flex; flex-direction: column; gap: var(--space-4); }
-  .alert {
-    border: var(--border-width) solid var(--warning-border);
-    background: var(--warning-subtle);
-    border-radius: var(--radius-card);
-    padding: var(--space-4);
-    display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;
-  }
-  .alert .t-meta { color: var(--text-primary); max-width: 80ch; flex: 1 1 260px; }
-  .alert :global(.alert__icon) { color: var(--warning); flex: none; }
+  .net-tabs { display: flex; flex-direction: column; gap: 1.5rem; min-width: 0; }
+  .net-tabs > .v-tabs { align-self: flex-start; }
+  .rpanel { display: flex; flex-direction: column; gap: 1.5rem; min-width: 0; }
+  .rpanel[hidden] { display: none; }
+  .duo { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(24rem, 100%), 1fr)); gap: 1.5rem; }
+  .duo > .v-card { min-width: 0; }
 
-  .graph { height: 220px; }
-  .graph canvas { display: block; width: 100%; height: 100%; border-radius: var(--radius-sm); }
-  .duo { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(360px, 100%), 1fr)); gap: var(--space-4); }
-  .more { display: inline-flex; align-items: center; gap: 2px; font-size: var(--meta-size); color: var(--text-secondary); text-decoration: none; }
-  .more:hover { color: var(--text-primary); }
-  .list { list-style: none; margin: 0; padding: 0; }
-  .list li {
-    display: flex; align-items: center; gap: var(--space-3); min-height: var(--row-h);
-    padding: var(--space-2) var(--space-4); border-top: var(--border-width) solid var(--border);
-  }
-  .list :global(.list__icon) { color: var(--text-secondary); flex: none; }
-  .list__main { display: flex; flex-direction: column; min-width: 0; flex: 1; }
-  .list__title { font-size: var(--dense-size); color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .list__sub { font-size: var(--meta-size); color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .list__side { font-size: var(--meta-size); color: var(--text-secondary); white-space: nowrap; font-variant-numeric: tabular-nums; }
-  .empty { padding: var(--space-4); border-top: var(--border-width) solid var(--border); }
+  /* stat-group-01 */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 1.5rem 0; }
+  .v-card > .stats { padding-inline: 0; }
+  .stat { display: flex; flex-direction: column; gap: 0.25rem; padding-inline: 1.5rem; min-width: 0; }
+  .stat + .stat { border-left: 1px solid var(--border); }
+  .stat__l { font-size: 0.875rem; color: var(--text-secondary); }
+  .stat__v { font-size: 2rem; line-height: 1.1; font-weight: 300; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--text-primary); overflow-wrap: anywhere; }
+  .stat__u { font-size: 0.875rem; font-weight: 400; letter-spacing: 0; color: var(--text-secondary); }
+  .stat__c { font-size: 0.75rem; color: var(--text-secondary); }
 
-  .iface { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-3); }
-  .iface__icon {
-    display: grid; place-items: center; width: 32px; height: 32px; flex: none;
-    border-radius: var(--radius-sm); background: var(--bg-surface-2); color: var(--text-secondary);
-    box-shadow: inset 0 0 0 1px var(--border);
-  }
-  .iface__head { display: flex; flex-direction: column; flex: 1; min-width: 0; }
-  .iface__title { font-size: var(--body-size); font-weight: 600; margin: 0; color: var(--text-primary); }
-  .traffic {
-    display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-5); margin-top: var(--space-3);
-    padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); background: var(--bg-surface-2); color: var(--text-secondary);
-  }
-  .traffic > span { display: inline-flex; align-items: center; gap: var(--space-1); }
+  /* realtime-02 */
+  .graph { height: 14rem; }
+  .graph canvas { display: block; width: 100%; height: 100%; border-radius: 0.5rem; }
+  .graph > p { margin: 0.5rem 0 0; }
+  .side { flex: none; font-size: 0.8125rem; color: var(--text-secondary); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .v-card__head > .v-btn { flex: none; }
+
+  /* interfaces (status-01) */
+  .iface { align-items: center; }
+  .kv { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 1rem 1.5rem; margin: 0; }
+  .kv > div { display: flex; flex-direction: column; gap: 0.125rem; min-width: 0; }
+  .kv dt { font-size: 0.75rem; color: var(--text-secondary); }
+  .kv dd { margin: 0; overflow-wrap: anywhere; }
+  .traffic { margin: 0; flex-wrap: wrap; gap: 0.5rem 1.5rem; }
+  .traffic > span { display: inline-flex; align-items: center; gap: 0.25rem; }
   .traffic strong { color: var(--text-primary); font-weight: 500; font-variant-numeric: tabular-nums; }
-  .section { margin-top: var(--space-4); }
-  .note { max-width: 80ch; }
+
+  /* tableaux (data-table-01) : cartes sans marge latérale, pied de carte vide masqué */
+  .v-card > .v-table-wrap { padding-inline: 0; border-top: 1px solid var(--border); margin-top: -0.5rem; }
+  .v-card > .v-toolbar { padding-block: 0; }
+  .v-card__foot:empty { display: none; }
+  .v-toolbar > .v-select { flex: none; }
+  .v-tab :global(.v-tag) { margin-left: 0.125rem; }
   .row-deny td { background: var(--danger-subtle); }
 
-  .form {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
-    gap: var(--space-4); align-items: end;
-  }
-  .field { display: flex; flex-direction: column; gap: var(--space-2); }
-  .field label { font-size: var(--dense-size); line-height: var(--dense-lh); font-weight: 500; color: var(--text-primary); }
-  .field input {
-    height: var(--control-h); padding-inline: var(--space-3);
-    background: var(--control-fill); color: var(--text-primary);
-    border: var(--border-width) solid var(--field-stroke);
-    border-radius: var(--radius-control); font-size: var(--dense-size); box-shadow: var(--shadow-xs);
-    transition: border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
-  }
-  .field input:hover { border-color: var(--border-strong); }
-  .field input:focus-visible {
-    outline: none; border-color: var(--accent);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
-  }
-  .field input::placeholder { color: var(--text-tertiary); }
-  .field :global(.select) { width: 100%; }
-
-  .field__err { color: var(--danger); font-size: var(--meta-size); }
-  .field input[aria-invalid='true'] { border-color: var(--danger); }
-  .more { background: none; border: 0; padding: 0; font: inherit; font-size: var(--meta-size); cursor: pointer; }
-  .graph > p { margin: var(--space-2) 0 0; }
-  .msg { margin-top: var(--space-4); }
+  /* formulaire d'ouverture de port */
+  .form { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr)); gap: 1rem; align-items: end; }
+  .field { display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; }
+  .field .v-input, .field .v-select { width: 100%; }
+  .field__err { color: var(--danger); font-size: 0.75rem; }
+  .v-input[aria-invalid='true'] { border-color: var(--danger); }
+  .msg { margin: 0; font-size: 0.875rem; }
   .msg--err { color: var(--danger); }
   .msg--ok { color: var(--success); }
+
+  /* Lignes et en-têtes générés par scripts/ui/table.ts */
+  :global(.net .v-table td.is-mono) { font-family: var(--font-mono); font-size: 0.8125rem; font-variant-ligatures: none; }
+  :global(.net .v-table td.is-muted) { color: var(--text-secondary); }
+  :global(.net .v-table th.al-right), :global(.net .v-table td.al-right) { text-align: right; }
+  :global(.net .v-table td.is-actions) { width: 1%; white-space: nowrap; text-align: right; }
+  :global(.net .dt__sort) { display: inline-flex; align-items: center; gap: 0.25rem; margin: 0 -0.25rem; padding: 0.125rem 0.25rem; border: 0; border-radius: 0.375rem; background: transparent; color: inherit; font: inherit; cursor: pointer; white-space: nowrap; }
+  :global(.net .al-right > .dt__sort) { flex-direction: row-reverse; }
+  :global(.net .dt__sort:hover) { background: var(--bg-hover); color: var(--text-primary); }
+  :global(.net .dt__arrow) { width: 0.75rem; height: 0.75rem; opacity: 0; transition: opacity 150ms, transform 150ms; }
+  :global(.net .dt__sort:hover .dt__arrow), :global(.net .dt__sort:focus-visible .dt__arrow) { opacity: 0.6; }
+  :global(.net th[aria-sort] .dt__sort) { color: var(--text-primary); }
+  :global(.net th[aria-sort] .dt__arrow) { opacity: 1; color: var(--accent-text); }
+  :global(.net th[aria-sort='descending'] .dt__arrow) { transform: rotate(180deg); }
+  :global(.net .dt__state td) { padding: 0; }
+  :global(.net .dt__state:hover) { background: transparent; }
+  :global(.net .ui-state) { display: grid; justify-items: center; gap: 0.5rem; padding: 2.5rem 1rem; text-align: center; }
+  :global(.net .ui-state__icon) { color: var(--text-secondary); }
+  :global(.net .ui-state__title) { margin: 0; font-size: 0.875rem; font-weight: 500; color: var(--text-primary); }
+  :global(.net .ui-state__text) { margin: 0; max-width: 36ch; font-size: 0.875rem; color: var(--text-secondary); }
+  @media (max-width: 900px) { :global(.net .hide-md) { display: none; } }
+  @media (max-width: 640px) {
+    :global(.net .hide-sm) { display: none; }
+    .stats { grid-template-columns: 1fr 1fr; }
+    .stat, .stat + .stat { border-left: 0; padding-inline: 1rem; }
+  }
 </style>

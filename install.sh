@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-ORVANE_REPO="${ORVANE_REPO:-https://github.com/Drasewave/orvanes.git}"
+ORVANE_REPO="${ORVANE_REPO:-https://github.com/Milou-dx/orvanes.git}"
 ORVANE_BRANCH="${ORVANE_BRANCH:-master}"
 ORVANE_DIR="${ORVANE_DIR:-$HOME/orvane}"
 ORVANE_ADMIN="${ORVANE_ADMIN:-admin}"
@@ -70,6 +70,8 @@ check_prerequisites() {
 fetch_code() {
   step "Code ($ORVANE_REPO, branche $ORVANE_BRANCH)"
   if [ -d "$ORVANE_DIR/.git" ]; then
+    # Ancienne adresse du dépôt : ce nom de compte n'existe plus, on ne le suit pas.
+    if git -C "$ORVANE_DIR" remote get-url origin | grep -q 'Drasewave/orvanes'; then git -C "$ORVANE_DIR" remote set-url origin "$ORVANE_REPO"; fi
     git -C "$ORVANE_DIR" fetch -q origin "$ORVANE_BRANCH"
     git -C "$ORVANE_DIR" checkout -q "$ORVANE_BRANCH"
     git -C "$ORVANE_DIR" merge -q --ff-only "origin/$ORVANE_BRANCH" \

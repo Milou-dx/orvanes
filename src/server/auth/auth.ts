@@ -1,3 +1,5 @@
+import { newSecret, otpauthUri, verifyCode } from './totp.js';
+import { PANEL_NAME } from '../core/panel';
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import type { AstroCookies } from 'astro';
 import * as core from './auth-core.js';
@@ -63,7 +65,7 @@ function touch(user: any, patch: Record<string, unknown> = {}) {
   core.saveUsers(users);
 }
 
-export function passwordLogin(identifier: string, password: string, ip: string): { user: any } {
+export function passwordLogin(identifier: string, password: string, ip: string, code?: string): { user: any; totpRequired?: boolean } {
   const id = core.normalizeEmail(identifier);
   const key = `pw:${ip}:${id}`;
   const wait = core.throttled(key);
@@ -75,10 +77,45 @@ export function passwordLogin(identifier: string, password: string, ip: string):
     core.recordFailure(key);
     throw new AuthError('Identifiant ou mot de passe incorrect.', 401);
   }
-  core.recordSuccess(key);
   if (user.status === 'blocked') throw new AuthError('Ce compte est bloqué.', 403);
+  if (user.totp?.secret) {
+    if (!code) return { user: null, totpRequired: true };
+    const step = verifyCode(user.totp.secret, code, user.totp.lastStep ?? -1);
+    if (step === null) {
+      core.recordFailure(key);
+      throw new AuthError('Code de vérification incorrect.', 401);
+    }
+    patchUser(user.id, { totp: { secret: user.totp.secret, lastStep: step } });
+  }
+  core.recordSuccess(key);
   touch(user);
   return { user: core.findUserById(user.id) };
+}
+
+function patchUser(id: string, fields: object) {
+  core.saveUsers(core.listUsers().map((u: any) => (u.id === id ? { ...u, ...fields } : u)));
+}
+
+export function totpStart(id: string) {
+  const user = core.findUserById(id);
+  if (!user) throw new AuthError('Compte inconnu.', 404);
+  if (user.totp?.secret) throw new AuthError('La double authentification est déjà active.', 409);
+  const secret = newSecret();
+  patchUser(id, { totpPending: secret });
+  return { secret, uri: otpauthUri(secret, user.email, PANEL_NAME) };
+}
+
+export function totpConfirm(id: string, code: string) {
+  const user = core.findUserById(id);
+  const step = user?.totpPending ? verifyCode(user.totpPending, code) : null;
+  if (step === null) throw new AuthError('Code incorrect. Vérifiez l’heure de votre téléphone et réessayez.', 400);
+  patchUser(id, { totp: { secret: user.totpPending, lastStep: step }, totpPending: undefined });
+}
+
+export function totpDisable(id: string, code: string) {
+  const user = core.findUserById(id);
+  if (!user?.totp?.secret || verifyCode(user.totp.secret, code, user.totp.lastStep ?? -1) === null) throw new AuthError('Code incorrect.', 400);
+  patchUser(id, { totp: undefined });
 }
 
 const GOOGLE_CALLBACK = '/api/auth/google/callback';

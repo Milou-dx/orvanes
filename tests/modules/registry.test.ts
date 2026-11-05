@@ -112,7 +112,7 @@ describe('registre', () => {
     add(manifest('base'));
     add(manifest('demo', { requires: { commands: ['bash', 'commande-qui-nexiste-pas'], modules: ['base'] } }));
     const r = createRegistry({ root, dataDir: data });
-    expect((await r.install('demo')).output).toBe('Prérequis manquants : commande commande-qui-nexiste-pas, module base.');
+    expect((await r.install('demo')).output).toBe('Prérequis manquants : commande commande-qui-nexiste-pas, module base. Installez-les sur le serveur, puis réessayez.');
     expect(r.isInstalled('demo')).toBe(false);
   });
 

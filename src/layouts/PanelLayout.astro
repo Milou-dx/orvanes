@@ -154,12 +154,11 @@ const favicon = faviconProp ?? `/icons/${logoKey}.svg?v=${ICON_V}`;
 
         {authOn && user && (
           <div class="pane__foot">
-            <span class="account" title={user.email && user.email !== user.name ? user.email : user.name}>
+            <button type="button" class="account" data-account-menu aria-haspopup="menu" aria-expanded="false" aria-label={`Compte de ${user.name}`}
+                    data-name={user.name} data-email={user.email && user.email !== user.name ? user.email : ''} data-admin={user.role === 'admin' ? '' : undefined}>
               <span class="account__avatar" aria-hidden="true">{(user.name ?? '?').trim().slice(0, 1).toUpperCase()}</span>
               <span class="account__name">{user.name}</span>
-            </span>
-            <button type="button" class="iconbtn" data-logout aria-label="Se déconnecter" title="Se déconnecter">
-              <Icon name="logout" size={16} />
+              <Sym name="chevronUp" size={14} class="account__chev" />
             </button>
           </div>
         )}
@@ -339,6 +338,13 @@ const favicon = faviconProp ?? `/icons/${logoKey}.svg?v=${ICON_V}`;
         :global(:root:not([data-nav])) .navsub-toggle { display: none; }
         :global(:root:not([data-nav])) .navitem[hidden] { display: list-item; }
       }
+      /* rail d'icônes : la flèche des sous-onglets est masquée, sa marge doit l'être aussi */
+      @media (min-width: 640.02px) {
+        :global(:root[data-nav='compact']) .navitem:has(.navsub-toggle) .navlink { padding-right: 0; }
+      }
+      @media (min-width: 640.02px) and (max-width: 1000px) {
+        :global(:root:not([data-nav])) .navitem:has(.navsub-toggle) .navlink { padding-right: 0; }
+      }
       @media (max-width: 640px) {
         :global(:root[data-nav]) .navsub-toggle, :global(:root:not([data-nav])) .navsub-toggle { display: inline-grid; }
         :global(:root[data-nav]) .navitem[hidden], :global(:root:not([data-nav])) .navitem[hidden] { display: none; }
@@ -349,12 +355,18 @@ const favicon = faviconProp ?? `/icons/${logoKey}.svg?v=${ICON_V}`;
         flex: none; display: flex; align-items: center; gap: var(--space-2);
         padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3); border-top: var(--border-width) solid var(--border);
       }
-      .account { display: flex; align-items: center; gap: var(--space-2); flex: 1; min-width: 0; font-size: var(--dense-size); }
+      .account {
+        display: flex; align-items: center; gap: var(--space-2); flex: 1; min-width: 0; font: inherit; font-size: var(--dense-size);
+        padding: var(--space-1) var(--space-2); margin-left: calc(-1 * var(--space-2)); border: 0; border-radius: var(--radius-md);
+        background: none; color: inherit; cursor: pointer; text-align: left;
+      }
+      .account:hover, .account[aria-expanded='true'] { background: var(--bg-hover); }
       .account__avatar {
         display: inline-grid; place-items: center; flex: none; width: 20px; height: 20px; border-radius: var(--radius-full);
         background: var(--bg-hover); color: var(--text-secondary); font-size: var(--micro-size); font-weight: 600;
       }
-      .account__name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-secondary); }
+      .account__name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-secondary); }
+      .account__chev { flex: none; color: var(--text-tertiary); }
 
       .scrim { display: none; }
 
@@ -443,7 +455,8 @@ const favicon = faviconProp ?? `/icons/${logoKey}.svg?v=${ICON_V}`;
       :global(:root[data-nav='compact']) .brand,
       :global(:root[data-nav='compact']) .navsec__head,
       :global(:root[data-nav='compact']) .navlink__label, :global(:root[data-nav='compact']) .navlink__badge,
-      :global(:root[data-nav='compact']) .account { display: none; }
+      :global(:root[data-nav='compact']) .account__name, :global(:root[data-nav='compact']) .account__chev { display: none; }
+      :global(:root[data-nav='compact']) .account { flex: none; margin: 0; }
       :global(:root[data-nav='compact']) .pane__foot { justify-content: center; padding-inline: 0; }
       :global(:root[data-nav='compact']) .pane__head { justify-content: center; padding: 0; }
       :global(:root[data-nav='compact']) .pane__scroll { padding-inline: var(--space-2); gap: var(--space-2); }
@@ -456,7 +469,8 @@ const favicon = faviconProp ?? `/icons/${logoKey}.svg?v=${ICON_V}`;
         :global(:root:not([data-nav])) .brand,
         :global(:root:not([data-nav])) .navsec__head,
         :global(:root:not([data-nav])) .navlink__label, :global(:root:not([data-nav])) .navlink__badge,
-        :global(:root:not([data-nav])) .account { display: none; }
+        :global(:root:not([data-nav])) .account__name, :global(:root:not([data-nav])) .account__chev { display: none; }
+        :global(:root:not([data-nav])) .account { flex: none; margin: 0; }
         :global(:root:not([data-nav])) .pane__foot { justify-content: center; padding-inline: 0; }
         :global(:root:not([data-nav])) .pane__head { justify-content: center; padding: 0; }
         :global(:root:not([data-nav])) .pane__scroll { padding-inline: var(--space-2); gap: var(--space-2); }
@@ -489,7 +503,9 @@ const favicon = faviconProp ?? `/icons/${logoKey}.svg?v=${ICON_V}`;
         :global(:root[data-nav]) .navsec__head, :global(:root:not([data-nav])) .navsec__head { display: flex; }
         :global(:root[data-nav]) .navlink__label, :global(:root:not([data-nav])) .navlink__label { display: block; }
         :global(:root[data-nav]) .navlink__badge:not([hidden]), :global(:root:not([data-nav])) .navlink__badge:not([hidden]) { display: inline-grid; }
-        :global(:root[data-nav]) .account, :global(:root:not([data-nav])) .account { display: flex; }
+        :global(:root[data-nav]) .account, :global(:root:not([data-nav])) .account { display: flex; flex: 1; margin-left: calc(-1 * var(--space-2)); }
+        :global(:root[data-nav]) .account__name, :global(:root:not([data-nav])) .account__name { display: block; }
+        :global(:root[data-nav]) .account__chev, :global(:root:not([data-nav])) .account__chev { display: inline; }
         :global(:root[data-nav]) .pane__foot, :global(:root:not([data-nav])) .pane__foot { justify-content: flex-start; padding-inline: var(--space-3) var(--space-2); }
         :global(:root[data-nav]) .pane__head, :global(:root:not([data-nav])) .pane__head { justify-content: flex-start; padding: 0 var(--space-2) 0 var(--space-3); }
         :global(:root[data-nav]) .navsec + .navsec, :global(:root:not([data-nav])) .navsec + .navsec { border-top: 0; padding-top: 0; }

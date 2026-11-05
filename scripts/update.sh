@@ -10,6 +10,8 @@ branch="$(git branch --show-current)"
 echo "[1/4] Code"
 before="$(git rev-parse HEAD)"
 active="$(readlink dist 2>/dev/null || true)"
+# Ancienne adresse du dépôt : ce nom de compte n'existe plus, on ne le suit pas.
+if git remote get-url origin | grep -q 'Drasewave/orvanes'; then git remote set-url origin https://github.com/Milou-dx/orvanes.git; fi
 git pull -q --ff-only origin "$branch"
 if [ -n "$active" ] && [ ! -L dist ]; then ln -sfn "$active" dist; fi
 echo "      $(git log -1 --format='%h %s')"

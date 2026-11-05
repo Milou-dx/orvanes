@@ -1,21 +1,14 @@
 ---
 import PanelLayout from '../layouts/PanelLayout.astro';
-import SubNav from '../components/ui/SubNav.astro';
-import Toolbar from '../components/ui/Toolbar.astro';
-import DataTable from '../components/ui/DataTable.astro';
-import EmptyState from '../components/ui/EmptyState.astro';
-import SettingsGroup from '../components/ui/SettingsGroup.astro';
-import SettingsRow from '../components/ui/SettingsRow.astro';
-import Card from '../components/ui/Card.astro';
-import Toggle from '../components/ui/Toggle.astro';
-import Badge from '../components/ui/Badge.astro';
-import Button from '../components/ui/Button.astro';
+import Icon from '../components/ui/Icon.astro';
+import '../styles/vault.css';
 import { adminOverview, googleConfigured } from '../server/auth/auth';
 import { tabs as panelTabs } from '../server/auth/auth-core.js';
-import { ago } from '../server/core/format';
+import { ago, tone } from '../server/core/format';
 import { PANEL_NAME } from '../server/core/panel';
 import { isInstalled } from '../server/modules/registry.js';
 
+/** Recomposé avec les blocs du Vault (dashboardblocks, MIT) : settings-01 (membres), settings-03 (droits en interrupteurs), team (avatars), status-label. */
 export const prerender = false;
 
 const VIEWS = [
@@ -37,241 +30,319 @@ const users = [...ov.users].sort(
 const admins = ov.users.filter((u) => u.role === 'admin' && u.status === 'active');
 const rescue = admins.filter((u) => u.hasPassword);
 const initials = (name: string) => name.split(/[\s@._-]+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join('') || '?';
-type Tone = 'success' | 'warning' | 'danger';
-const statusBadge = (s: string): { tone: Tone; label: string } =>
-  s === 'active' ? { tone: 'success', label: 'Actif' } : s === 'pending' ? { tone: 'warning', label: 'En attente' } : { tone: 'danger', label: 'Bloqué' };
+const statusOf = (s: string) =>
+  s === 'active' ? { tone: 'good', label: 'Actif' } : s === 'pending' ? { tone: 'warning', label: 'En attente' } : { tone: 'bad', label: 'Bloqué' };
 const data = JSON.stringify({ users: ov.users, tabs: tabs.map((t) => ({ id: t.id, label: t.label, sensitive: t.sensitive })), enabled: ov.enabled, google: googleConfigured() }).replace(/</g, '\\u003c');
-const sensitiveCount = tabs.filter((t) => t.sensitive).length;
 const members = users.filter((u) => u.role !== 'admin');
-const navItems = VIEWS.map(([k, label]) => ({ href: `/acces?vue=${k}`, label, count: k === 'utilisateurs' && pendingUsers.length ? pendingUsers.length : undefined }));
+const plural = (n: number, w: string) => `${n} ${w}${n > 1 ? 's' : ''}`;
+const summary = `${plural(admins.length, 'administrateur')} et ${plural(members.filter((u) => u.status === 'active').length, 'utilisateur')}${pendingUsers.length ? `, ${plural(pendingUsers.length, 'demande')} en attente` : ''} · protection ${ov.enabled ? 'activée' : 'désactivée'}`;
+const groups = [
+  { title: 'Onglets sensibles', desc: 'Donnent la main sur la machine.', items: tabs.filter((t) => t.sensitive) },
+  { title: 'Autres onglets', desc: 'Consultation et outils sans accès au système.', items: tabs.filter((t) => !t.sensitive) },
+].filter((g) => g.items.length);
+const access = (u: (typeof users)[number]) => (u.role === 'admin' ? tabs.length : u.tabs.filter((t) => tabs.some((x) => x.id === t)).length);
 const redirectUri = `${Astro.url.origin}/api/auth/google/callback`;
 ---
-<PanelLayout title="Utilisateurs" subtitle={`${ov.users.length} compte${ov.users.length > 1 ? 's' : ''}${pendingUsers.length ? ` · ${pendingUsers.length} en attente` : ''} · protection ${ov.enabled ? 'activée' : 'désactivée'}`} refreshMs={null}>
-  {vue === 'utilisateurs' && <Button slot="actions" variant="primary" icon="add" id="acces-new">Nouvel utilisateur</Button>}
+<PanelLayout title="Utilisateurs" subtitle={summary} refreshMs={null}>
   <script is:inline type="application/json" id="acces-data" set:html={data}></script>
 
-  <SubNav items={navItems} label="Sections de l’administration des accès" current={`/acces?vue=${vue}`} />
+  <div class="v-page acces">
+    <nav class="v-tabs" aria-label="Sections de l’administration des accès">
+      {VIEWS.map(([k, label]) => (
+        <a class="v-tab" href={`/acces?vue=${k}`} aria-current={k === vue ? 'page' : undefined} data-astro-prefetch="hover">
+          {label}{k === 'utilisateurs' && pendingUsers.length > 0 && <span class="v-tag">{pendingUsers.length}</span>}
+        </a>
+      ))}
+    </nav>
 
-  {!ov.enabled && (
-    <div class="alert alert--warn" role="alert">
-      <p class="t-meta"><strong>La protection est inactive.</strong> Toute personne qui atteint le panel y entre sans se connecter. <a href="/acces?vue=securite">Voir comment l’activer</a>.</p>
-    </div>
-  )}
+    {!ov.enabled && (
+      <div class="v-alert v-alert--warn" role="alert">
+        <strong>La protection est inactive.</strong>
+        <span>Toute personne qui atteint le panel y entre sans se connecter. <a href="/acces?vue=securite">Voir comment l’activer</a>.</span>
+      </div>
+    )}
 
-  {vue === 'utilisateurs' && (
-    <>
-      {pendingUsers.length > 0 && (
-        <SettingsGroup title={`${pendingUsers.length} demande${pendingUsers.length > 1 ? 's' : ''} d’accès en attente`} footer="Ces personnes se sont connectées avec Google mais n’ont aucun droit pour l’instant.">
-          {pendingUsers.map((u) => (
-            <SettingsRow icon="user" tint="--mac-orange" title={u.name} desc={`${u.email} · inscrit il y a ${ago(u.createdAt)}`}>
-              <Button size="sm" variant="primary" data-edit={u.id}>Approuver…</Button>
-              <Button size="sm" variant="danger" data-block={u.id} data-name={u.name}>Refuser</Button>
-            </SettingsRow>
-          ))}
-        </SettingsGroup>
-      )}
+    {vue === 'utilisateurs' && (
+      <section class="v-card">
+        <header class="v-card__head">
+          <div class="v-card__titles">
+            <h2 class="v-card__title">Membres</h2>
+            <p class="v-card__desc">{summary.split(' · ')[0]}. Un administrateur voit tous les onglets ; un utilisateur ne voit que ceux que vous lui donnez.</p>
+          </div>
+          <button type="button" class="v-btn" id="acces-new"><Icon name="add" size={16} />Nouvel utilisateur</button>
+        </header>
 
-      <Toolbar controls="users" search="Rechercher un nom ou une adresse" topSearch count label="Recherche d’utilisateurs" />
-      <Card flush>
-        <DataTable id="users" caption="Comptes du panel" noun={['compte', 'comptes']} sort={{ key: 'user' }}
-          empty={{ icon: 'users', title: 'Aucun compte', text: 'Créez le premier utilisateur avec « Nouvel utilisateur ».' }}
-          columns={[
-            { key: 'user', label: 'Utilisateur', sortable: true },
-            { key: 'role', label: 'Rôle', sortable: true, hideBelow: 'sm' },
-            { key: 'status', label: 'Statut', sortable: true },
-            { key: 'access', label: 'Onglets', type: 'number', sortable: true, hideBelow: 'lg' },
-            { key: 'last', label: 'Dernière connexion', type: 'date', sortable: true, hideBelow: 'lg' },
-            { key: 'actions', label: 'Actions', actions: true, hideLabel: true },
-          ]}>
-          {users.map((u) => {
-            const st = statusBadge(u.status);
-            const n = u.role === 'admin' ? tabs.length : u.tabs.filter((t) => tabs.some((x) => x.id === t)).length;
-            return (
-              <tr>
-                <td data-value={u.name}>
-                  <div class="who">
-                    <span class="avatar" aria-hidden="true">{initials(u.name)}{u.picture && <img src={u.picture} alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()" />}</span>
-                    <div class="who__t"><strong>{u.name}</strong><div class="t-meta text-tertiary">{u.email}{u.hasPassword ? ' · mot de passe' : ''}</div>{linux && u.role !== 'admin' && <div class="t-meta text-tertiary">{u.linuxUser ? <>Compte Linux <code>{u.linuxUser}</code></> : 'Sans compte Linux : Claude en lecture seule'}</div>}</div>
-                  </div>
-                </td>
-                <td class="hide-sm" data-value={u.role}>{u.role === 'admin' ? <Badge tone="accent">Administrateur</Badge> : <span class="text-secondary">Utilisateur</span>}</td>
-                <td data-value={st.label}><Badge tone={st.tone} dot>{st.label}</Badge></td>
-                <td class="hide-lg" data-value={n}>
-                  {u.role === 'admin' ? <span class="text-secondary">Tous</span> : n === 0 ? <span class="text-tertiary">Aucun</span> : <span class="text-secondary">{n} sur {tabs.length}</span>}
-                </td>
-                <td class="hide-lg text-secondary" data-value={u.lastLoginAt ?? ''}>{u.lastLoginAt ? `il y a ${ago(u.lastLoginAt)}` : 'jamais'}{u.sessions > 0 && <div class="t-meta text-tertiary">{u.sessions} session{u.sessions > 1 ? 's' : ''}</div>}</td>
-                <td class="is-actions">
-                  <div class="rowact">
-                    <Button size="sm" data-edit={u.id}>Modifier</Button>
-                    <Button variant="ghost" size="sm" icon="more" iconOnly label={`Autres actions pour ${u.name}`} aria-haspopup="menu" aria-expanded="false"
-                      data-more={u.id} data-name={u.name} data-admin={u.role === 'admin' ? '' : undefined}
-                      data-linux={linux && u.role !== 'admin' ? '' : undefined} data-sessions={u.sessions} />
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </DataTable>
-        <p class="note t-meta text-secondary">Un administrateur voit tous les onglets, dont celui-ci. Un utilisateur ne voit que les onglets que vous lui attribuez : sans cette attribution, il ne peut ouvrir ni la page ni ses fonctions. Les onglets « sensible » donnent la main sur la machine.{linux && ' Un utilisateur lié à un compte Linux utilise Claude sous ce compte, enfermé dans son dossier personnel (écriture complète dans /home/<compte>, reste du système en lecture seule) ; sans compte Linux, Claude ne fait que consulter.'}</p>
-      </Card>
-    </>
-  )}
+        <div class="search">
+          <label class="v-label" for="acces-q">Rechercher</label>
+          <input class="v-input" id="acces-q" type="search" placeholder="Nom ou adresse" autocomplete="off" />
+        </div>
 
-  {vue === 'droits' && (
-    <>
-      <p class="t-meta text-secondary lead">Cochez un onglet pour l’ouvrir à un utilisateur ; le panel enregistre la case dès que vous cliquez. Les administrateurs ({admins.length}) voient tous les onglets et ne figurent pas ici. {sensitiveCount} onglets de niveau <span class="sens">sensible</span> donnent la main sur la machine.</p>
-      {members.length === 0 ? (
-        <Card><EmptyState icon="users" title="Aucun utilisateur à configurer" text="Créez un utilisateur non administrateur pour lui attribuer des onglets."><Button slot="actions" variant="primary" href="/acces?vue=utilisateurs">Aller aux utilisateurs</Button></EmptyState></Card>
-      ) : (
-        <Card flush>
-          <div class="mx-wrap" tabindex="0" role="region" aria-label="Matrice des droits par onglet, défilement horizontal">
+        {pendingUsers.length > 0 && (
+          <section aria-labelledby="acces-pending">
+            <h3 class="v-h3" id="acces-pending">{plural(pendingUsers.length, 'demande')} d’accès en attente</h3>
+            <ul class="v-list">
+              {pendingUsers.map((u) => (
+                <li data-q={`${u.name} ${u.email}`.toLowerCase()}>
+                  <span class="v-avatar" style={`--c:${tone(u.name)}`} aria-hidden="true">{initials(u.name)}{u.picture && <img src={u.picture} alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()" />}</span>
+                  <span class="v-who"><span class="v-who__name">{u.name}</span><span class="v-who__sub">{u.email} · inscrit il y a {ago(u.createdAt)}</span></span>
+                  <button type="button" class="v-btn v-btn--sm" data-edit={u.id}>Approuver…</button>
+                  <button type="button" class="v-btn v-btn--sm v-btn--danger" data-block={u.id} data-name={u.name}>Refuser</button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        <section aria-labelledby="acces-members">
+          <h3 class="v-h3" id="acces-members">{plural(users.length, 'compte')}</h3>
+          {users.length === 0 ? <p class="v-muted empty">Aucun compte. Créez le premier avec « Nouvel utilisateur ».</p> : (
+            <ul class="v-list" id="acces-list">
+              {users.map((u) => {
+                const st = statusOf(u.status);
+                const n = access(u);
+                return (
+                  <li data-q={`${u.name} ${u.email} ${u.linuxUser ?? ''}`.toLowerCase()}>
+                    <span class:list={['v-avatar', u.sessions > 0 && 'v-avatar--on']} style={`--c:${tone(u.name)}`} aria-hidden="true">{initials(u.name)}{u.picture && <img src={u.picture} alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()" />}</span>
+                    <span class="v-who">
+                      <span class="v-who__name">{u.name}{u.sessions > 0 && <span class="visually-hidden"> (session ouverte)</span>}</span>
+                      <span class="v-who__sub">{u.email}{u.hasPassword ? ' · mot de passe' : ''}{linux && u.role !== 'admin' && (u.linuxUser ? ` · Linux ${u.linuxUser}` : ' · sans compte Linux')}</span>
+                    </span>
+                    <span class="col col--role v-muted">{u.role === 'admin' ? 'Administrateur' : 'Utilisateur'}</span>
+                    <span class="col col--tabs v-badge">{u.role === 'admin' ? 'Tous les onglets' : `${n}/${tabs.length} onglets`}</span>
+                    <span class="col col--last v-muted" title={u.sessions > 0 ? `${plural(u.sessions, 'session')} ouverte${u.sessions > 1 ? 's' : ''}` : undefined}>{u.lastLoginAt ? `il y a ${ago(u.lastLoginAt)}` : 'jamais connecté'}</span>
+                    <span class:list={['col', 'v-status', `v-status--${st.tone}`]}>{st.label}</span>
+                    <span class="acts">
+                      <button type="button" class="v-btn v-btn--outline v-btn--sm" data-edit={u.id}>Modifier</button>
+                      <button type="button" class="v-btn v-btn--ghost v-btn--sm v-btn--icon" aria-label={`Autres actions pour ${u.name}`} aria-haspopup="menu" aria-expanded="false"
+                        data-more={u.id} data-name={u.name} data-admin={u.role === 'admin' ? '' : undefined}
+                        data-linux={linux && u.role !== 'admin' ? '' : undefined} data-sessions={u.sessions}><Icon name="more" size={16} /></button>
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          <p class="v-muted empty" id="acces-none" hidden>Aucun compte ne correspond.</p>
+        </section>
+
+        <footer class="v-card__foot">
+          Les onglets sensibles donnent la main sur la machine.{linux && ' Un utilisateur lié à un compte Linux utilise Claude sous ce compte, enfermé dans son dossier personnel ; sans compte Linux, Claude ne fait que consulter.'}
+        </footer>
+      </section>
+    )}
+
+    {vue === 'droits' && (
+      <section class="v-card">
+        <header class="v-card__head">
+          <div class="v-card__titles">
+            <h2 class="v-card__title">Droits par onglet</h2>
+            <p class="v-card__desc">Chaque interrupteur ouvre un onglet à un utilisateur, enregistré dès le clic. Les administrateurs ({admins.length}) voient tout et n’apparaissent pas ici.</p>
+          </div>
+        </header>
+        {members.length === 0 ? (
+          <div class="empty">
+            <p class="v-muted">Aucun utilisateur à configurer. Créez un utilisateur non administrateur pour lui attribuer des onglets.</p>
+            <a class="v-btn v-btn--outline v-btn--sm" href="/acces?vue=utilisateurs">Aller aux membres</a>
+          </div>
+        ) : (
+          <div class="mx-wrap" tabindex="0" role="region" aria-label="Droits par onglet, défilement horizontal">
             <table class="mx" id="matrix">
               <thead>
                 <tr>
                   <th scope="col" class="mx-tab">Onglet</th>
                   {members.map((u) => (
                     <th scope="col" class:list={['mx-user', u.status !== 'active' && 'is-off']}>
-                      <span class="avatar" aria-hidden="true">{initials(u.name)}{u.picture && <img src={u.picture} alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()" />}</span>
+                      <span class="v-avatar" style={`--c:${tone(u.name)}`} aria-hidden="true">{initials(u.name)}{u.picture && <img src={u.picture} alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()" />}</span>
                       <span class="mx-user__n">{u.name}</span>
-                      <span class="t-meta text-tertiary mx-user__c" data-mx-count={u.id}>{u.tabs.filter((t) => tabs.some((x) => x.id === t)).length}/{tabs.length}</span>
-                      {u.status !== 'active' && <span class="t-meta text-tertiary">{statusBadge(u.status).label}</span>}
+                      <span class="mx-user__c" data-mx-count={u.id}>{access(u)}/{tabs.length}</span>
+                      {u.status !== 'active' && <span class="mx-user__c">{statusOf(u.status).label}</span>}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody>
-                {tabs.map((t) => (
-                  <tr>
-                    <th scope="row" class="mx-tab">{t.label}{t.sensitive && <span class="sens">sensible</span>}</th>
-                    {members.map((u) => (
-                      <td class="mx-cell">
-                        <label>
-                          <input type="checkbox" data-mx-user={u.id} data-mx-tab={t.id} checked={u.tabs.includes(t.id)} />
-                          <span class="visually-hidden">{u.name} : {t.label}</span>
-                        </label>
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
+              {groups.map((g) => (
+                <tbody>
+                  <tr class="mx-group"><th scope="rowgroup" colspan={members.length + 1}><span class="v-label">{g.title}</span> <span class="v-muted">{g.desc}</span></th></tr>
+                  {g.items.map((t) => (
+                    <tr>
+                      <th scope="row" class="mx-tab">{t.label}</th>
+                      {members.map((u) => (
+                        <td class="mx-cell">
+                          <input type="checkbox" class="v-switch" data-mx-user={u.id} data-mx-tab={t.id} checked={u.tabs.includes(t.id)} aria-label={`${u.name} : ${t.label}`} />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              ))}
             </table>
           </div>
-        </Card>
-      )}
-    </>
-  )}
+        )}
+      </section>
+    )}
 
-  {vue === 'google' && (
-    <>
-      <SettingsGroup title="État">
-        <SettingsRow icon="users" title="Connexion avec Google" desc="Bouton « Se connecter avec Google » sur l’écran de connexion.">
-          <Badge tone={ov.google.configured ? 'success' : 'neutral'} dot>{ov.google.configured ? 'Configurée' : 'Non configurée'}</Badge>
-        </SettingsRow>
-      </SettingsGroup>
+    {vue === 'google' && (
+      <>
+        <form id="google-form" class="v-card">
+          <header class="v-card__head">
+            <div class="v-card__titles">
+              <h2 class="v-card__title">Connexion avec Google</h2>
+              <p class="v-card__desc">Ajoute « Se connecter avec Google » à l’écran de connexion. Un compte Google inconnu apparaît en attente ; vous décidez de son accès.</p>
+            </div>
+            <span class:list={['v-status', ov.google.configured ? 'v-status--good' : '']}>{ov.google.configured ? 'Configurée' : 'Non configurée'}</span>
+          </header>
+          <div>
+            <div class="v-row">
+              <label class="v-row__txt" for="g-id"><span class="v-row__label">ID client</span><span class="v-row__desc">Se termine par apps.googleusercontent.com.</span></label>
+              <input id="g-id" class="v-input v-mono" value={ov.google.clientId} placeholder="123456789-abc…apps.googleusercontent.com" autocomplete="off" spellcheck="false" />
+            </div>
+            <div class="v-row">
+              <label class="v-row__txt" for="g-secret"><span class="v-row__label">Code secret du client</span><span class="v-row__desc">{ov.google.hasSecret ? 'Laissé vide, le code enregistré ne change pas.' : 'Commence par GOCSPX-.'}</span></label>
+              <input id="g-secret" class="v-input v-mono" type="password" placeholder={ov.google.hasSecret ? '••••••••' : 'GOCSPX-…'} autocomplete="off" spellcheck="false" />
+            </div>
+          </div>
+          <footer class="v-card__foot foot-end">
+            <p id="google-msg" class="msg" hidden></p>
+            <button type="button" class="v-btn v-btn--outline" id="google-test" disabled={!ov.google.configured}>Tester auprès de Google</button>
+            <button type="submit" class="v-btn">Enregistrer</button>
+          </footer>
+        </form>
 
-      <form id="google-form" class="form">
-        <SettingsGroup title="Identifiant client Google">
-          <SettingsRow title="ID client"><input id="g-id" class="mono gin" aria-label="ID client" value={ov.google.clientId} placeholder="123456789-abc…apps.googleusercontent.com" autocomplete="off" spellcheck="false" /></SettingsRow>
-          <SettingsRow title="Code secret du client"><input id="g-secret" class="mono gin" aria-label="Code secret du client" type="password" placeholder={ov.google.hasSecret ? '•••••••• (inchangé si vide)' : 'GOCSPX-…'} autocomplete="off" spellcheck="false" /></SettingsRow>
-          <SettingsRow title="Enregistrer ou tester">
-            <Button variant="secondary" size="md" id="google-test" disabled={!ov.google.configured}>Tester auprès de Google</Button>
-            <Button variant="primary" size="md" type="submit">Enregistrer</Button>
-          </SettingsRow>
-        </SettingsGroup>
-      </form>
-      <p id="google-msg" class="t-meta msg" hidden></p>
+        <section class="v-card">
+          <header class="v-card__head">
+            <div class="v-card__titles">
+              <h2 class="v-card__title">Créer vos identifiants Google</h2>
+              <p class="v-card__desc">Cinq étapes dans la console Google Cloud, à faire une fois.</p>
+            </div>
+          </header>
+          <ol class="steps">
+            <li>Ouvrez la <a href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noopener">console Google Cloud</a> et créez un projet (par exemple « {PANEL_NAME} »).</li>
+            <li>Dans « API et services » → <a href="https://console.cloud.google.com/apis/credentials/consent" target="_blank" rel="noopener">Écran de consentement OAuth</a> : type <strong>Externe</strong>, nom « {PANEL_NAME} ». Gardez l’état <strong>Test</strong> et ajoutez comme <strong>utilisateurs de test</strong> les adresses Gmail autorisées à se connecter, la vôtre incluse.</li>
+            <li>Dans <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Identifiants</a> → « Créer des identifiants » → « ID client OAuth » → type d’application : <strong>Application Web</strong>.</li>
+            <li>Dans « URI de redirection autorisés », ajoutez : <code class="v-mono">{redirectUri}</code></li>
+            <li>Copiez l’<strong>ID client</strong> et le <strong>code secret</strong> dans le formulaire ci-dessus, puis enregistrez et testez.</li>
+          </ol>
+          <footer class="v-card__foot">Google n’accepte qu’une adresse de retour en HTTPS : le bouton passe par le domaine public, pas par l’adresse Tailscale. L’identifiant et le mot de passe restent disponibles partout.</footer>
+        </section>
+      </>
+    )}
 
-      <Card title="Créer vos identifiants Google">
-        <ol class="steps">
-          <li>Ouvrez la <a href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noopener">console Google Cloud</a> et créez un projet (par exemple « {PANEL_NAME} »).</li>
-          <li>Dans « API et services » → <a href="https://console.cloud.google.com/apis/credentials/consent" target="_blank" rel="noopener">Écran de consentement OAuth</a> : type <strong>Externe</strong>, nom « {PANEL_NAME} ». Gardez l’état <strong>Test</strong> et ajoutez comme <strong>utilisateurs de test</strong> les adresses Gmail autorisées à se connecter, la vôtre incluse.</li>
-          <li>Dans <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Identifiants</a> → « Créer des identifiants » → « ID client OAuth » → type d’application : <strong>Application Web</strong>.</li>
-          <li>Dans « URI de redirection autorisés », ajoutez : <code class="mono">{redirectUri}</code></li>
-          <li>Copiez l’<strong>ID client</strong> et le <strong>code secret</strong> dans le formulaire ci-dessus, puis enregistrez et testez.</li>
-        </ol>
-        <p class="t-meta text-secondary">Google n’accepte qu’une adresse de retour en HTTPS : le bouton passe donc par le domaine public, et l’adresse Tailscale ne le permet pas (l’identifiant et le mot de passe restent disponibles partout). Un compte Google inconnu apparaît ici « en attente » ; vous décidez de son accès.</p>
-      </Card>
-    </>
-  )}
+    {vue === 'securite' && (
+      <>
+        <section class="v-card">
+          <header class="v-card__head">
+            <div class="v-card__titles">
+              <h2 class="v-card__title">Protection par connexion</h2>
+              <p class="v-card__desc">Activée : écran de connexion et onglets limités par compte, terminal et Claude inclus. Désactivée : le panel reste ouvert.</p>
+            </div>
+            <button type="button" role="switch" class="v-switch" id="acces-enable" aria-checked={ov.enabled ? 'true' : 'false'} aria-label="Protection par connexion"></button>
+          </header>
+        </section>
 
-  {vue === 'securite' && (
-    <>
-      <SettingsGroup title="Protection par connexion">
-        <SettingsRow icon="shield" title="Exiger une connexion pour entrer dans le panel" desc="Désactivée : le panel reste ouvert. Activée : écran de connexion et onglets limités par compte, terminal et Claude inclus.">
-          <Toggle id="acces-enable" checked={ov.enabled} label="Protection par connexion" />
-        </SettingsRow>
-      </SettingsGroup>
+        <section class="v-card">
+          <header class="v-card__head">
+            <div class="v-card__titles">
+              <h2 class="v-card__title">Avant d’activer</h2>
+              <p class="v-card__desc">Ce qu’il faut pour ne pas vous enfermer dehors.</p>
+            </div>
+          </header>
+          <div>
+            <div class="v-row">
+              <div class="v-row__txt"><span class="v-row__label">Compte de secours</span><span class="v-row__desc">Un administrateur avec identifiant et mot de passe, utilisable si Google ne répond plus. Requis.</span></div>
+              <span class="v-row__ctl">
+                <span class:list={['v-status', rescue.length ? 'v-status--good' : 'v-status--warning']}>{rescue.length ? plural(rescue.length, 'compte') : 'À créer'}</span>
+                {!rescue.length && admins[0] && <button type="button" class="v-btn v-btn--outline v-btn--sm" data-password={admins[0].id} data-name={admins[0].name}>Définir le mot de passe de {admins[0].name}</button>}
+              </span>
+            </div>
+            <div class="v-row">
+              <div class="v-row__txt"><span class="v-row__label">Connexion Google</span><span class="v-row__desc">Facultative : sans elle, on se connecte par identifiant et mot de passe.</span></div>
+              <span class:list={['v-status', ov.google.configured ? 'v-status--good' : '']}>{ov.google.configured ? 'Configurée' : 'Non configurée'}</span>
+            </div>
+          </div>
+        </section>
 
-      <SettingsGroup title="Avant d’activer">
-        <SettingsRow icon={rescue.length ? 'check' : 'warning'} title="Compte de secours" desc="Un administrateur avec identifiant et mot de passe : il vous reste si Google ne répond plus. Ce compte est requis.">
-          <Badge tone={rescue.length ? 'success' : 'warning'}>{rescue.length ? `${rescue.length} compte${rescue.length > 1 ? 's' : ''}` : 'À créer'}</Badge>
-          {!rescue.length && admins[0] && <Button size="sm" data-password={admins[0].id} data-name={admins[0].name}>Définir le mot de passe de {admins[0].name}</Button>}
-        </SettingsRow>
-        <SettingsRow icon={ov.google.configured ? 'check' : 'info'} title="Connexion Google" desc="Facultative : sans elle, on se connecte par identifiant et mot de passe.">
-          <Badge tone={ov.google.configured ? 'success' : 'neutral'}>{ov.google.configured ? 'Configurée' : 'Non configurée'}</Badge>
-        </SettingsRow>
-      </SettingsGroup>
+        <section class="v-card">
+          <header class="v-card__head">
+            <div class="v-card__titles">
+              <h2 class="v-card__title">Ce qui est protégé</h2>
+              <p class="v-card__desc">La protection couvre le panel, pas les sites qu’il relaie.</p>
+            </div>
+          </header>
+          <div>
+            <div class="v-row">
+              <div class="v-row__txt"><span class="v-row__label">Le panel</span><span class="v-row__desc">Toutes les pages, leurs fonctions, et les WebSockets du terminal et de Claude.</span></div>
+              <span class="v-status v-status--good">Protégé</span>
+            </div>
+            <div class="v-row">
+              <div class="v-row__txt"><span class="v-row__label">Les sites relayés</span><span class="v-row__desc">Les sites du relais (par exemple /blog ou /docs) et les applications restent publics.</span></div>
+              <span class="v-status">Public</span>
+            </div>
+            <div class="v-row">
+              <div class="v-row__txt"><span class="v-row__label">Durée d’une session</span></div>
+              <span class="v-label">{ov.sessionDays} jours</span>
+            </div>
+          </div>
+        </section>
 
-      <SettingsGroup title="Ce qui est protégé">
-        <SettingsRow icon="apps" title="Le panel" desc="Toutes les pages, leurs fonctions, et les WebSockets du terminal et de Claude.">
-          <Badge tone="success">Protégé</Badge>
-        </SettingsRow>
-        <SettingsRow icon="network" title="Les sites relayés" desc="Les sites du relais (par exemple /blog ou /docs) et les applications restent publics.">
-          <Badge tone="neutral">Public</Badge>
-        </SettingsRow>
-        <SettingsRow icon="logs" title="Durée d’une session">{ov.sessionDays} jours</SettingsRow>
-      </SettingsGroup>
-
-      <div class="alert alert--info">
-        <p class="t-meta"><strong>Verrouillé hors du panel ?</strong> En SSH sur la machine, supprimez le fichier <span class="mono">data/auth.json</span> du dossier d’installation du panel (ou mettez <span class="mono">"enabled": false</span>) : la protection s’arrête à la requête suivante.</p>
-      </div>
-    </>
-  )}
+        <div class="v-alert">
+          <strong>Verrouillé hors du panel ?</strong>
+          <span>En SSH sur la machine, supprimez <span class="v-mono">data/auth.json</span> du dossier d’installation du panel (ou mettez <span class="v-mono">"enabled": false</span>) : la protection s’arrête à la requête suivante.</span>
+        </div>
+      </>
+    )}
+  </div>
 </PanelLayout>
 
 <script>
   import '../scripts/pages/acces';
+  // Recherche dans la liste des membres (remplace la barre d'outils du tableau).
+  document.addEventListener('astro:page-load', () => {
+    const q = document.getElementById('acces-q') as HTMLInputElement | null;
+    q?.addEventListener('input', () => {
+      const v = q.value.trim().toLowerCase();
+      let shown = 0;
+      document.querySelectorAll<HTMLElement>('.acces li[data-q]').forEach((li) => { li.hidden = !!v && !li.dataset.q!.includes(v); if (!li.hidden) shown++; });
+      document.getElementById('acces-none')!.hidden = shown > 0;
+    });
+  });
 </script>
 
 <style>
-  .alert { padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); border: var(--border-width) solid var(--border); margin-block: var(--space-3); }
-  .alert--warn { background: var(--warning-subtle); border-color: var(--warning-border); }
-  .alert--info { background: var(--accent-subtle); border-color: var(--accent-border); }
-  .alert a { color: inherit; text-decoration: underline; }
-  .note { padding: var(--space-3) var(--space-4); margin: 0; border-top: var(--border-width) solid var(--border); }
-  .lead { margin: var(--space-3) 0; max-width: 70ch; }
-  .mono { font-family: var(--font-mono); font-size: var(--meta-size); }
-  .gin { width: min(26rem, 100%); }
-  .msg { margin-top: var(--space-3); }
-  .steps { margin: 0 0 var(--space-3); padding-left: var(--space-5); display: grid; gap: var(--space-2); font-size: var(--body-size); line-height: var(--body-lh); }
+  .search { display: flex; flex-direction: column; gap: 0.5rem; }
+  .empty { margin: 0; padding: 1.5rem 0; text-align: center; display: grid; justify-items: center; gap: 0.75rem; }
+  .col { flex: none; }
+  .col--role { width: 7.5rem; }
+  .col--last { width: 9rem; text-align: right; }
+  .acts { flex: none; display: flex; gap: 0.25rem; }
+  .v-list > li[hidden] { display: none; }
+  .steps { margin: 0; padding-left: 3rem; display: grid; gap: 0.5rem; font-size: 0.875rem; line-height: 1.5; color: var(--text-secondary); }
+  .steps strong { color: var(--text-primary); font-weight: 500; }
   .steps a { color: var(--accent-text); }
-  .sens { margin-left: var(--space-2); padding: 0 var(--space-1); border-radius: var(--radius-xs); background: var(--warning-subtle); color: var(--warning); font-size: var(--micro-size); font-weight: var(--weight-medium); }
+  .foot-end { justify-content: flex-end; flex-wrap: wrap; }
+  .msg { margin: 0 auto 0 0; font-size: 0.875rem; }
 
-  .avatar { flex: none; display: inline-grid; place-items: center; width: var(--control-h); height: var(--control-h); border-radius: var(--radius-full); background: var(--accent-subtle); color: var(--accent-text); font-size: var(--meta-size); font-weight: var(--weight-bold); position: relative; overflow: hidden; }
-  .avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-  .who { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
-  .who__t { min-width: 12rem; overflow-wrap: anywhere; }
-  .rowact { display: flex; gap: var(--space-1); justify-content: flex-end; margin-left: auto; }
-  @media (max-width: 640px) { .who__t { min-width: 0; } .rowact { justify-content: flex-start; margin-left: 0; } }
-
-  .mx-wrap { overflow: auto; max-height: 75dvh; }
-  .mx { border-collapse: separate; border-spacing: 0; width: 100%; font-size: var(--dense-size); }
-  .mx th, .mx td { border-bottom: var(--border-width) solid var(--border); background: var(--bg-surface); }
-  .mx thead th { position: sticky; top: 0; z-index: 2; text-align: center; vertical-align: bottom; padding: var(--space-2); min-width: 6rem; font-weight: var(--weight-medium); color: var(--text-primary); }
-  .mx .mx-tab { position: sticky; left: 0; z-index: 1; text-align: left; padding: var(--space-2) var(--space-3); min-width: 9rem; border-right: var(--border-width) solid var(--border); font-weight: var(--weight-regular); color: var(--text-primary); }
-  .mx thead .mx-tab { z-index: 3; font-weight: var(--weight-medium); text-align: left; }
-  .mx-user { display: table-cell; }
-  .mx-user .avatar { margin-inline: auto; display: grid; width: var(--control-h-sm); height: var(--control-h-sm); }
+  .mx-wrap { overflow: auto; max-height: 75dvh; padding-inline: 0 !important; border-top: 1px solid var(--border); }
+  .mx { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 0.875rem; }
+  .mx th, .mx td { border-bottom: 1px solid var(--border); background: var(--bg-surface); }
+  .mx thead th { position: sticky; top: 0; z-index: 2; text-align: center; vertical-align: bottom; padding: 0.75rem 0.5rem; min-width: 6.5rem; font-weight: 500; color: var(--text-primary); }
+  .mx .mx-tab { position: sticky; left: 0; z-index: 1; text-align: left; padding: 0.625rem 1.5rem; min-width: 10rem; font-weight: 400; color: var(--text-primary); }
+  .mx thead .mx-tab { z-index: 3; font-weight: 500; vertical-align: bottom; }
+  .mx-group th { text-align: left; padding: 1rem 1.5rem 0.5rem; font-weight: 400; background: var(--bg-surface); }
+  .mx-user .v-avatar { margin: 0 auto 0.375rem; }
   .mx-user__n { display: block; overflow-wrap: anywhere; }
-  .mx-user__c { display: block; font-variant-numeric: tabular-nums; }
-  .mx-user.is-off { opacity: .7; }
-  .mx-cell { text-align: center; padding: 0; }
-  .mx-cell label { display: grid; place-items: center; min-height: var(--control-h-lg); min-width: var(--control-h-lg); width: 100%; cursor: pointer; }
-  .mx-cell label:hover { background: var(--bg-hover); }
-  .mx-cell input { width: var(--space-4); height: var(--space-4); accent-color: var(--accent); cursor: pointer; }
-  .mx-cell input:disabled { cursor: progress; }
-  .mx tbody tr:last-child > * { border-bottom: 0; }
+  .mx-user__c { display: block; font-size: 0.75rem; font-weight: 400; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .mx-user.is-off { opacity: 0.7; }
+  .mx-cell { text-align: center; padding: 0.5rem; }
+  .mx tbody:last-child tr:last-child > * { border-bottom: 0; }
 
+  @media (max-width: 900px) { .col--role, .col--last, .col--tabs { display: none; } }
+  @media (max-width: 640px) {
+    .v-list > li { flex-wrap: wrap; }
+    .acts { width: 100%; padding-left: 2.75rem; }
+    .steps { padding-left: 2.25rem; }
+  }
+
+  /* Formulaires des fenêtres (créés par scripts/pages/acces.ts). */
   :global(.acform) { display: grid; gap: var(--space-3); min-width: min(32rem, 100%); }
   :global(.acform__field) { display: grid; gap: var(--space-1); font-size: var(--dense-size); color: var(--text-secondary); }
   :global(.acform__row) { display: grid; gap: var(--space-3); grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr)); }

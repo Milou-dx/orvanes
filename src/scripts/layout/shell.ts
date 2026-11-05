@@ -1,3 +1,6 @@
+import { openMenu } from '../ui/menu';
+import { openFeedback } from './feedback';
+
 export const MOBILE = window.matchMedia('(max-width: 640px)');
 const NARROW = window.matchMedia('(max-width: 1000px)');
 
@@ -101,6 +104,26 @@ document.addEventListener('click', (e) => {
   const nav = target?.closest<HTMLElement>('[data-nav-set]');
   if (nav) { setNav(nav.dataset.navSet as 'compact' | 'expanded' | 'auto'); return; }
   if (target?.closest('[data-logout]')) { void logout(); return; }
+  const account = target?.closest<HTMLElement>('[data-account-menu]');
+  if (account) {
+    const theme = themeChoice();
+    const pick = (v: 'light' | 'dark' | 'system', label: string, icon: 'sun' | 'moon' | 'monitor') =>
+      ({ label, icon, checked: theme === v, run: () => setTheme(v) });
+    openMenu({
+      anchor: account, label: 'Compte', matchWidth: true, items: [
+        { head: { name: account.dataset.name ?? '', sub: account.dataset.email || undefined } },
+        'sep',
+        { label: 'Thème', choices: [pick('light', 'Clair', 'sun'), pick('dark', 'Sombre', 'moon'), pick('system', 'Système', 'monitor')] },
+        ...(account.dataset.admin !== undefined ? [{ label: 'Paramètres', icon: 'settings' as const, run: () => { location.href = '/parametres'; } }] : []),
+        'sep',
+        { label: 'Obtenir de l’aide', icon: 'help', run: () => { location.href = '/aide'; } },
+        { label: 'Envoyer un commentaire', icon: 'message', run: () => void openFeedback() },
+        'sep',
+        { label: 'Se déconnecter', icon: 'logout', danger: true, run: () => void logout() },
+      ],
+    });
+    return;
+  }
   const sec = target?.closest<HTMLElement>('[data-navsec]');
   if (sec) { if (!sec.hasAttribute('aria-disabled')) toggleSection(sec.dataset.navsec!); return; }
   const sub = target?.closest<HTMLElement>('[data-navsub]');

@@ -1,8 +1,9 @@
 import { esc, iconSVG } from './html';
 import type { IconName } from '../../components/ui/lucide';
 
-type MenuItem = { label: string; icon?: IconName; hint?: string; danger?: boolean; disabled?: boolean; run: () => void };
-type MenuEntry = MenuItem | 'sep';
+type MenuItem = { label: string; icon?: IconName; hint?: string; danger?: boolean; disabled?: boolean; checked?: boolean; run: () => void };
+/** head : en-tête de compte (shadcn nav-user) ; choices : rangée de choix exclusifs (radio) sous un libellé. */
+type MenuEntry = MenuItem | 'sep' | { head: { name: string; sub?: string } } | { label: string; choices: MenuItem[] };
 
 export interface OpenMenuOptions {
   items: MenuEntry[];
@@ -10,6 +11,8 @@ export interface OpenMenuOptions {
   x?: number;
   y?: number;
   label?: string;
+  /** Le menu prend la largeur de l'ancre (pied de la barre latérale). */
+  matchWidth?: boolean;
   returnFocus?: HTMLElement | null;
   onClose?: () => void;
 }
@@ -39,14 +42,24 @@ export function openMenu(o: OpenMenuOptions): () => void {
   el.className = 'ui-menu';
   el.setAttribute('role', 'menu');
   if (o.label) el.setAttribute('aria-label', o.label);
-  el.innerHTML = o.items.map((it) => {
-    if (it === 'sep') return '<hr class="ui-menu__sep" role="separator">';
+  const item = (it: MenuItem, cls = 'ui-menu__item') => {
     actions.push(it);
-    return `<button type="button" role="menuitem" tabindex="-1" class="ui-menu__item${it.danger ? ' is-danger' : ''}" data-i="${actions.length - 1}"${it.disabled ? ' disabled' : ''}>`
+    const radio = it.checked !== undefined;
+    return `<button type="button" role="${radio ? 'menuitemradio' : 'menuitem'}" tabindex="-1" class="${cls}${it.danger ? ' is-danger' : ''}" data-i="${actions.length - 1}"`
+      + (radio ? ` aria-checked="${it.checked}"` : '') + (it.disabled ? ' disabled' : '') + '>'
       + (it.icon ? iconSVG(it.icon, 16) : '')
       + `<span class="ui-menu__label">${esc(it.label)}</span>`
       + (it.hint ? `<kbd class="ui-menu__hint">${esc(it.hint)}</kbd>` : '') + '</button>';
+  };
+  el.innerHTML = o.items.map((it) => {
+    if (it === 'sep') return '<hr class="ui-menu__sep" role="separator">';
+    if ('head' in it) return `<div class="ui-menu__head" role="presentation"><span class="ui-menu__avatar" aria-hidden="true">${esc(it.head.name.trim().slice(0, 1).toUpperCase() || '?')}</span>`
+      + `<span class="ui-menu__who"><span class="ui-menu__name">${esc(it.head.name)}</span>${it.head.sub ? `<span class="ui-menu__sub">${esc(it.head.sub)}</span>` : ''}</span></div>`;
+    if ('choices' in it) return `<div class="ui-menu__choices" role="group" aria-label="${esc(it.label)}"><span class="ui-menu__label">${esc(it.label)}</span>`
+      + `<span class="ui-menu__seg">${it.choices.map((c) => item(c, 'ui-menu__item ui-menu__choice')).join('')}</span></div>`;
+    return item(it);
   }).join('');
+  if (o.matchWidth && o.anchor) el.style.width = `${o.anchor.getBoundingClientRect().width}px`;
   document.body.append(el);
 
   const m = 8, w = el.offsetWidth, h = el.offsetHeight;
@@ -71,8 +84,8 @@ export function openMenu(o: OpenMenuOptions): () => void {
     if (!list.length) return;
     const at = list.indexOf(document.activeElement as HTMLButtonElement);
     let next: HTMLButtonElement | undefined;
-    if (e.key === 'ArrowDown') next = list[(at + 1) % list.length];
-    else if (e.key === 'ArrowUp') next = list[(at - 1 + list.length) % list.length];
+    if (e.key === 'ArrowDown' || (e.key === 'ArrowRight' && list[at]?.classList.contains('ui-menu__choice'))) next = list[(at + 1) % list.length];
+    else if (e.key === 'ArrowUp' || (e.key === 'ArrowLeft' && list[at]?.classList.contains('ui-menu__choice'))) next = list[(at - 1 + list.length) % list.length];
     else if (e.key === 'Home') next = list[0];
     else if (e.key === 'End') next = list[list.length - 1];
     else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeMenu(true); return; }
@@ -89,9 +102,9 @@ export function openMenu(o: OpenMenuOptions): () => void {
   el.addEventListener('click', (e) => {
     const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-i]');
     if (!b || b.disabled) return;
-    const item = actions[Number(b.dataset.i)];
+    const picked = actions[Number(b.dataset.i)];
     closeMenu(true);
-    item.run();
+    picked.run();
   });
   current = {
     el, anchor: o.anchor ?? null, back: o.returnFocus ?? null, onClose: o.onClose,

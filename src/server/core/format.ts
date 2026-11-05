@@ -45,3 +45,11 @@ export function num(n: number | null | undefined, digits = 0): string {
   if (n === null || n === undefined || Number.isNaN(n)) return '-';
   return n.toLocaleString('fr-FR', { minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
+
+/** Couleur stable tirée d'un nom (avatars, tuiles), comme getAvatarColor des blocs dashboardblocks du Vault. */
+const TONES = ['var(--res-cpu)', 'var(--res-mem)', 'var(--res-disk)', 'var(--res-net)', 'var(--accent)'];
+export function tone(name: string): string {
+  let h = 0x811c9dc5;
+  for (const c of name) h = Math.imul(h ^ c.codePointAt(0)!, 0x01000193) >>> 0;
+  return TONES[h % TONES.length]!;
+}

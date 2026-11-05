@@ -13,7 +13,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   }
   try {
     const ip = request.headers.get('x-forwarded-for') ?? '';
-    const { user } = passwordLogin(String(body.identifier ?? ''), String(body.password ?? ''), ip);
+    const { user, totpRequired } = passwordLogin(String(body.identifier ?? ''), String(body.password ?? ''), ip, body.code ? String(body.code) : undefined);
+    if (totpRequired) return json({ ok: true, state: 'totp' });
     if (user.status !== 'active') return json({ ok: true, state: 'pending' });
     openSession(cookies, request, user.id);
     return json({ ok: true, state: 'ok', next: nextPage(String(body.suite ?? ''), user) });

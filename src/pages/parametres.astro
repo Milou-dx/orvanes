@@ -1,49 +1,139 @@
 ---
+/**
+ * Paramètres, recomposés avec les primitives settings du Vault (dashboardblocks, MIT) :
+ * une carte par section, des lignes libellé + description à gauche et contrôle à droite.
+ */
 import { resolve } from 'node:path';
 import PanelLayout from '../layouts/PanelLayout.astro';
-import SettingsGroup from '../components/ui/SettingsGroup.astro';
-import SettingsRow from '../components/ui/SettingsRow.astro';
-import Button from '../components/ui/Button.astro';
-import Segmented from '../components/ui/Segmented.astro';
+import Icon from '../components/ui/Icon.astro';
 import { PANEL_NAME } from '../server/core/panel';
 import pkg from '../../package.json';
+import { readFileSync } from 'node:fs';
+import { FEEDBACK_FILE } from './api/feedback';
+import '../styles/vault.css';
 
 export const prerender = false;
 
+const me: any = Astro.locals.user;
+const showTotp = Astro.locals.authEnabled && Boolean(me?.password);
+const hasTotp = Boolean(me?.totp?.secret);
 const publicUrl = String(process.env.PANEL_PUBLIC_URL ?? '').split(',')[0].trim().replace(/\/+$/, '') || Astro.url.origin;
 const dataDir = process.env.PANEL_DATA_DIR ?? resolve('data');
 const build = import.meta.env.BUILD_ID;
+const KIND: Record<string, string> = { bug: 'Bug', idee: 'Idée', autre: 'Autre' };
+let feedback: { at: string; kind?: string; user: string | null; page: string; title: string; selection: string; text: string }[] = [];
+try { feedback = readFileSync(FEEDBACK_FILE, 'utf8').trim().split('\n').filter(Boolean).map((l) => JSON.parse(l)).reverse().slice(0, 50); } catch {}
+const when = (iso: string) => new Date(iso).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
+const THEMES = [['light', 'Clair', 'sun'], ['dark', 'Sombre', 'moon'], ['system', 'Système', 'monitor']] as const;
+const NAVS = [['expanded', 'Complet'], ['compact', 'Compact'], ['auto', 'Automatique']] as const;
+const LINKS = [
+  { href: '/modules', label: 'Magasin', desc: 'Installer, mettre à jour ou retirer les intégrations du panel.' },
+  { href: '/acces', label: 'Utilisateurs', desc: 'Comptes, droits par onglet, connexion Google et protection.' },
+];
 ---
 <PanelLayout title="Paramètres" subtitle="Apparence et informations sur cette instance du panel" refreshMs={null}>
-  <div class="settings">
-    <SettingsGroup title="Apparence">
-      <SettingsRow icon="theme" title="Thème" desc="Système : suit le réglage clair ou sombre de l’appareil.">
-        <Segmented label="Thème" attr="theme-set" selected="system" options={[
-          { value: 'light', label: 'Clair', icon: 'sun' },
-          { value: 'dark', label: 'Sombre', icon: 'moon' },
-          { value: 'system', label: 'Système', icon: 'monitor' },
-        ]} />
-      </SettingsRow>
-      <SettingsRow icon="panelLeft" title="Menu" desc="Automatique : réduit aux icônes quand la fenêtre est étroite. Mémorisé sur cet appareil.">
-        <Segmented label="Largeur du menu" attr="nav-set" selected="auto" options={[
-          { value: 'expanded', label: 'Complet' },
-          { value: 'compact', label: 'Compact' },
-          { value: 'auto', label: 'Automatique' },
-        ]} />
-      </SettingsRow>
-    </SettingsGroup>
+  <div class="v-page">
+    <section class="v-card">
+      <header class="v-card__head">
+        <div class="v-card__titles">
+          <h2 class="v-card__title">Apparence</h2>
+          <p class="v-card__desc">Propre à cet appareil : le choix est gardé dans ce navigateur.</p>
+        </div>
+      </header>
+      <div>
+        <div class="v-row">
+          <div class="v-row__txt"><span class="v-row__label">Thème</span><span class="v-row__desc">Système suit le réglage clair ou sombre de l’appareil.</span></div>
+          <div class="v-tabs" role="group" aria-label="Thème">
+            {THEMES.map(([v, label, icon]) => <button type="button" class="v-tab" data-theme-set={v} aria-pressed={v === 'system'}><Icon name={icon} size={16} />{label}</button>)}
+          </div>
+        </div>
+        <div class="v-row">
+          <div class="v-row__txt"><span class="v-row__label">Menu</span><span class="v-row__desc">Automatique le réduit aux icônes quand la fenêtre est étroite.</span></div>
+          <div class="v-tabs" role="group" aria-label="Largeur du menu">
+            {NAVS.map(([v, label]) => <button type="button" class="v-tab" data-nav-set={v} aria-pressed={v === 'auto'}>{label}</button>)}
+          </div>
+        </div>
+      </div>
+    </section>
 
-    <SettingsGroup title="Instance">
-      <SettingsRow icon="server" title="Nom du panel" desc="Nom affiché en haut du menu.">{PANEL_NAME}</SettingsRow>
-      <SettingsRow icon="box" title="Version"><span class="mono">{pkg.version}{build ? ` · build ${build}` : ''}</span></SettingsRow>
-      <SettingsRow icon="globe" title="Adresse" desc="Adresse publique de ce panel."><span class="mono wrap">{publicUrl}</span><Button size="sm" iconOnly icon="copy" label="Copier l’adresse" data-copy={publicUrl} /></SettingsRow>
-      <SettingsRow icon="database" title="Dossier de données" desc="Comptes, modules installés et réglages."><span class="mono wrap">{dataDir}</span><Button size="sm" iconOnly icon="copy" label="Copier le chemin" data-copy={dataDir} /></SettingsRow>
-    </SettingsGroup>
+    {showTotp && <section class="v-card">
+      <header class="v-card__head">
+        <div class="v-card__titles">
+          <h2 class="v-card__title">Sécurité</h2>
+          <p class="v-card__desc">Propre à votre compte. Code perdu : <code>node scripts/admin.mjs reset &lt;identifiant&gt;</code> sur le serveur.</p>
+        </div>
+      </header>
+      <div class="v-row">
+        <div class="v-row__txt"><span class="v-row__label">Double authentification</span><span class="v-row__desc">{hasTotp ? 'Active : un code est demandé à la connexion par mot de passe.' : 'Demande un code à usage unique en plus du mot de passe.'}</span></div>
+        <button type="button" class="v-btn v-btn--outline" data-totp={hasTotp ? 'off' : 'on'}>{hasTotp ? 'Désactiver' : 'Activer'}</button>
+      </div>
+    </section>}
 
-    <SettingsGroup title="Administration">
-      <SettingsRow icon="store" title="Magasin" desc="Installer ou désinstaller les intégrations du panel." href="/modules" />
-      <SettingsRow icon="users" title="Utilisateurs" desc="Comptes, droits par onglet et protection par connexion." href="/acces" />
-    </SettingsGroup>
+    <section class="v-card">
+      <header class="v-card__head">
+        <div class="v-card__titles">
+          <h2 class="v-card__title">Instance</h2>
+          <p class="v-card__desc">Ce qui identifie ce panel. Ces valeurs viennent de la configuration du serveur.</p>
+        </div>
+        <span class="v-status v-status--good">En ligne</span>
+      </header>
+      <div>
+        <div class="v-row">
+          <div class="v-row__txt"><span class="v-row__label">Nom du panel</span><span class="v-row__desc">Affiché en haut du menu.</span></div>
+          <span class="v-row__ctl v-label">{PANEL_NAME}</span>
+        </div>
+        <div class="v-row">
+          <div class="v-row__txt"><span class="v-row__label">Version</span></div>
+          <span class="v-row__ctl"><span class="v-badge v-mono">{pkg.version}</span>{build && <span class="v-badge v-mono">build {build}</span>}</span>
+        </div>
+        <div class="v-row">
+          <div class="v-row__txt"><span class="v-row__label">Adresse</span><span class="v-row__desc v-mono">{publicUrl}</span></div>
+          <button type="button" class="v-btn v-btn--outline v-btn--sm" data-copy={publicUrl}><Icon name="copy" size={16} />Copier</button>
+        </div>
+        <div class="v-row">
+          <div class="v-row__txt"><span class="v-row__label">Dossier de données</span><span class="v-row__desc v-mono">{dataDir}</span></div>
+          <button type="button" class="v-btn v-btn--outline v-btn--sm" data-copy={dataDir}><Icon name="copy" size={16} />Copier</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="v-card">
+      <header class="v-card__head">
+        <div class="v-card__titles">
+          <h2 class="v-card__title">Administration</h2>
+          <p class="v-card__desc">Les autres pages de réglage, réservées aux administrateurs.</p>
+        </div>
+      </header>
+      <div>
+        {LINKS.map((l) => (
+          <div class="v-row">
+            <div class="v-row__txt"><span class="v-row__label">{l.label}</span><span class="v-row__desc">{l.desc}</span></div>
+            <a class="v-btn v-btn--outline v-btn--sm" href={l.href} data-astro-prefetch="hover">Ouvrir<Icon name="chevronRight" size={16} /></a>
+          </div>
+        ))}
+      </div>
+    </section>
+    <section class="v-card">
+      <header class="v-card__head">
+        <div class="v-card__titles">
+          <h2 class="v-card__title">Commentaires reçus</h2>
+          <p class="v-card__desc">Envoyés depuis le menu du compte. Les 50 derniers, du plus récent au plus ancien.</p>
+        </div>
+        <span class="v-badge">{feedback.length}</span>
+      </header>
+      <div>
+        {feedback.length === 0 && <div class="v-row"><span class="v-row__desc">Aucun commentaire pour l’instant.</span></div>}
+        {feedback.map((f) => (
+          <div class="v-row">
+            <div class="v-row__txt">
+              <span class="v-row__label"><span class="v-badge">{KIND[f.kind ?? 'autre'] ?? 'Autre'}</span> {f.text}</span>
+              <span class="v-row__desc">{f.user ?? 'Anonyme'} · <a href={f.page}>{f.title || f.page}</a>{f.selection && ` · « ${f.selection.slice(0, 120)} »`}</span>
+            </div>
+            <span class="v-row__ctl v-mono">{when(f.at)}</span>
+          </div>
+        ))}
+      </div>
+    </section>
   </div>
   {/* Pose l'état choisi avant le premier rendu (shell.ts le fait trop tard : flash du mauvais choix). */}
   <script is:inline>
@@ -59,6 +149,7 @@ const build = import.meta.env.BUILD_ID;
 </PanelLayout>
 
 <script>
+  import '../scripts/pages/totp';
   import { toast } from '../scripts/ui/dialog';
   document.addEventListener('astro:page-load', () => {
     document.querySelectorAll<HTMLElement>('[data-copy]').forEach((b) => b.addEventListener('click', async () => {
@@ -71,15 +162,3 @@ const build = import.meta.env.BUILD_ID;
     }));
   });
 </script>
-
-<style>
-  .settings { display: flex; flex-direction: column; gap: var(--space-6); max-width: 52rem; }
-  .mono { font-family: var(--font-mono); font-size: var(--meta-size); color: var(--text-primary); }
-  .wrap { overflow-wrap: anywhere; text-align: right; }
-  @media (max-width: 640px) {
-    .wrap { text-align: left; }
-    .settings :global(.srow__end) { padding-left: 0; }
-    .settings :global(.seg) { width: 100%; }
-    .settings :global(.seg__btn) { flex: 1; justify-content: center; }
-  }
-</style>

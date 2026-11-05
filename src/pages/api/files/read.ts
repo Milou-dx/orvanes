@@ -57,6 +57,7 @@ export const GET: APIRoute = async ({ url }) => {
     return json({
       path: target,
       size: st.size,
+      mtime: st.mtime.toISOString(),
       truncated,
       content: buf.toString('utf8'),
     });

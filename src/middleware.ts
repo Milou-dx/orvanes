@@ -30,6 +30,10 @@ async function guard(ctx: Parameters<Parameters<typeof defineMiddleware>[0]>[0])
 
   const verdict = auth.decide(url.pathname, user);
   if (verdict === 'allow') {
+    // Lecture des fichiers partageable ; toute écriture sur le disque reste aux admins.
+    if (url.pathname.startsWith('/api/files/') && !['GET', 'HEAD'].includes(ctx.request.method) && user?.role !== 'admin') {
+      return json(403, 'Modification des fichiers réservée aux administrateurs');
+    }
     if (user) {
       const token = auth.tokenFromCookie(ctx.request.headers.get('cookie'));
       if (token) {
@@ -53,6 +57,21 @@ async function guard(ctx: Parameters<Parameters<typeof defineMiddleware>[0]>[0])
   }
   return ctx.redirect(`/connexion?etat=refuse&onglet=${encodeURIComponent(url.pathname)}`);
 }
+
+// Les artefacts de Claude (iframe srcdoc sandboxée) héritent de cette politique et chargent des bibliothèques depuis des CDN.
+const csp = (pathname: string) => [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline'${pathname.startsWith('/claude') ? ' https:' : ''}`,
+  "style-src 'self' 'unsafe-inline'",
+  'img-src * data: blob:',
+  'media-src * data: blob:',
+  "font-src 'self' data:",
+  "connect-src 'self' ws: wss:",
+  "frame-src 'self' blob:",
+  "frame-ancestors 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+].join('; ');
 
 const COMPRESSIBLE = /^(text\/html|application\/json|image\/svg\+xml|text\/plain)/;
 
@@ -79,6 +98,9 @@ export const onRequest = defineMiddleware(async (ctx, next) => {
     return json(404, 'Route inconnue');
   }
   const type = res.headers.get('content-type') ?? '';
+  res.headers.set('x-content-type-options', 'nosniff');
+  res.headers.set('referrer-policy', 'strict-origin-when-cross-origin');
+  if (type.startsWith('text/html')) res.headers.set('content-security-policy', csp(pathname));
   if (
     !res.body
     || !COMPRESSIBLE.test(type)

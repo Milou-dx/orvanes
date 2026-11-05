@@ -36,6 +36,8 @@ export const storableTabs = () => [...new Set([...assignableTabs(), ...listModul
   .filter((t) => !t.adminOnly && !CORE_TABS.some((c) => c.id === t.id)).map((t) => t.id)])];
 
 const PUBLIC_PREFIXES = ['/connexion', '/portail', '/api/auth', '/_astro', '/icons', '/modules-assets', '/favicon.ico'];
+// Ouvertes à tout compte actif, quels que soient ses onglets.
+const MEMBER_PATHS = ['/aide', '/api/feedback'];
 const isPublicPath = (pathname) => PUBLIC_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
 const matches = (pathname, base, exact = false) => pathname === base || (!exact && pathname.startsWith(`${base}/`));
@@ -204,6 +206,7 @@ export function decide(pathname, user) {
   if (!user) return 'login';
   if (user.status !== 'active') return 'pending';
   if (user.role === 'admin') return 'allow';
+  if (MEMBER_PATHS.includes(pathname)) return 'allow';
   const tabs = tabsForPath(pathname);
   if (tabs.length === 0) return 'forbidden';
   const mine = allowedTabs(user);

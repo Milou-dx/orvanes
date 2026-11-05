@@ -42,9 +42,12 @@ const initial = String(who?.name || who?.email || '?').trim().charAt(0).toUpperC
           <input id="f-pw" name="password" type="password" autocomplete="current-password" required placeholder=" " aria-describedby="login-error" />
           <label for="f-pw">Mot de passe</label>
         </div>
+        <div class="field" id="f-code-field" style="--i:1" hidden>
+          <input id="f-code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder=" " aria-describedby="login-error" />
+          <label for="f-code">Code de vérification</label>
+        </div>
         <p class="auth__error" id="login-error" role="alert">{erreurMessage}</p>
         <button type="submit" class="go" id="login-btn" style="--i:2">
-          <span class="go__fill"></span>
           <span class="go__label">Se connecter</span>
           <Icon name="arrowRight" size={20} class="go__arrow" />
           <span class="go__spin"></span>

@@ -1,89 +1,109 @@
 ---
 import PanelLayout from '../layouts/PanelLayout.astro';
 import Button from '../components/ui/Button.astro';
-import Icon from '../components/ui/Icon.astro';
+import SubNav from '../components/ui/SubNav.astro';
 import ErrorState from '../components/ui/ErrorState.astro';
-import SettingsGroup from '../components/ui/SettingsGroup.astro';
 import ModuleLogo from '../components/ui/ModuleLogo.astro';
 import { storeState } from '../server/modules/store-ops.js';
 import { listSources, publishConfig } from '../server/modules/store-publish.js';
 import { STORE_URL } from '../server/modules/store.js';
+import { tone } from '../server/core/format';
 
 export const prerender = false;
 
 const { installed, available, error, rebuilding } = await storeState();
 const sources = publishConfig().enabled ? listSources() : [];
 const host = STORE_URL.replace(/^https?:\/\//, '');
+// Composition d'après settings-04 (dashboardblocks, MIT) du Vault : une liste, des onglets, un statut par ligne.
 const byName = <T extends { name: string }>(a: T, b: T) => a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' });
+const updates = installed.filter((m) => m.update);
+const rows = [
+  ...installed.map((m) => ({ ...m, state: m.update ? 'update' : 'installed' })),
+  ...available.map((m) => ({ ...m, update: undefined, data: [], state: 'available' })),
+].sort(byName);
+const VIEWS = [
+  { k: 'toutes', label: 'Toutes', items: rows, empty: 'Aucune intégration.' },
+  { k: 'installees', label: 'Installées', items: rows.filter((m) => m.state !== 'available'), empty: 'Aucune intégration installée.' },
+  { k: 'disponibles', label: 'Disponibles', items: rows.filter((m) => m.state === 'available'), empty: 'Toutes les intégrations du Magasin sont installées.' },
+];
+const view = VIEWS.find((v) => v.k === Astro.url.searchParams.get('vue')) ?? VIEWS[0]!;
+const STATE = { installed: 'Installée', update: 'Mise à jour', available: 'Disponible' } as const;
+const plural = (n: number, w: string) => `${n} ${w}${n > 1 ? 's' : ''}`;
+const summary = error
+  ? `${plural(installed.length, 'intégration installée')}. Le Magasin ne répond pas, la liste des disponibles manque.`
+  : `${installed.length} sur ${rows.length} installée${installed.length > 1 ? 's' : ''}${updates.length ? `, ${plural(updates.length, 'mise')} à jour à faire` : ''}.`;
 ---
-<PanelLayout title="Magasin" subtitle={`${installed.length} installée${installed.length > 1 ? 's' : ''}${error ? '' : ` · ${available.length} disponible${available.length > 1 ? 's' : ''} sur ${host}`}`} refreshMs={null}>
+<PanelLayout title="Magasin" subtitle={`Intégrations publiées sur ${host}`} refreshMs={null}>
   {rebuilding && <p class="note" id="mod-rebuild" role="status">Le panel se reconstruit pour ajouter ou retirer des onglets. La page se rechargera toute seule dès qu’il répond.</p>}
   <p class="note" id="mod-busy" role="status" hidden></p>
-  <div class="mods">
-    <SettingsGroup title="Installées" footer={installed.length ? undefined : 'Aucune intégration installée.'}>
-      {[...installed].sort(byName).map((m) => (
-        <div class="mod" id={`module-${m.id}`}>
-          <div class="srow">
-            <span class="srow__tile mod__logo" aria-hidden="true"><ModuleLogo id={m.id} size={18} /></span>
-            <span class="srow__txt">
-              <span class="srow__title">{m.name}</span>
-              <span class="srow__desc">Version {m.version}{m.update && <strong class="mod__new"> · {m.update} disponible</strong>} · {m.description}</span>
-            </span>
-            <span class="srow__end">
-              {m.update && <Button size="sm" variant="primary" data-action="update" data-id={m.id} data-name={m.name} data-version={m.update}>Mettre à jour</Button>}
-              <Button size="sm" variant="secondary" data-action="uninstall" data-id={m.id} data-name={m.name} data-has-data={m.data.length ? '' : undefined}>Désinstaller</Button>
-            </span>
-          </div>
-          <pre class="mono mod__out" role="status" hidden></pre>
-        </div>
-      ))}
-    </SettingsGroup>
 
-    <SettingsGroup title={`Disponibles sur ${host}`} footer={error ? undefined : available.length ? undefined : 'Toutes les intégrations du Magasin sont installées.'}>
-      {error && (
-        <ErrorState compact title="Magasin injoignable" text={error}>
-          <Button slot="actions" variant="secondary" size="sm" icon="refresh" href="/modules">Réessayer</Button>
-        </ErrorState>
-      )}
-      {[...available].sort(byName).map((m) => (
-        <div class="mod" id={`module-${m.id}`}>
-          <div class="srow">
-            <span class="srow__tile mod__logo" aria-hidden="true"><Icon name="store" size={16} /></span>
-            <span class="srow__txt">
-              <span class="srow__title">{m.name}</span>
-              <span class="srow__desc">Version {m.version} · {m.description}</span>
-            </span>
-            <span class="srow__end">
-              <Button size="sm" variant="primary" data-action="install" data-id={m.id} data-name={m.name}>Installer</Button>
-            </span>
-          </div>
-          <pre class="mono mod__out" role="status" hidden></pre>
-        </div>
-      ))}
-    </SettingsGroup>
+  <section class="store">
+    <header class="store__head">
+      <h2 class="t-card">Intégrations</h2>
+      <p class="t-meta text-secondary">{summary}</p>
+    </header>
+    <SubNav label="Filtrer les intégrations" current={`/modules?vue=${view.k}`}
+      items={VIEWS.map((v) => ({ href: `/modules?vue=${v.k}`, label: v.label, count: v.k !== 'toutes' && v.items.length ? v.items.length : undefined }))} />
 
-    {sources.length > 0 && (
-      <SettingsGroup title="Publication" footer="Réservé à ce serveur. Pour publier une nouvelle version, augmentez « version » dans le module.json de la source.">
-        {sources.map((m) => (
-          <div class="mod" id={`source-${m.id}`}>
-            <div class="srow srow--plain">
-              <span class="srow__txt">
-                <span class="srow__title">{m.name}</span>
-                <span class="srow__desc">Source {m.version} · publié : {m.published ?? 'non'}{m.errors.length > 0 && <span class="mod__err"> · manifeste invalide</span>}</span>
-              </span>
-              <span class="srow__end">
-                <Button size="sm" variant={m.published === m.version ? 'secondary' : 'primary'} data-action="publish" data-id={m.id} data-name={m.name}
-                        disabled={m.errors.length > 0 || m.published === m.version}>{m.published === m.version ? 'À jour' : 'Publier'}</Button>
-              </span>
+    {error && view.k !== 'installees' && (
+      <ErrorState compact title="Magasin injoignable" text={error}>
+        <Button slot="actions" variant="secondary" size="sm" icon="refresh" href="/modules">Réessayer</Button>
+      </ErrorState>
+    )}
+    {view.items.length === 0 ? (!error && <p class="store__empty t-meta text-secondary">{view.empty}</p>) : (
+      <ul class="store__list">
+        {view.items.map((m) => (
+          <li class="mod" id={`module-${m.id}`}>
+            <div class="conn">
+              {m.state === 'available'
+                ? <span class="conn__logo conn__logo--letter" style={`--c:${tone(m.name)}`} aria-hidden="true">{m.name[0]}</span>
+                : <span class="conn__logo" aria-hidden="true"><ModuleLogo id={m.id} size={18} /></span>}
+              <div class="conn__txt">
+                <p class="conn__name"><strong>{m.name}</strong><span class:list={['conn__state', `conn__state--${m.state}`]}>{STATE[m.state as keyof typeof STATE]}</span></p>
+                <p class="conn__desc">{m.description}</p>
+                <p class="conn__meta">Version {m.version}{m.update && <> → <strong>{m.update}</strong></>}</p>
+              </div>
+              <div class="conn__act">
+                {m.state === 'available' && <Button size="sm" variant="primary" icon="add" data-action="install" data-id={m.id} data-name={m.name}>Installer</Button>}
+                {m.update && <Button size="sm" variant="primary" data-action="update" data-id={m.id} data-name={m.name} data-version={m.update}>Mettre à jour</Button>}
+                {m.state !== 'available' && <Button size="sm" variant="ghost" data-action="uninstall" data-id={m.id} data-name={m.name} data-has-data={m.data.length ? '' : undefined}>Désinstaller</Button>}
+              </div>
             </div>
             <pre class="mono mod__out" role="status" hidden></pre>
-          </div>
+          </li>
         ))}
-      </SettingsGroup>
+      </ul>
     )}
-  </div>
+  </section>
+
+  {sources.length > 0 && (
+    <section class="store">
+      <header class="store__head">
+        <h2 class="t-card">Publication</h2>
+        <p class="t-meta text-secondary">Réservé à ce serveur. Pour publier une nouvelle version, augmentez « version » dans le module.json de la source.</p>
+      </header>
+      <ul class="store__list">
+        {sources.map((m) => (
+          <li class="mod" id={`source-${m.id}`}>
+            <div class="conn">
+              <span class="conn__logo conn__logo--letter" style={`--c:${tone(m.name)}`} aria-hidden="true">{m.name[0]}</span>
+              <div class="conn__txt">
+                <p class="conn__name"><strong>{m.name}</strong>{m.errors.length > 0 && <span class="conn__state conn__state--err">Manifeste invalide</span>}</p>
+                <p class="conn__meta">Source {m.version} · publié : {m.published ?? 'non'}</p>
+              </div>
+              <div class="conn__act">
+                <Button size="sm" variant={m.published === m.version ? 'secondary' : 'primary'} data-action="publish" data-id={m.id} data-name={m.name}
+                        disabled={m.errors.length > 0 || m.published === m.version}>{m.published === m.version ? 'À jour' : 'Publier'}</Button>
+              </div>
+            </div>
+            <pre class="mono mod__out" role="status" hidden></pre>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
   <p class="t-meta text-secondary foot">
-    Les intégrations viennent de {host}. Le serveur principal signe chaque paquet : le panel refuse tout paquet qu’il n’a pas publié. Installer ou retirer une intégration reconstruit le panel (environ une minute).
+    Le serveur principal signe chaque paquet : le panel refuse tout paquet qu’il n’a pas publié. Installer ou retirer une intégration reconstruit le panel (environ une minute).
   </p>
 </PanelLayout>
 
@@ -92,12 +112,29 @@ const byName = <T extends { name: string }>(a: T, b: T) => a.name.localeCompare(
 </script>
 
 <style>
-  .mods { display: grid; gap: var(--space-5); }
-  .mod__logo { background: var(--bg-surface-2); color: var(--text-primary); width: auto; min-width: var(--control-h-sm); padding-inline: var(--space-1); }
-  .mod__new { color: var(--accent-text); font-weight: 600; }
-  .mod__err { color: var(--danger); }
-  .note { margin: 0; padding: var(--space-3) var(--space-4); border-radius: var(--radius-lg); background: var(--accent-subtle); color: var(--text-primary); }
-  .mod__out { margin: 0 var(--space-3) var(--space-3); padding: var(--space-2) var(--space-3); border-radius: var(--radius-control); background: var(--bg-hover); font-size: var(--meta-size); overflow: auto; max-height: 16rem; white-space: pre-wrap; }
-  .foot { margin-top: var(--space-4); }
+  .store { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4) var(--space-5); margin-bottom: var(--space-4); background: var(--bg-surface); border-radius: var(--radius-card); box-shadow: var(--shadow-card, var(--shadow-xs)); }
+  .store__head { display: flex; flex-direction: column; gap: 2px; }
+  .store__head h2, .store__head p { margin: 0; }
+  .store__list { list-style: none; margin: 0; padding: 0; border-top: 0.5px solid var(--border); }
+  .store__list > li + li { border-top: 0.5px solid var(--border); }
+  .store__empty { margin: 0; padding: var(--space-6) 0; text-align: center; border-top: 0.5px solid var(--border); }
+  .conn { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-2) var(--space-3); padding: var(--space-3) 0; }
+  .conn__logo { flex: none; display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: var(--radius-sm); border: 0.5px solid var(--border); color: var(--text-primary); background: var(--bg-surface-2); }
+  .conn__logo--letter { border: 0; font-weight: 600; font-size: var(--meta-size); background: color-mix(in oklab, var(--c) 25%, var(--bg-surface)); }
+  .conn__txt { flex: 1 1 12rem; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .conn__txt p { margin: 0; }
+  .conn__name { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--space-2); }
+  .conn__state { font-size: var(--meta-size); color: var(--text-tertiary); }
+  .conn__state::before { content: ''; display: inline-block; width: 6px; height: 6px; margin-right: 5px; border-radius: 50%; background: currentColor; vertical-align: 1px; }
+  .conn__state--installed { color: var(--success); }
+  .conn__state--update { color: var(--accent-text); }
+  .conn__state--err { color: var(--danger); }
+  .conn__desc { color: var(--text-secondary); font-size: var(--meta-size); text-wrap: pretty; }
+  .conn__meta { color: var(--text-tertiary); font-size: var(--micro-size); font-variant-numeric: tabular-nums; }
+  .conn__act { display: flex; flex-wrap: wrap; gap: var(--space-2); flex: none; }
+  .note { margin: 0 0 var(--space-4); padding: var(--space-3) var(--space-4); border-radius: var(--radius-lg); background: var(--accent-subtle); color: var(--text-primary); }
+  .mod__out { margin: 0 0 var(--space-3); padding: var(--space-2) var(--space-3); border-radius: var(--radius-control); background: var(--bg-hover); font-size: var(--meta-size); overflow: auto; max-height: 16rem; white-space: pre-wrap; }
+  .foot { margin-top: var(--space-2); }
   :global(.mod__purge) { display: flex; align-items: center; gap: var(--space-2); min-height: var(--control-h); color: var(--text-primary); cursor: pointer; }
+  @media (max-width: 640px) { .store { padding: var(--space-4); } .conn__act { width: 100%; padding-left: calc(2rem + var(--space-3)); } }
 </style>

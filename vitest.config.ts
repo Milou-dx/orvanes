@@ -4,6 +4,7 @@ export default defineConfig({
   resolve: { alias: { 'astro:middleware': 'astro/virtual-modules/middleware.js' } },
   test: {
     include: ['tests/**/*.test.ts', 'modules/*/tests/**/*.test.ts'],
+    globalSetup: ['tests/global-tmp.ts'],
     setupFiles: ['tests/setup.ts'],
     pool: 'forks',
   },

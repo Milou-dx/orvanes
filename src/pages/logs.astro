@@ -1,10 +1,7 @@
 ---
 import PanelLayout from '../layouts/PanelLayout.astro';
-import Card from '../components/ui/Card.astro';
-import Button from '../components/ui/Button.astro';
-import EmptyState from '../components/ui/EmptyState.astro';
-import Select from '../components/ui/Select.astro';
 import Icon from '../components/ui/Icon.astro';
+import '../styles/vault.css';
 import * as logs from '../server/system/logs.js';
 import { safe } from '../server/core/safe';
 
@@ -28,51 +25,75 @@ if (url.searchParams.get('format') === 'json') {
   }
 }
 
+/** Recomposé avec les blocs du Vault (dashboardblocks, MIT) : dashboard-header-01 (barre de filtres), notifications-03 (filtres par niveau), activity-feed-01 (fil), status-label, alerts-01. */
+const LEVELS = [['all', 'Tous'], ['error', 'Erreurs'], ['warn', 'Avertissements'], ['info', 'Infos'], ['debug', 'Debug']] as const;
 const srcLabel = (l: string) => String(l ?? '').replace(/\s*\(journald\)/i, '');
 ---
 <PanelLayout title="Journaux" refreshMs={null}>
+  <div class="v-page v-page--wide">
   {sources.length === 0 ? (
-    <Card flush><EmptyState icon="logs" title="Aucune source de journal disponible" /></Card>
+    <section class="v-card">
+      <div class="v-empty">
+        <Icon name="logs" size={24} />
+        <p class="v-empty__title">Aucune source de journal disponible</p>
+        <p class="v-empty__text">Le panel ne trouve aucun journal à lire sur cette machine.</p>
+      </div>
+    </section>
   ) : (
-    <div id="lg-root" data-source={current}>
-      <div class="lg-bar" role="group" aria-label="Options du journal">
-        <div class="ui-toolbar__search lg-search" role="search">
-          <Icon name="search" size={16} />
-          <input class="filter" type="search" id="lg-search" placeholder="Rechercher dans le journal" aria-label="Rechercher dans le journal" autocomplete="off" spellcheck="false" data-search-target />
+    <section class="v-card" id="lg-root" data-source={current}>
+      <header class="v-card__head">
+        <div class="v-card__titles">
+          <h2 class="v-card__title">Journal</h2>
+          <p class="v-card__desc">Dernières lignes de la source choisie, relues toutes les 3 secondes tant que le direct est actif.</p>
         </div>
-        <Select id="lg-source" label="Source du journal">
+        <span class="v-status v-status--good" id="lg-live-state">En direct</span>
+      </header>
+
+      <div class="v-toolbar" role="group" aria-label="Options du journal">
+        <label class="lg-search">
+          <Icon name="search" size={16} />
+          <input class="v-input" type="search" id="lg-search" placeholder="Rechercher dans le journal" aria-label="Rechercher dans le journal" autocomplete="off" spellcheck="false" data-search-target />
+        </label>
+        <select class="v-select" id="lg-source" aria-label="Source du journal">
           {sources.map((s: any) => <option value={s.id} selected={s.id === current}>{srcLabel(s.label)}</option>)}
-        </Select>
-        <Select id="lg-level" label="Niveau">
+        </select>
+        <select class="v-select" id="lg-lines" aria-label="Nombre de lignes">
+          <option value="100">100 lignes</option>
+          <option value="300" selected>300 lignes</option>
+          <option value="1000">1 000 lignes</option>
+          <option value="2000">2 000 lignes</option>
+        </select>
+        <div class="lg-actions">
+          <button type="button" class="v-btn v-btn--outline" id="lg-live" aria-pressed="true"><Icon name="pause" size={16} />Pause</button>
+          <button type="button" class="v-btn v-btn--outline v-btn--icon" id="lg-refresh" aria-label="Actualiser maintenant" title="Actualiser maintenant"><Icon name="refresh" size={16} /></button>
+          <button type="button" class="v-btn v-btn--outline" id="lg-follow" aria-pressed="true"><Icon name="arrowDown" size={16} />Suivre</button>
+          <button type="button" class="v-btn v-btn--outline v-btn--icon" id="lg-download" aria-label="Télécharger les lignes affichées" title="Télécharger les lignes affichées"><Icon name="download" size={16} /></button>
+        </div>
+      </div>
+
+      <div class="lg-levels">
+        <div class="v-tabs" role="group" aria-label="Niveau">
+          {LEVELS.map(([v, label]) => (
+            <button type="button" class="v-tab" data-lv={v} aria-pressed={v === 'all'}>{label}{(v === 'error' || v === 'warn') && <span class="v-tag" data-n={v}>0</span>}</button>
+          ))}
+        </div>
+        <select id="lg-level" aria-label="Niveau" hidden>
           <option value="all">Tous les niveaux</option>
           <option value="error">Erreurs</option>
           <option value="warn">Avertissements</option>
           <option value="info">Infos</option>
           <option value="debug">Debug</option>
-        </Select>
-        <Select id="lg-lines" label="Nombre de lignes">
-          <option value="100">100 lignes</option>
-          <option value="300" selected>300 lignes</option>
-          <option value="1000">1 000 lignes</option>
-          <option value="2000">2 000 lignes</option>
-        </Select>
-        <div class="lg-actions">
-          <Button id="lg-live" size="md" icon="pause" aria-pressed="true">Pause</Button>
-          <Button id="lg-refresh" size="md" icon="refresh" iconOnly label="Actualiser maintenant" />
-          <Button id="lg-follow" size="md" icon="arrowDown" aria-pressed="true">Suivre</Button>
-          <Button id="lg-download" size="md" icon="download" iconOnly label="Télécharger les lignes affichées" />
-        </div>
+        </select>
       </div>
 
-      <Card flush>
-        <p slot="actions" class="lg-stat" id="lg-stat"></p>
-        <p id="lg-stale" class="lg-stale" role="status" hidden>Données non actualisées : la dernière lecture a échoué. Les lignes affichées datent de la lecture précédente.</p>
-        <div id="lg-viewer" class="viewer" tabindex="0" role="log" aria-label="Contenu du journal" aria-live="off">
-          <p class="lg-msg">Chargement…</p>
-        </div>
-      </Card>
-    </div>
+      <p id="lg-stale" class="v-alert v-alert--warn lg-stale" role="status" hidden>Données non actualisées : la dernière lecture a échoué. Les lignes affichées datent de la lecture précédente.</p>
+      <div id="lg-viewer" class="viewer" tabindex="0" role="log" aria-label="Contenu du journal" aria-live="off">
+        <p class="lg-msg">Chargement…</p>
+      </div>
+      <footer class="v-card__foot"><span id="lg-stat" class="lg-stat"></span></footer>
+    </section>
   )}
+  </div>
 </PanelLayout>
 
 <script>
@@ -101,7 +122,8 @@ const srcLabel = (l: string) => String(l ?? '').replace(/\s*\(journald\)/i, '');
     const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
     const sourceSel = $<HTMLSelectElement>('lg-source'), levelSel = $<HTMLSelectElement>('lg-level'), linesSel = $<HTMLSelectElement>('lg-lines');
     const search = $<HTMLInputElement>('lg-search'), viewer = $('lg-viewer'), stat = $('lg-stat'), stale = $('lg-stale');
-    const liveBtn = $<HTMLButtonElement>('lg-live'), followBtn = $<HTMLButtonElement>('lg-follow');
+    const liveBtn = $<HTMLButtonElement>('lg-live'), followBtn = $<HTMLButtonElement>('lg-follow'), liveState = $('lg-live-state');
+    const lvTabs = [...root.querySelectorAll<HTMLButtonElement>('[data-lv]')];
 
     let all: { text: string; level: Level }[] = [];
     let live = true;
@@ -119,6 +141,8 @@ const srcLabel = (l: string) => String(l ?? '').replace(/\s*\(journald\)/i, '');
     };
     const paintButtons = () => {
       setBtn(liveBtn, live ? 'pause' : 'play', live ? 'Pause' : 'Reprendre', live);
+      liveState.textContent = live ? 'En direct' : 'En pause';
+      liveState.className = `v-status v-status--${live ? 'good' : 'warning'}`;
       liveBtn.title = live ? 'Mise à jour en direct active : mettre en pause' : 'En pause : reprendre le direct';
       setBtn(followBtn, 'arrowDown', 'Suivre', follow);
       followBtn.title = 'Suivre les nouvelles lignes';
@@ -133,6 +157,11 @@ const srcLabel = (l: string) => String(l ?? '').replace(/\s*\(journald\)/i, '');
       shown = keep.map((l) => l.text);
       const counts = { error: 0, warn: 0 };
       for (const l of all) if (l.level === 'error' || l.level === 'warn') counts[l.level]++;
+      for (const t of lvTabs) {
+        t.setAttribute('aria-pressed', String(t.dataset.lv === lv));
+        const n = t.querySelector('[data-n]');
+        if (n) n.textContent = String(counts[t.dataset.lv as 'error' | 'warn']);
+      }
       stat.textContent = `${keep.length} sur ${all.length} lignes · ${counts.error} erreurs · ${counts.warn} avertissements`;
 
       if (failed) return;
@@ -172,9 +201,9 @@ const srcLabel = (l: string) => String(l ?? '').replace(/\s*\(journald\)/i, '');
         if (all.length) { stale.hidden = false; return; }
         failed = true;
         painted = '';
-        viewer.innerHTML = `<div class="ui-state ui-state--error" role="alert"><span class="ui-state__icon">${iconSVG('circleAlert', 20)}</span>`
-          + `<p class="ui-state__title">Impossible de lire ce journal</p>`
-          + `<p class="ui-state__text">Réessayez ou choisissez une autre source.</p><pre class="ui-state__detail">${esc(e?.message ?? e)}</pre></div>`;
+        viewer.innerHTML = `<div class="v-empty" role="alert"><span class="lg-err-icon">${iconSVG('circleAlert', 20)}</span>`
+          + `<p class="v-empty__title">Impossible de lire ce journal</p>`
+          + `<p class="v-empty__text">Réessayez ou choisissez une autre source.</p><pre class="v-code">${esc(e?.message ?? e)}</pre></div>`;
       } finally { busy = false; }
     }
 
@@ -199,6 +228,7 @@ const srcLabel = (l: string) => String(l ?? '').replace(/\s*\(journald\)/i, '');
     });
     linesSel.addEventListener('change', () => load());
     levelSel.addEventListener('change', () => render());
+    for (const t of lvTabs) t.addEventListener('click', () => { levelSel.value = t.dataset.lv!; render(); });
     search.addEventListener('input', () => render());
     liveBtn.addEventListener('click', () => setLive(!live));
     followBtn.addEventListener('click', () => setFollow(!follow));
@@ -233,35 +263,37 @@ const srcLabel = (l: string) => String(l ?? '').replace(/\s*\(journald\)/i, '');
 </script>
 
 <style>
-  #lg-root { display: flex; flex-direction: column; gap: var(--space-3); }
-  .lg-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
-  .lg-search { position: relative; display: flex; align-items: center; flex: 1 1 220px; min-width: 0; max-width: 360px; }
-  .lg-search > :global(svg) { position: absolute; left: var(--space-3); color: var(--text-tertiary); pointer-events: none; }
-  .lg-search .filter { width: 100%; padding-left: calc(var(--space-3) + 14px + var(--space-2)); }
-  .lg-actions { display: flex; gap: var(--space-2); margin-left: auto; }
-  .lg-actions :global(button[aria-pressed='true']#lg-follow) { border-color: var(--accent-border); background: var(--accent-subtle); color: var(--accent-text); }
-  .lg-stale { margin: 0; padding: var(--space-2) var(--space-4); font-size: var(--meta-size); color: var(--warning); background: var(--warning-subtle); border-bottom: var(--border-width) solid var(--warning-border); }
-  .lg-stat { font-size: var(--meta-size); line-height: var(--meta-lh); color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
-  @media (max-width: 640px) {
-    .lg-search { flex-basis: 100%; max-width: none; }
-    .lg-actions { margin-left: 0; width: 100%; }
-  }
+  .lg-search { position: relative; display: flex; align-items: center; flex: 1 1 14rem; min-width: 0; }
+  .lg-search > :global(svg) { position: absolute; left: 0.75rem; width: 1rem; height: 1rem; color: var(--text-tertiary); pointer-events: none; }
+  .lg-search :global(.v-input) { width: 100%; padding-left: 2.25rem; }
+  .lg-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-left: auto; }
+  .lg-actions :global(.v-btn--icon) { width: 2.25rem; }
+  .lg-actions :global(.v-btn[aria-pressed='true']) { border-color: var(--accent-border); background: var(--accent-subtle); color: var(--accent-text); }
+  .lg-levels { display: flex; }
+  .lg-stale { margin-inline: 1.5rem; }
+  .lg-stale[hidden], #lg-level[hidden] { display: none; }
+  .lg-stat { font-variant-numeric: tabular-nums; }
+  @media (max-width: 640px) { .lg-actions { margin-left: 0; width: 100%; } .lg-stale { margin-inline: 1rem; } }
 
   .viewer {
     background: var(--console-bg); color: var(--console-fg);
-    height: min(70vh, 40rem); overflow: auto;
-    padding: var(--space-3) var(--space-4);
-    font-family: var(--font-mono); font-size: var(--meta-size); line-height: var(--space-5);
+    height: min(65vh, 40rem); overflow: auto;
+    padding: 0.75rem 0;
+    border: 1px solid var(--console-border); border-radius: 0.625rem;
+    font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.5rem;
   }
-  .viewer:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .viewer:focus-visible { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent); }
   .viewer ::selection { background: var(--console-select); color: var(--console-strong); }
-  .viewer :global(.line) { white-space: pre; color: var(--console-fg); padding-left: var(--space-2); border-left: 2px solid transparent; }
+  .viewer :global(.line) { white-space: pre; color: var(--console-fg); padding: 0 1rem; border-left: 3px solid transparent; }
+  .viewer :global(.line:hover) { background: rgb(255 255 255 / 0.04); }
   @media (max-width: 640px) { .viewer :global(.line) { white-space: pre-wrap; overflow-wrap: anywhere; } }
-  .viewer :global(.l-error) { color: var(--console-red); border-left-color: var(--console-red); }
+  .viewer :global(.l-error) { color: var(--console-red); border-left-color: var(--console-red); background: color-mix(in srgb, var(--console-red) 8%, transparent); }
   .viewer :global(.l-warn) { color: var(--console-yellow); border-left-color: var(--console-yellow); }
   .viewer :global(.l-ok) { color: var(--console-green); }
   .viewer :global(.l-debug) { color: var(--console-muted); }
-  .viewer :global(mark) { background: var(--console-select); color: var(--console-strong); border-radius: var(--radius-xs); }
-  .viewer :global(.lg-msg) { color: var(--console-muted); font-family: var(--font-ui); font-size: var(--dense-size); }
-  .viewer :global(.ui-state__title), .viewer :global(.ui-state__text) { color: var(--console-fg); }
+  .viewer :global(mark) { background: var(--console-select); color: var(--console-strong); border-radius: 0.125rem; }
+  .viewer :global(.lg-msg) { margin: 0; padding: 0 1rem; color: var(--console-muted); font-family: var(--font-ui); font-size: 0.875rem; }
+  .viewer :global(.v-empty__title), .viewer :global(.v-empty__text) { color: var(--console-fg); }
+  .viewer :global(.lg-err-icon) { color: var(--console-red); display: inline-flex; }
+  .viewer :global(.v-code) { max-width: 100%; background: transparent; border-color: var(--console-border); color: var(--console-fg); }
 </style>

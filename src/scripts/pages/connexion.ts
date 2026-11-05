@@ -53,7 +53,14 @@ function init() {
     error.textContent = '';
     setInvalid(false);
     try {
-      const r = await post('/api/auth/login', { identifier: data.get('identifier'), password: data.get('password'), suite });
+      const r = await post('/api/auth/login', { identifier: data.get('identifier'), password: data.get('password'), code: data.get('code'), suite });
+      if (r.state === 'totp') {
+        byId('f-code-field')?.removeAttribute('hidden');
+        byId('f-code')?.focus();
+        submit.disabled = false;
+        submit.classList.remove('is-loading');
+        return;
+      }
       location.href = r.state === 'pending' ? '/connexion?etat=attente' : r.next;
     } catch (err) {
       error.textContent = (err as Error).message;

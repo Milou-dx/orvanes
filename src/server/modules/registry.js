@@ -182,7 +182,7 @@ export function createRegistry({ root = resolve('.'), dataDir = process.env.PANE
   const running = new Map();
 
   function exclusive(id, op) {
-    if (running.has(id)) return Promise.resolve({ ok: false, output: 'Opération en cours sur ce module : réessayez quand elle sera terminée.' });
+    if (running.has(id)) return Promise.resolve({ ok: false, output: 'Opération en cours sur ce module : réessayez quand elle aura fini.' });
     const p = op().finally(() => running.delete(id));
     running.set(id, p);
     return p;
@@ -194,7 +194,7 @@ export function createRegistry({ root = resolve('.'), dataDir = process.env.PANE
     if (!m) return { ok: false, output: `Module inconnu : ${id}` };
     if (isInstalled(id) && !again) return { ok: true, output: 'Déjà installé.' };
     const lacking = await missing(m);
-    if (lacking.length) return { ok: false, output: `Prérequis manquants : ${lacking.join(', ')}.` };
+    if (lacking.length) return { ok: false, output: `Prérequis manquants : ${lacking.join(', ')}. Installez-les sur le serveur, puis réessayez.` };
     const res = await runHook(m, 'install');
     if (res.ok) saveInstalled([...load().installed, id]);
     return res;

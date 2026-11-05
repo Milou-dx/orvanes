@@ -24,7 +24,7 @@ function upsertAdmin(id, clear) {
   const hash = core.hashPassword(clear);
   const existing = users.find((u) => u.email === id);
   if (existing) {
-    core.saveUsers(users.map((u) => (u.id === existing.id ? { ...u, role: 'admin', status: 'active', password: hash } : u)));
+    core.saveUsers(users.map((u) => (u.id === existing.id ? { ...u, role: 'admin', status: 'active', totp: undefined, password: hash } : u)));
     core.destroyUserSessions(existing.id);
   } else {
     core.saveUsers([...users, core.newUser({ email: id, name: id.split('@')[0], role: 'admin', password: hash })]);

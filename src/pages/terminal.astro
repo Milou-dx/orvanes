@@ -1,31 +1,37 @@
 ---
 import PanelLayout from '../layouts/PanelLayout.astro';
-import Card from '../components/ui/Card.astro';
-import Badge from '../components/ui/Badge.astro';
-import Button from '../components/ui/Button.astro';
+import Icon from '../components/ui/Icon.astro';
+import '../styles/vault.css';
 
+/** Recomposé avec les blocs du Vault (dashboardblocks / shadcn, MIT) : app-shell-03 (barre d'onglets de sessions), tabs, button, kbd, status-label, alert. */
 export const prerender = false;
+
+const KEYS = [
+  ['\\u001b', 'Échap', null], ['\\t', 'Tab', null], ['\\u0003', 'Ctrl+C', null], ['\\u0004', 'Ctrl+D', null],
+  ['\\u001b[A', '↑', 'Flèche haut'], ['\\u001b[B', '↓', 'Flèche bas'], ['\\u001b[D', '←', 'Flèche gauche'], ['\\u001b[C', '→', 'Flèche droite'],
+] as const;
 ---
 <PanelLayout title="Terminal" subtitle="Session SSH" refreshMs={null}>
-  <div slot="actions" class="acts">
-    <Badge tone="neutral" dot id="term-state"><span id="term-state-text">Déconnecté</span></Badge>
-    <Button variant="secondary" size="sm" id="term-new" icon="refresh">Nouvelle session</Button>
-  </div>
-
-  <div class="term-wrap" id="term-wrap" data-no-shortcuts>
-    <Card flush>
-      <div class="term-bar" role="toolbar" aria-label="Outils du terminal">
-        <div class="term-bar__group">
-          <Button variant="ghost" size="sm" id="term-copy" icon="copy">Copier</Button>
-          <Button variant="ghost" size="sm" id="term-paste" icon="clipboard">Coller</Button>
-          <Button variant="ghost" size="sm" id="term-clear" icon="dismiss">Effacer</Button>
-          <Button variant="ghost" size="sm" id="term-sigint">Interrompre (Ctrl+C)</Button>
+  <div class="v-page v-page--wide term-wrap" id="term-wrap" data-no-shortcuts>
+    <section class="v-card term-card">
+      <div class="term-top">
+        <div class="v-tabs" aria-label="Sessions">
+          <span class="v-tab" aria-current="page"><Icon name="terminal" size={16} />Session SSH</span>
         </div>
-        <div class="term-bar__group">
-          <Button variant="ghost" size="sm" iconOnly label="Réduire la police" id="term-font-down">A−</Button>
-          <span id="term-font" class="t-meta mono term-bar__font" aria-live="polite">13</span>
-          <Button variant="ghost" size="sm" iconOnly label="Agrandir la police" id="term-font-up">A+</Button>
-          <Button variant="ghost" size="sm" id="term-full" icon="open">Plein écran</Button>
+        <button type="button" class="v-btn v-btn--ghost v-btn--sm" id="term-new"><Icon name="add" size={16} />Nouvelle session</button>
+        <span class="v-status term-state" id="term-state"><span id="term-state-text">Déconnecté</span></span>
+      </div>
+
+      <div class="v-toolbar term-bar" role="toolbar" aria-label="Outils du terminal">
+        <button type="button" class="v-btn v-btn--outline v-btn--sm" id="term-copy"><Icon name="copy" size={16} />Copier</button>
+        <button type="button" class="v-btn v-btn--outline v-btn--sm" id="term-paste"><Icon name="clipboard" size={16} />Coller</button>
+        <button type="button" class="v-btn v-btn--outline v-btn--sm" id="term-clear"><Icon name="dismiss" size={16} />Effacer</button>
+        <button type="button" class="v-btn v-btn--outline v-btn--sm" id="term-sigint">Interrompre <kbd class="term-kbd">Ctrl+C</kbd></button>
+        <div class="term-bar__end">
+          <button type="button" class="v-btn v-btn--ghost v-btn--sm v-btn--icon" id="term-font-down" aria-label="Réduire la police" title="Réduire la police">A−</button>
+          <span id="term-font" class="v-mono v-muted term-bar__font" aria-live="polite">13</span>
+          <button type="button" class="v-btn v-btn--ghost v-btn--sm v-btn--icon" id="term-font-up" aria-label="Agrandir la police" title="Agrandir la police">A+</button>
+          <button type="button" class="v-btn v-btn--outline v-btn--sm" id="term-full"><Icon name="open" size={16} />Plein écran</button>
         </div>
       </div>
 
@@ -34,25 +40,20 @@ export const prerender = false;
       </div>
 
       <div class="term-keys" id="term-keys" role="group" aria-label="Touches spéciales">
-        <button type="button" class="term-key" data-send="\u001b">Échap</button>
-        <button type="button" class="term-key" data-send="\t">Tab</button>
-        <button type="button" class="term-key" data-send="\u0003">Ctrl+C</button>
-        <button type="button" class="term-key" data-send="\u0004">Ctrl+D</button>
-        <button type="button" class="term-key" data-send="\u001b[A" aria-label="Flèche haut">↑</button>
-        <button type="button" class="term-key" data-send="\u001b[B" aria-label="Flèche bas">↓</button>
-        <button type="button" class="term-key" data-send="\u001b[D" aria-label="Flèche gauche">←</button>
-        <button type="button" class="term-key" data-send="\u001b[C" aria-label="Flèche droite">→</button>
+        {KEYS.map(([send, label, aria]) => <button type="button" class="v-btn v-btn--outline term-key" data-send={send} aria-label={aria ?? undefined}>{label}</button>)}
       </div>
 
-      <div class="term-status t-meta" role="status">
+      <p id="term-msg" class="v-alert v-alert--warn term-msg" role="alert" hidden></p>
+
+      <footer class="v-card__foot term-status" role="status">
         <span id="term-status-state">Déconnecté</span>
         <span class="term-status__sep" aria-hidden="true">·</span>
-        <span id="term-size" class="mono">-</span>
+        <span id="term-size" class="v-mono">-</span>
         <span class="term-status__sep" aria-hidden="true">·</span>
         <span>SSH · UTF-8</span>
-      </div>
-      <p id="term-msg" class="cmd__msg t-meta" role="alert"></p>
-    </Card>
+        <span class="term-status__hint"><kbd class="term-kbd">Ctrl</kbd><kbd class="term-kbd">Maj</kbd><kbd class="term-kbd">C</kbd> copier <kbd class="term-kbd">Ctrl</kbd><kbd class="term-kbd">Maj</kbd><kbd class="term-kbd">V</kbd> coller</span>
+      </footer>
+    </section>
   </div>
 </PanelLayout>
 
@@ -76,10 +77,11 @@ export const prerender = false;
     const wrap = document.getElementById('term-wrap');
     const fontEl = document.getElementById('term-font');
 
+    const STATUS: Record<string, string> = { success: 'good', accent: 'info', warning: 'warning', danger: 'bad' };
     function setState(text: string, tone: string) {
       if (stateText) stateText.textContent = text;
       if (statusState) statusState.textContent = text;
-      if (state) state.className = `badge badge--${tone}`;
+      if (state) state.className = `v-status term-state${STATUS[tone] ? ` v-status--${STATUS[tone]}` : ''}`;
     }
 
     function showSize() {
@@ -89,11 +91,11 @@ export const prerender = false;
     function showError(text: string) {
       if (!msg) return;
       msg.textContent = text;
-      msg.className = 'cmd__msg t-meta cmd__msg--err';
+      msg.hidden = false;
     }
 
     function hideError() {
-      if (msg) msg.textContent = '';
+      if (msg) { msg.textContent = ''; msg.hidden = true; }
     }
 
     const styles = getComputedStyle(document.documentElement);
@@ -226,7 +228,7 @@ export const prerender = false;
     document.getElementById('term-clear')?.addEventListener('click', () => term.clear());
     async function newSession() {
       if (stateText?.textContent === 'Connecté' && !(await confirmDialog({
-        title: 'Démarrer une nouvelle session ?', message: 'Le shell en cours sera fermé, avec les commandes qui y tournent.', confirmLabel: 'Nouvelle session', danger: true,
+        title: 'Démarrer une nouvelle session ?', message: 'Le panel ferme le shell en cours et les commandes qui y tournent.', confirmLabel: 'Nouvelle session', danger: true,
       }))) return;
       intentionalClose = true;
       ws?.close();
@@ -327,61 +329,35 @@ export const prerender = false;
 </script>
 
 <style>
-  .acts { display: flex; align-items: center; gap: var(--space-2); }
-
   .term-wrap { background: var(--bg-app); }
-  .term-wrap:fullscreen { display: flex; flex-direction: column; padding: var(--space-3); }
-  .term-wrap:fullscreen :global(.card) { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  .term-wrap:fullscreen { padding: 0.75rem; }
+  .term-wrap:fullscreen .term-card { flex: 1; min-height: 0; }
   .term-wrap:fullscreen .term-frame { flex: 1; height: auto; min-height: 0; }
 
-  .term-bar {
-    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
-    gap: var(--space-2); padding: var(--space-2) var(--space-3);
-    border-bottom: var(--border-width) solid var(--border);
-  }
-  .term-bar__group { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); }
-  .term-bar__font { min-width: var(--space-6); text-align: center; color: var(--text-secondary); }
+  /* Fenêtre : la carte shadcn sans marges, les barres collées aux bords */
+  .term-card { gap: 0; padding: 0; overflow: hidden; }
+  .term-card > :global(*) { padding-inline: 0; }
+  .term-top { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; padding: 0.625rem 0.75rem; border-bottom: 1px solid var(--border); background: var(--bg-surface-2); }
+  .term-state { margin-left: auto; }
+  .term-bar { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); }
+  .term-bar__end { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem; margin-left: auto; }
+  .term-bar__font { min-width: 1.75rem; text-align: center; }
 
-  .term-frame {
-    background: var(--console-bg);
-    height: min(70dvh, 45rem);
-    padding: var(--space-3) var(--space-4);
-    border-bottom: var(--border-width) solid var(--console-border);
-    box-sizing: border-box;
-    overflow: hidden;
-  }
+  .term-frame { background: var(--console-bg); height: min(70dvh, 45rem); padding: 0.75rem 1rem; box-sizing: border-box; overflow: hidden; }
   .term { height: 100%; }
   .term :global(.xterm) { height: 100%; }
   .term :global(.xterm-viewport) { background-color: var(--console-bg) !important; }
 
-  .term-keys {
-    display: none; gap: var(--space-1); padding: var(--space-2) var(--space-3);
-    overflow-x: auto; border-bottom: var(--border-width) solid var(--border);
-  }
-  .term-key {
-    flex: 1 0 auto; min-height: 44px; min-width: 44px;
-    padding-inline: var(--space-3); font: inherit; font-size: var(--meta-size);
-    color: var(--text-primary); background: var(--bg-surface);
-    border: var(--border-width) solid var(--control-stroke); border-radius: var(--radius-sm);
-    cursor: pointer; touch-action: manipulation;
-  }
-  .term-key:hover { background: var(--bg-hover); }
-  .term-key:active { background: var(--bg-surface-2); }
-  .term-key:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .term-keys { display: none; gap: 0.375rem; padding: 0.5rem 0.75rem; overflow-x: auto; border-top: 1px solid var(--border); }
+  .term-key { flex: 1 0 auto; min-height: 44px; min-width: 44px; touch-action: manipulation; }
   @media (pointer: coarse), (max-width: 640px) { .term-keys { display: flex; } .term-bar :global(#term-sigint) { display: none; } }
 
-  .term-status {
-    display: flex; align-items: center; gap: var(--space-2);
-    padding: var(--space-1) var(--space-4); color: var(--text-secondary);
-    min-height: var(--control-h-sm);
-  }
+  .term-msg { margin: 0.75rem; }
+  .term-msg[hidden] { display: none; }
+  .term-status { padding: 0.5rem 1rem; border-top: 1px solid var(--border); flex-wrap: wrap; }
   .term-status__sep { color: var(--text-tertiary); }
-
-  .cmd__msg { min-height: var(--control-h-sm); margin: 0; padding: var(--space-2) var(--space-4) var(--space-3); color: var(--text-tertiary); }
-  .cmd__msg--err { color: var(--danger); }
-
-  @media (max-width: 640px) {
-    .term-frame { padding: var(--space-2); height: min(60dvh, 45rem); }
-    .term-bar { padding: var(--space-2); }
-  }
+  .term-status__hint { margin-left: auto; display: inline-flex; align-items: center; gap: 0.25rem; }
+  .term-kbd { display: inline-flex; align-items: center; height: 1.25rem; min-width: 1.25rem; padding: 0 0.25rem; justify-content: center; border-radius: 0.25rem; background: var(--bg-hover); color: var(--text-secondary); font: 500 0.6875rem/1 var(--font-ui); }
+  .term-status__hint .term-kbd:not(:first-child) { margin-left: 0; }
+  @media (max-width: 640px) { .term-frame { padding: 0.5rem; height: min(60dvh, 45rem); } .term-status__hint { display: none; } }
 </style>
