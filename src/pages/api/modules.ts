@@ -2,11 +2,9 @@ import type { APIRoute } from 'astro';
 import { installFromStore, storeState, uninstallFromStore, updateFromStore } from '../../server/modules/store-ops.js';
 import { publish, publishConfig } from '../../server/modules/store-publish.js';
 import { forgetCatalog } from '../../server/modules/store.js';
+import { jsonNoStore as json } from '../../server/core/http';
 
 export const prerender = false;
-
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
 
 const forbidden = (locals: App.Locals) => locals.user?.role !== 'admin';
 const ID = /^[a-z0-9][a-z0-9-]{0,39}$/;

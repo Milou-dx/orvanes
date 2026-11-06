@@ -79,7 +79,6 @@ export async function deleteEntry(userPath) {
   await fs.rm(abs, { recursive: true });
 }
 
-export const absolutePathFor = resolvePath;
 
 export function safeBasename(name) {
   const base = String(name || '').trim();

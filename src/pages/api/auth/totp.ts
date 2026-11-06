@@ -1,10 +1,8 @@
 import type { APIRoute } from 'astro';
 import { AuthError, totpConfirm, totpDisable, totpStart } from '../../../server/auth/auth';
+import { jsonNoStore as json } from '../../../server/core/http';
 
 export const prerender = false;
-
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
 
 export const POST: APIRoute = async ({ request, locals }) => {
   const user = (locals as any).user;

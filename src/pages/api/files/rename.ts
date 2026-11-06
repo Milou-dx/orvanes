@@ -1,13 +1,9 @@
 import type { APIRoute } from 'astro';
 import path from 'node:path';
 import * as files from '../../../server/files/files.js';
+import { json } from '../../../server/core/http';
 
 export const prerender = false;
-
-const json = (b: unknown, status = 200) =>
-  new Response(JSON.stringify(b), {
-    status, headers: { 'content-type': 'application/json; charset=utf-8' },
-  });
 
 export const POST: APIRoute = async ({ request }) => {
   let body: any;
@@ -19,7 +15,7 @@ export const POST: APIRoute = async ({ request }) => {
   if (!name) return json({ error: 'Nom invalide : il ne peut contenir ni « / » ni « \\ », ni valoir « . » ou « .. ».' }, 400);
 
   try {
-    const dir = path.posix.dirname(files.absolutePathFor(from));
+    const dir = path.posix.dirname(files.resolvePath(from));
     const to = dir === '/' ? `/${name}` : `${dir}/${name}`;
     await files.renameEntry(from, to);
     return json({ ok: true, name });

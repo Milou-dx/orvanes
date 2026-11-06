@@ -1,13 +1,8 @@
 import type { APIRoute } from 'astro';
 import * as fw from '../../server/network/firewall';
+import { jsonNoStore as json } from '../../server/core/http';
 
 export const prerender = false;
-
-const json = (b: unknown, status = 200) =>
-  new Response(JSON.stringify(b), {
-    status,
-    headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' },
-  });
 
 export const GET: APIRoute = async () => {
   try {

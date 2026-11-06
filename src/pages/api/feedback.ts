@@ -1,14 +1,12 @@
 import type { APIRoute } from 'astro';
 import { appendFileSync, mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { jsonNoStore as json } from '../../server/core/http';
 
 export const prerender = false;
 
 const DATA_DIR = process.env.PANEL_DATA_DIR ?? resolve('data');
 export const FEEDBACK_FILE = join(DATA_DIR, 'feedback.jsonl');
-
-const json = (b: unknown, status = 200) =>
-  new Response(JSON.stringify(b), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
 
 const clip = (v: unknown, max: number) => String(v ?? '').trim().slice(0, max);
 

@@ -1,12 +1,8 @@
 import type { APIRoute } from 'astro';
 import * as files from '../../../server/files/files.js';
+import { jsonNoStore as json } from '../../../server/core/http';
 
 export const prerender = false;
-
-const json = (b: unknown, status = 200) =>
-  new Response(JSON.stringify(b), {
-    status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' },
-  });
 
 export const GET: APIRoute = async ({ url }) => {
   const asked = url.searchParams.get('path') ?? '/';

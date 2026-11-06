@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { stat, open } from 'node:fs/promises';
 import * as files from '../../../server/files/files.js';
+import { jsonNoStore as json } from '../../../server/core/http';
 
 export const prerender = false;
 
@@ -71,8 +72,3 @@ export const GET: APIRoute = async ({ url }) => {
   }
 };
 
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' },
-  });
-}

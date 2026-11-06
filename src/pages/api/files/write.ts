@@ -1,15 +1,11 @@
 import type { APIRoute } from 'astro';
 import { stat, writeFile } from 'node:fs/promises';
 import * as files from '../../../server/files/files.js';
+import { jsonNoStore as json } from '../../../server/core/http';
 
 export const prerender = false;
 
 const MAX_BYTES = 5 * 1024 * 1024;
-
-const json = (b: unknown, status = 200) =>
-  new Response(JSON.stringify(b), {
-    status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' },
-  });
 
 // Enregistre un fichier texte ouvert dans Coup d'œil. Réservé aux admins par le middleware (écriture sur /api/files/*).
 export const POST: APIRoute = async ({ request, locals }) => {

@@ -1,12 +1,8 @@
 import type { APIRoute } from 'astro';
 import * as files from '../../../server/files/files.js';
+import { json } from '../../../server/core/http';
 
 export const prerender = false;
-
-const json = (b: unknown, status = 200) =>
-  new Response(JSON.stringify(b), {
-    status, headers: { 'content-type': 'application/json; charset=utf-8' },
-  });
 
 export const POST: APIRoute = async ({ request }) => {
   let body: any;

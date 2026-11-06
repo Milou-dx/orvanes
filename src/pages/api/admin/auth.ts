@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import * as a from '../../../server/auth/auth';
+import { json } from '../../../server/core/http';
 
 export const prerender = false;
 
@@ -33,6 +34,3 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
   }
 };
 
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json; charset=utf-8' } });
-}

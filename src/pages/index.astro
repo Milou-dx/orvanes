@@ -58,7 +58,7 @@ const svcRows = [
 ].slice(0, 7);
 const STATE_LABEL: Record<string, string> = { active: 'Actif', failed: 'En échec', activating: 'Démarrage' };
 
-// État global (status-01 + alerts-04) : le pire signal décide, une phrase nomme chaque problème.
+// État global : le pire signal décide, une phrase nomme chaque problème.
 const liste = (xs: string[]) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} et ${xs.at(-1)}`);
 const down = svcRows.filter((s) => s.state === 'failed').map((s) => `${s.name} en échec`);
 const high = [

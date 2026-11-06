@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { AuthError, openSession, passwordLogin } from '../../../server/auth/auth';
 import { firstAllowedPage } from '../../../server/auth/auth-core.js';
+import { json } from '../../../server/core/http';
 
 export const prerender = false;
 
@@ -29,6 +30,3 @@ export function nextPage(suite: string, user: any): string {
   return firstAllowedPage(user) ?? '/';
 }
 
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json; charset=utf-8' } });
-}

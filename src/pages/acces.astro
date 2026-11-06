@@ -295,7 +295,6 @@ const redirectUri = `${Astro.url.origin}/api/auth/google/callback`;
 
 <script>
   import '../scripts/pages/acces';
-  // Recherche dans la liste des membres (remplace la barre d'outils du tableau).
   document.addEventListener('astro:page-load', () => {
     const q = document.getElementById('acces-q') as HTMLInputElement | null;
     q?.addEventListener('input', () => {
