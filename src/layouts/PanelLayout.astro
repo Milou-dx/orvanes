@@ -33,7 +33,7 @@ const page = currentItem(NAV, path);
 const isCurrent = (item: NavItem) => item === page;
 const section = SECTIONS.find((s) => s.id === page?.sec && s.label !== page?.label);
 const logoKey = 'panel';
-const ICON_V = 7;
+const ICON_V = 8;
 const favicon = faviconProp ?? `/icons/${logoKey}.svg?v=${ICON_V}`;
 ---
 <!doctype html>

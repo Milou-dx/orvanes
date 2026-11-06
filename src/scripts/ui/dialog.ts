@@ -75,7 +75,8 @@ export function openModal(opts: ModalOptions): Promise<boolean> {
       const logo = document.createElement('div');
       logo.className = 'dlg__logo';
       logo.setAttribute('aria-hidden', 'true');
-      logo.innerHTML = `<svg viewBox="0 0 24 24">${PANEL_MARK}</svg>`;
+      // Identifiant propre : le dégradé du logo du menu disparaît quand le menu est masqué.
+      logo.innerHTML = `<svg viewBox="0 0 24 24">${PANEL_MARK.replaceAll('orvanes-r', 'orvanes-r-dlg')}</svg>`;
       box.append(logo);
     }
     box.append(title, body, actions);
