@@ -205,7 +205,7 @@ start_service() {
   cat >"$unit.tmp" <<EOF
 # Créé par install.sh. La configuration est dans $ORVANE_DIR/.env.
 [Unit]
-Description=Panel Orvane
+Description=Panel Orvanes
 After=network-online.target
 
 [Service]
@@ -245,7 +245,7 @@ summary() {
   local server; server="$(set -- ${SSH_CONNECTION:-}; echo "${3:-<serveur>}")"
   printf '\nOuvrir le panel tout de suite, depuis votre poste :\n  ssh -L %s:%s:%s %s@%s\n  puis http://localhost:%s\n\n' \
     "$PORT" "$HOST" "$PORT" "$(id -un)" "$server" "$PORT"
-  printf 'Pour un accès permanent, exposez-le par un reverse proxy HTTPS ou Tailscale (README, « Premier lancement »),\n'
+  printf 'Pour un accès permanent, exposez-le par un reverse proxy HTTPS ou Tailscale (https://orvanes.tech/docs/premier-acces),\n'
   printf 'puis renseignez PANEL_PUBLIC_URL dans %s/.env et lancez scripts/update.sh.\n' "$ORVANE_DIR"
   printf 'Mise à jour : %s/scripts/update.sh    Journal : journalctl --user -u %s -f\n' "$ORVANE_DIR" "$SERVICE"
 }

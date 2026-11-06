@@ -1,5 +1,10 @@
 # Historique
 
+## 0.2.1 (2026-11-06)
+
+- Nom unifié : Orvanes.
+- Documentation déplacée sur https://orvanes.tech/docs.
+
 ## 0.2.0 (2026-11-06)
 
 - Nouveau logo Orvanes, nom par défaut du panel aligné.

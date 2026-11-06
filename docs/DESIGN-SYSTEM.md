@@ -1,4 +1,4 @@
-# Système de design du panel Orvane
+# Système de design du panel Orvanes
 
 Référence vivante : la page `/design` (réservée aux administrateurs, absente du menu).
 

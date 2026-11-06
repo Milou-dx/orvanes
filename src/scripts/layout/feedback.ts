@@ -53,7 +53,7 @@ export async function openFeedback(kind: (typeof KINDS)[number][0] = 'idee') {
     },
   });
   if (sent) toast('Merci ! Votre commentaire a bien été envoyé.', 'success');
-  if (report && await confirmDialog({ title: 'Prévenir aussi les auteurs d’Orvane ?', message: 'Ce signalement reste sur votre serveur. Vous pouvez l’envoyer sur GitHub : relisez-le avant de le publier, il sera public.', confirmLabel: 'Ouvrir GitHub' })) {
+  if (report && await confirmDialog({ title: 'Prévenir aussi les auteurs d’Orvanes ?', message: 'Ce signalement reste sur votre serveur. Vous pouvez l’envoyer sur GitHub : relisez-le avant de le publier, il sera public.', confirmLabel: 'Ouvrir GitHub' })) {
     window.open(report, '_blank', 'noopener');
   }
 }
