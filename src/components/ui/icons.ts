@@ -1,10 +1,10 @@
 export const PANEL_MARK =
-  '<g transform="translate(0.92 0) scale(0.4615) translate(-8 -6)">'
-  + '<polygon points="32,6 56,19 32,32 8,19" fill="#DCE2EC"/>'
-  + '<polygon points="8,19 32,32 32,58 8,45" fill="#97A3B9"/>'
-  + '<polygon points="56,19 32,32 32,58 56,45" fill="#55627C"/>'
-  + '<ellipse cx="32" cy="19" rx="11" ry="6" fill="#55627C"/><ellipse cx="32" cy="19.6" rx="5.4" ry="2.9" fill="#DCE2EC"/>'
-  + '<path d="M37 42.5 50.5 35.2M37 48.5 50.5 41.2" stroke="#34C759" stroke-width="2.6" stroke-linecap="round"/>'
+  '<g transform="scale(0.375)">'
+  + '<defs><linearGradient id="orvanes-r" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#ffd2c4"/></linearGradient></defs>'
+  + '<rect width="64" height="64" rx="14" fill="#e2402b"/>'
+  + '<path d="M32 9a20 20 0 0 0 0 40" fill="none" stroke="url(#orvanes-r)" stroke-width="10"/>'
+  + '<path d="M32 15a20 20 0 0 1 0 40" fill="none" stroke="#8a1d10" stroke-width="10"/>'
+  + '<circle cx="32" cy="32" r="4" fill="#ffffff"/>'
   + '</g>';
 
 export const FAVICONS: Record<string, string> = {

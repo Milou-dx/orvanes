@@ -115,6 +115,7 @@ document.addEventListener('click', (e) => {
         'sep',
         { label: 'Thème', choices: [pick('light', 'Clair', 'sun'), pick('dark', 'Sombre', 'moon'), pick('system', 'Système', 'monitor')] },
         ...(account.dataset.admin !== undefined ? [{ label: 'Paramètres', icon: 'settings' as const, run: () => { location.href = '/parametres'; } }] : []),
+        { label: 'Sécurité', icon: 'shield', run: () => { location.href = '/securite'; } },
         'sep',
         { label: 'Obtenir de l’aide', icon: 'help', run: () => { location.href = '/aide'; } },
         { label: 'Envoyer un commentaire', icon: 'message', run: () => void openFeedback() },

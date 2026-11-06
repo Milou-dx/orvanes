@@ -1,3 +1,5 @@
+<img src="docs/brand/orvanes-logo-clair.png" alt="Orvanes" width="220">
+
 # Orvane
 
 Orvane est un panel web d'administration pour un VPS Debian ou Ubuntu : état du système, processus, services systemd, réseau et pare-feu, fichiers, journaux et terminal. Des modules ajoutent d'autres onglets (Docker, Claude, Minecraft, mail…) ; vous installez ceux dont vous avez besoin depuis le panel.

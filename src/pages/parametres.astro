@@ -14,9 +14,6 @@ import '../styles/vault.css';
 
 export const prerender = false;
 
-const me: any = Astro.locals.user;
-const showTotp = Astro.locals.authEnabled && Boolean(me?.password);
-const hasTotp = Boolean(me?.totp?.secret);
 const publicUrl = String(process.env.PANEL_PUBLIC_URL ?? '').split(',')[0].trim().replace(/\/+$/, '') || Astro.url.origin;
 const dataDir = process.env.PANEL_DATA_DIR ?? resolve('data');
 const build = import.meta.env.BUILD_ID;
@@ -55,19 +52,6 @@ const LINKS = [
         </div>
       </div>
     </section>
-
-    {showTotp && <section class="v-card">
-      <header class="v-card__head">
-        <div class="v-card__titles">
-          <h2 class="v-card__title">Sécurité</h2>
-          <p class="v-card__desc">Propre à votre compte. Code perdu : <code>node scripts/admin.mjs reset &lt;identifiant&gt;</code> sur le serveur.</p>
-        </div>
-      </header>
-      <div class="v-row">
-        <div class="v-row__txt"><span class="v-row__label">Double authentification</span><span class="v-row__desc">{hasTotp ? 'Active : un code est demandé à la connexion par mot de passe.' : 'Demande un code à usage unique en plus du mot de passe.'}</span></div>
-        <button type="button" class="v-btn v-btn--outline" data-totp={hasTotp ? 'off' : 'on'}>{hasTotp ? 'Désactiver' : 'Activer'}</button>
-      </div>
-    </section>}
 
     <section class="v-card">
       <header class="v-card__head">
@@ -149,7 +133,6 @@ const LINKS = [
 </PanelLayout>
 
 <script>
-  import '../scripts/pages/totp';
   import { toast } from '../scripts/ui/dialog';
   document.addEventListener('astro:page-load', () => {
     document.querySelectorAll<HTMLElement>('[data-copy]').forEach((b) => b.addEventListener('click', async () => {

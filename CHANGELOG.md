@@ -1,5 +1,12 @@
 # Historique
 
+## 0.2.0 (2026-11-06)
+
+- Nouveau logo Orvanes, nom par défaut du panel aligné.
+- Fenêtre d'erreur avec le logo.
+- Page Sécurité : double authentification pour tous les comptes.
+- Copier sur un fichier existant : message clair.
+
 ## 0.1.0 (2026-11-05)
 
 - Double authentification TOTP dans Paramètres.

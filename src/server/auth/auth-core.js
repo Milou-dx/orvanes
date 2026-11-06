@@ -37,7 +37,7 @@ export const storableTabs = () => [...new Set([...assignableTabs(), ...listModul
 
 const PUBLIC_PREFIXES = ['/connexion', '/portail', '/api/auth', '/_astro', '/icons', '/modules-assets', '/favicon.ico'];
 // Ouvertes à tout compte actif, quels que soient ses onglets.
-const MEMBER_PATHS = ['/aide', '/api/feedback'];
+const MEMBER_PATHS = ['/aide', '/securite', '/api/feedback'];
 const isPublicPath = (pathname) => PUBLIC_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
 const matches = (pathname, base, exact = false) => pathname === base || (!exact && pathname.startsWith(`${base}/`));

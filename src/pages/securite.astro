@@ -1,0 +1,35 @@
+---
+import PanelLayout from '../layouts/PanelLayout.astro';
+import '../styles/vault.css';
+
+export const prerender = false;
+
+const me: any = Astro.locals.user;
+const hasPassword = Boolean(me?.password);
+const hasTotp = Boolean(me?.totp?.secret);
+---
+<PanelLayout title="Sécurité" subtitle="Protection de votre compte" refreshMs={null}>
+  <div class="v-page">
+    <section class="v-card">
+      <header class="v-card__head">
+        <div class="v-card__titles">
+          <h2 class="v-card__title">Double authentification</h2>
+          <p class="v-card__desc">Code perdu : un administrateur lance <code>node scripts/admin.mjs reset &lt;identifiant&gt;</code> sur le serveur.</p>
+        </div>
+      </header>
+      <div class="v-row">
+        {hasPassword ? (
+          <>
+            <div class="v-row__txt"><span class="v-row__label">Code à usage unique</span><span class="v-row__desc">{hasTotp ? 'Active : un code est demandé à la connexion par mot de passe.' : 'Demande un code en plus du mot de passe.'}</span></div>
+            <button type="button" class="v-btn v-btn--outline" data-totp={hasTotp ? 'off' : 'on'}>{hasTotp ? 'Désactiver' : 'Activer'}</button>
+          </>
+        ) : (
+          <div class="v-row__txt"><span class="v-row__label">Non disponible</span><span class="v-row__desc">Votre compte se connecte sans mot de passe du panel : sa protection dépend de votre fournisseur.</span></div>
+        )}
+      </div>
+    </section>
+  </div>
+</PanelLayout>
+<script>
+  import '../scripts/pages/totp';
+</script>
