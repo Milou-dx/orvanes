@@ -1,4 +1,4 @@
-
+import { PANEL_MARK } from '../../components/ui/icons';
 export interface ModalOptions {
   title: string;
   body?: HTMLElement | string;
@@ -6,6 +6,8 @@ export interface ModalOptions {
   cancelLabel?: string | null;
   danger?: boolean;
   wide?: boolean;
+  /** Logo du panel au-dessus du titre. */
+  logo?: boolean;
   /** false : Échap et clic sur le fond ne ferment pas (seul le bouton de confirmation ferme). */
   dismissible?: boolean;
   onConfirm?: () => boolean | void | Promise<boolean | void>;
@@ -69,6 +71,13 @@ export function openModal(opts: ModalOptions): Promise<boolean> {
       actions.prepend(cancel);
     }
 
+    if (opts.logo) {
+      const logo = document.createElement('div');
+      logo.className = 'dlg__logo';
+      logo.setAttribute('aria-hidden', 'true');
+      logo.innerHTML = `<svg viewBox="0 0 24 24">${PANEL_MARK}</svg>`;
+      box.append(logo);
+    }
     box.append(title, body, actions);
     overlay.append(box);
 
@@ -156,9 +165,26 @@ export async function promptDialog(o: {
   return ok ? result : null;
 }
 
+let openErrors: HTMLElement | null = null;
+
+/** Fenêtre d'erreur unique : les erreurs suivantes s'y ajoutent, sans doublon. */
+export function showError(message: string): void {
+  const text = document.createElement('p');
+  text.textContent = message;
+  if (openErrors) {
+    if (![...openErrors.querySelectorAll('p')].some((p) => p.textContent === message)) openErrors.append(text);
+    return;
+  }
+  const body = document.createElement('div');
+  body.append(text);
+  openErrors = body;
+  void openModal({ title: 'Une erreur est survenue', logo: true, body, confirmLabel: 'Fermer', cancelLabel: null }).then(() => { openErrors = null; });
+}
+
 export type ToastKind = 'info' | 'success' | 'warning' | 'error';
 
 export function toast(message: string, kind: ToastKind = 'info', durationMs = 4000): void {
+  if (kind === 'error') { showError(message); return; }
   let host = document.getElementById('toasts');
   if (!host) {
     host = document.createElement('div');
@@ -169,7 +195,7 @@ export function toast(message: string, kind: ToastKind = 'info', durationMs = 40
   }
   const t = document.createElement('div');
   t.className = `toast toast--${kind}`;
-  t.setAttribute('role', kind === 'error' ? 'alert' : 'status');
+  t.setAttribute('role', 'status');
   const text = document.createElement('span');
   text.className = 'toast__text';
   text.textContent = message;
@@ -184,8 +210,8 @@ export function toast(message: string, kind: ToastKind = 'info', durationMs = 40
   t.append(text, x);
   host.append(t);
 
-  // WCAG 2.2.1 : une erreur reste au moins 10 s, et le minuteur s'arrête tant que le toast est survolé ou focalisé.
-  let left = kind === 'error' ? Math.max(durationMs, 10_000) : durationMs;
+  // WCAG 2.2.1 : le minuteur s'arrête tant que le toast est survolé ou focalisé.
+  let left = durationMs;
   let started = 0;
   const held = new Set<string>();
   const run = () => { started = Date.now(); timer = window.setTimeout(remove, left); };

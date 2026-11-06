@@ -135,9 +135,9 @@ export function getDb(): DatabaseSync {
   return db;
 }
 
-function migrate(d: DatabaseSync): void {
+export function migrate(d: DatabaseSync, target = MIGRATIONS.length): void {
   const current = (d.prepare('PRAGMA user_version').get() as { user_version: number }).user_version;
-  for (let v = current; v < MIGRATIONS.length; v++) {
+  for (let v = current; v < target; v++) {
     d.exec('BEGIN');
     try {
       const step = MIGRATIONS[v];

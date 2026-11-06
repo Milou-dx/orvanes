@@ -1,3 +1,4 @@
+import './errors';
 import './shell';
 import './transitions';
 import './search';

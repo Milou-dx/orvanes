@@ -22,12 +22,14 @@ describe('toast', () => {
     expect(count()).toBe(0);
   });
 
-  it('garde une erreur au moins 10 s', () => {
-    vi.useFakeTimers();
-    toast('ko', 'error', 2000);
-    vi.advanceTimersByTime(9_900);
-    expect(count()).toBe(1);
-    vi.advanceTimersByTime(200);
+  it('ouvre une seule fenêtre avec le logo pour les erreurs, sans doublon', () => {
+    toast('ko', 'error');
+    toast('ko', 'error');
+    toast('autre', 'error');
     expect(count()).toBe(0);
+    expect(document.querySelectorAll('.dlg').length).toBe(1);
+    expect(document.querySelector('.dlg__logo svg')).not.toBeNull();
+    expect([...document.querySelectorAll('.dlg__body p')].map((p) => p.textContent)).toEqual(['ko', 'autre']);
+    document.querySelector<HTMLButtonElement>('.dlg__ok')!.click();
   });
 });

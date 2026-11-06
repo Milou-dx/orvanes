@@ -60,7 +60,13 @@ export async function copyEntry(fromPath, toDir) {
   const fromAbs = resolvePath(fromPath);
   const toAbs = path.join(resolvePath(toDir), path.basename(fromAbs));
   if (toAbs === fromAbs) throw new Error('Source et destination identiques');
-  await fs.cp(fromAbs, toAbs, { recursive: true, errorOnExist: true, force: false });
+  try {
+    await fs.cp(fromAbs, toAbs, { recursive: true, errorOnExist: true, force: false });
+  } catch (e) {
+    // fs.cp a ses propres codes d'erreur : les appelants attendent le code système.
+    if (e?.code === 'ERR_FS_CP_EEXIST') e.code = 'EEXIST';
+    throw e;
+  }
 }
 
 async function moveAcrossDevices(fromAbs, toAbs) {
