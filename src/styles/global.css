@@ -310,17 +310,19 @@ a { color: var(--accent-text); text-underline-offset: 3px; }
 }
 
 .tgl {
-  position: relative; width: 34px; height: 20px; flex: none; cursor: pointer;
-  border-radius: 99px; border: 0; background: var(--field-stroke);
-  transition: background-color var(--dur-base) var(--ease-out);
+  position: relative; width: var(--toggle-w); height: var(--toggle-h); flex: none; cursor: pointer;
+  border-radius: var(--radius-full); border: var(--border-width) solid var(--text-secondary); background: var(--bg-hover);
+  transition: transform var(--dur-fast) var(--ease-out);
 }
 .tgl::after {
-  content: ''; position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; border-radius: 50%;
-  background: #fff; box-shadow: 0 1px 2px rgb(0 0 0 / 20%);
-  transition: transform var(--dur-base) var(--ease-out);
+  --knob: calc(var(--toggle-h) - 2 * var(--toggle-pad));
+  content: ''; position: absolute; top: calc(var(--toggle-pad) - var(--border-width)); left: calc(var(--toggle-pad) - var(--border-width));
+  width: var(--knob); height: var(--knob); border-radius: var(--radius-full);
+  background: var(--text-secondary);
+  transition: transform var(--dur-spring-toggle) var(--ease-spring-toggle), background-color var(--dur-fade) linear;
 }
-.tgl[aria-checked='true'] { background: var(--accent); border-color: var(--accent); }
-.tgl[aria-checked='true']::after { transform: translateX(14px); background: var(--accent-fg); }
+.tgl:active:not(:disabled) { transform: scale(var(--press-scale)); }
+.tgl[aria-checked='true']::after { transform: translateX(calc(var(--toggle-w) - var(--toggle-h))); background: var(--text-primary); }
 .tgl:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 .tgl:disabled { opacity: .5; cursor: progress; }
 .tgl[disabled]:not(:active) { cursor: default; }

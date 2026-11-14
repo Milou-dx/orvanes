@@ -12,26 +12,32 @@ Référence vivante : la page `/design` (réservée aux administrateurs, absente
 
 ## Jetons canoniques
 
+L'interface est celle de mistraOS (`themes/mistra/theme.toml`, accent « slate ») : surfaces grises en duotone, accent blanc en sombre et noir en clair, couleur réservée aux états et aux graphes. Chaque jeton de couleur est déclaré une fois, en `light-dark(clair, sombre)`.
+
 | Famille | Jetons |
 |---|---|
+| Palette source | `--m-surface` (contenu), `--m-sidebar` (volet, barre), `--m-card`, `--m-popover`, `--m-text`, `--m-text-dim`, `--m-border`, `--m-accent`, `--m-accent-text`, `--m-shade` : les valeurs de mistraOS, dont dérivent les jetons ci-dessous. Une page lit les jetons dérivés, jamais `--m-*` |
+| Îlot | `--island`, `--island-text`, `--island-text-dim`, `--island-highlight` (noirs dans les deux modes), `--island-h`, `--island-pad`, `--island-gap` |
 | Fonds | `--bg-app`, `--bg-surface`, `--bg-surface-2`, `--bg-hover` |
 | Filets | `--border`, `--border-strong`, `--field-stroke` (bord des champs, 3:1) |
 | Texte | `--text-primary`, `--text-secondary`, `--text-tertiary`, `--text-disabled` |
 | Accent | `--accent`, `--accent-hover`, `--accent-active`, `--accent-subtle`, `--accent-border`, `--accent-fg` |
 | Sémantique | `--success`, `--warning`, `--danger`, `--info` (+ `-subtle`, `-border`) ; points : `--status-online/-warning/-error/-offline` |
 | Teintes | `--tone-<gray\|brown\|orange\|yellow\|green\|blue\|purple\|pink\|red>-bg/-fg` : palette de base des couleurs sémantiques et des graphes, jamais pour teinter une icône |
-| Rayons | `--radius-xs` 4, `--radius-sm` 6, `--radius-md` 8, `--radius-lg` 12, `--radius-full` (points seulement) |
+| Rayons | `--radius-xs` 4, `--radius-sm` 8 (lignes, entrées de menu), `--radius-md` 10 (contrôles), `--radius-lg` 14 (cartes, menus, dialogues), `--radius-full` (capsules, interrupteurs, points) |
 | Ombres | `--shadow-xs`, `--shadow-sm`, `--shadow-md` |
-| Mouvement | `--dur-fast`, `--dur-base`, `--dur-enter`, `--ease-out`, `--ease-in`, `--ease-in-out` |
+| Mouvement | `--dur-fast`, `--dur-base`, `--dur-enter`, `--ease-out`, `--ease-in`, `--ease-in-out` ; ressorts `--ease-spring-morph` + `--dur-spring-morph` (îlot), `--ease-spring-toggle` + `--dur-spring-toggle` (interrupteur) ; fondu `--ease-fade` + `--dur-fade` ; survol qui voyage `--ease-hover` + `--dur-hover-move`, `--dur-hover-fade` ; appui `--press-scale` |
 | Typo | `--{micro,meta,dense,body,card,section,page}-{size,lh,ls}`, `--weight-{regular,medium,semibold,bold}`, `--font-ui`, `--font-mono` |
-| Espaces | `--space-0-5` à `--space-16` (grille de 4 px), `--control-h-sm/-h/-h-lg`, `--row-h`, `--row-h-compact` |
+| Espaces | `--space-0-5` à `--space-16` (grille de 4 px), `--control-h-sm/-h/-h-lg`, `--row-h`, `--row-h-compact`, `--toggle-w/-h/-pad` |
 | Empilement | `--z-sticky`, `--z-pane`, `--z-drawer`, `--z-menu`, `--z-overlay`, `--z-toast` |
 
 `--text-disabled` est réservé aux contrôles désactivés (sous 4,5:1 par conception) : une mention informative (« protégé », « Non renseigné ») prend `--text-tertiary`. Un lien posé sur un fond teinté (`-subtle`) garde la couleur du texte, souligné.
 
-Alias conservés (ne plus les utiliser dans du code neuf) : `--radius-control` = sm, `--radius-card` / `--radius-modal` = md, `--radius-pill`, `--shadow-subtle` = xs, `--shadow-overlay` = md, `--duration-micro/-ui/-page`, `--ease`.
+Alias conservés (ne plus les utiliser dans du code neuf) : `--radius-control` = md, `--radius-card` / `--radius-modal` = lg, `--radius-pill`, `--shadow-subtle` = xs, `--shadow-overlay` = md, `--duration-micro/-ui/-page`, `--ease`.
 
-Police : Inter Variable auto-hébergée via `@fontsource-variable/inter` (licence OFL, importée par PanelLayout, servie par Vite).
+Police : Inter Variable seule, auto-hébergée via `@fontsource-variable/inter` (licence OFL, importée par PanelLayout, servie par Vite). Corps 13 px, rampe 26 (page), 17 (section), 15 (carte), 13, 12 (meta), 11 (micro).
+
+Contraste : `tests/ui/tokens-contrast.test.ts` vérifie les paires de jetons dans les deux modes (texte 7:1, texte secondaire et états 4,5:1). Une nouvelle paire texte/fond s'y ajoute dans le même commit.
 
 ## Points de rupture et cibles tactiles
 
