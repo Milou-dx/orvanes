@@ -90,7 +90,7 @@ const KEYS = [
   .term-status { padding: 0.5rem 1rem; border-top: 1px solid var(--border); flex-wrap: wrap; }
   .term-status__sep { color: var(--text-tertiary); }
   .term-status__hint { margin-left: auto; display: inline-flex; align-items: center; gap: 0.25rem; }
-  .term-kbd { display: inline-flex; align-items: center; height: 1.25rem; min-width: 1.25rem; padding: 0 0.25rem; justify-content: center; border-radius: 0.25rem; background: var(--bg-hover); color: var(--text-secondary); font: 500 0.6875rem/1 var(--font-ui); }
+  .term-kbd { display: inline-flex; align-items: center; height: 1.25rem; min-width: 1.25rem; padding: 0 0.25rem; justify-content: center; border-radius: var(--radius-xs); background: var(--bg-hover); color: var(--text-secondary); font: 500 var(--micro-size)/1 var(--font-ui); }
   .term-status__hint .term-kbd:not(:first-child) { margin-left: 0; }
   @media (max-width: 640px) { .term-frame { padding: 0.5rem; height: min(60dvh, 45rem); } .term-status__hint { display: none; } }
 </style>

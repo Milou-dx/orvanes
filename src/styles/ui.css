@@ -366,7 +366,7 @@ input[aria-invalid='true'], select[aria-invalid='true'], textarea[aria-invalid='
   }
   .sgroup__rows {
     display: flex; flex-direction: column; min-width: 0;
-    background: var(--bg-surface); border-radius: 10px;
+    background: var(--bg-surface); border-radius: var(--radius-md);
     box-shadow: var(--shadow-card, var(--shadow-xs));
     overflow: hidden;
   }

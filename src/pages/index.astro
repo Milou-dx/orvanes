@@ -221,7 +221,7 @@ const sub = os?.hostname ? [os.hostname, os.osName, `${cores} cœurs`, up ? `en 
   .kpi__label { display: flex; align-items: center; gap: var(--space-2); color: var(--text-secondary); font-size: var(--meta-size); }
   .kpi__label::before { content: ''; width: 8px; height: 8px; border-radius: 2px; background: var(--c); }
   .kpi__value { font: 600 1.875rem/1.15 var(--font-display); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .kpi__unit { font: 500 0.875rem var(--font-ui); color: var(--text-secondary); margin-left: 3px; letter-spacing: 0; }
+  .kpi__unit { font: 500 var(--dense-size) var(--font-ui); color: var(--text-secondary); margin-left: 3px; letter-spacing: 0; }
   .kpi__note { color: var(--text-tertiary); font-size: var(--micro-size); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .kpi__bar { height: 4px; margin-top: var(--space-2); border-radius: var(--radius-pill); background: var(--bg-hover); overflow: hidden; }
   .kpi__bar span { display: block; height: 100%; width: var(--p); background: var(--c); border-radius: inherit; transition: width var(--dur-base) var(--ease-out); }
@@ -232,7 +232,7 @@ const sub = os?.hostname ? [os.hostname, os.osName, `${cores} cœurs`, up ? `en 
   @keyframes grow { from { width: 0; } }
 
   /* Courbe temps réel (realtime-02) */
-  .now { display: flex; align-items: baseline; gap: 3px; margin: 0 0 var(--space-2); color: var(--text-secondary); font-size: 0.875rem; }
+  .now { display: flex; align-items: baseline; gap: 3px; margin: 0 0 var(--space-2); color: var(--text-secondary); font-size: var(--dense-size); }
   .now span:first-child { font: 600 1.75rem/1.1 var(--font-display); letter-spacing: -0.02em; color: var(--text-primary); font-variant-numeric: tabular-nums; }
   .now__l { margin-left: var(--space-2); color: var(--text-tertiary); font-size: var(--micro-size); }
   .spark { display: block; width: 100%; flex: 1; min-height: 120px; }

@@ -158,7 +158,7 @@ a { color: var(--accent-text); text-underline-offset: 3px; }
   background: var(--control-fill); color: var(--text-primary);
   border: var(--border-width) solid var(--control-stroke);
   border-bottom-color: var(--control-stroke-bottom);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   font-size: var(--body-size);
   transition: background-color var(--duration-micro) var(--ease);
 }
@@ -261,7 +261,7 @@ a { color: var(--accent-text); text-underline-offset: 3px; }
 .fb__text:focus, .dlg .fb__text:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
 .fb__text[aria-invalid='true'] { border-color: var(--danger); }
 .fb__foot { display: flex; justify-content: space-between; margin: 0 !important; font-size: var(--micro-size); color: var(--text-tertiary); }
-.fb__foot kbd { font-family: inherit; padding: 0 4px; border: var(--border-width) solid var(--border); border-radius: 4px; }
+.fb__foot kbd { font-family: inherit; padding: 0 4px; border: var(--border-width) solid var(--border); border-radius: var(--radius-xs); }
 .dlg__actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-2); }
 .dlg__btn {
   min-height: 32px; padding: 0 var(--space-4); border-radius: var(--radius-control); cursor: pointer;
@@ -298,7 +298,7 @@ a { color: var(--accent-text); text-underline-offset: 3px; }
 .toast__close:hover { color: var(--text-primary); }
 
 @media (max-width: 640px) {
-  .tbl { font-size: 13px; line-height: 18px; }
+  .tbl { font-size: var(--meta-size); line-height: 18px; }
   .tbl th { padding-inline: var(--space-2) !important; }
   .tbl td { padding: 6px var(--space-2); }
   .tbl td:first-child, .tbl th:first-child { padding-left: var(--space-3) !important; }

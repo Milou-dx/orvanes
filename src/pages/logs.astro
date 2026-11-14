@@ -117,8 +117,8 @@ const srcLabel = (l: string) => String(l ?? '').replace(/\s*\(journald\)/i, '');
     background: var(--console-bg); color: var(--console-fg);
     height: min(65vh, 40rem); overflow: auto;
     padding: 0.75rem 0;
-    border: 1px solid var(--console-border); border-radius: 0.625rem;
-    font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.5rem;
+    border: 1px solid var(--console-border); border-radius: var(--radius-md);
+    font-family: var(--font-mono); font-size: var(--meta-size); line-height: 1.5rem;
   }
   .viewer:focus-visible { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent); }
   .viewer ::selection { background: var(--console-select); color: var(--console-strong); }
@@ -130,7 +130,7 @@ const srcLabel = (l: string) => String(l ?? '').replace(/\s*\(journald\)/i, '');
   .viewer :global(.l-ok) { color: var(--console-green); }
   .viewer :global(.l-debug) { color: var(--console-muted); }
   .viewer :global(mark) { background: var(--console-select); color: var(--console-strong); border-radius: 0.125rem; }
-  .viewer :global(.lg-msg) { margin: 0; padding: 0 1rem; color: var(--console-muted); font-family: var(--font-ui); font-size: 0.875rem; }
+  .viewer :global(.lg-msg) { margin: 0; padding: 0 1rem; color: var(--console-muted); font-family: var(--font-ui); font-size: var(--dense-size); }
   .viewer :global(.v-empty__title), .viewer :global(.v-empty__text) { color: var(--console-fg); }
   .viewer :global(.lg-err-icon) { color: var(--console-red); display: inline-flex; }
   .viewer :global(.v-code) { max-width: 100%; background: transparent; border-color: var(--console-border); color: var(--console-fg); }

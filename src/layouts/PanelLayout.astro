@@ -295,7 +295,7 @@ const favicon = faviconProp ?? `/icons/${logoKey}.svg?v=${ICON_V}`;
       .navlink--on { background: var(--nav-selected); color: var(--text-primary); font-weight: 600; }
       .navlink:focus-visible { outline-offset: -2px; }
       .navlink__label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .navlink__badge { margin-left: auto; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px; background: var(--accent); color: var(--accent-fg); font-size: var(--micro-size); font-weight: 600; font-variant-numeric: tabular-nums; display: inline-grid; place-items: center; }
+      .navlink__badge { margin-left: auto; min-width: 18px; height: 18px; padding: 0 5px; border-radius: var(--radius-full); background: var(--accent); color: var(--accent-fg); font-size: var(--micro-size); font-weight: 600; font-variant-numeric: tabular-nums; display: inline-grid; place-items: center; }
       .navlink__glyph { display: inline-grid; place-items: center; width: 20px; height: 20px; flex: none; color: var(--text-primary); transition: transform var(--dur-base) var(--ease-out); }
       .navlink:active .navlink__glyph { transform: scale(0.9); }
       .navlink--sub { margin-left: 18px; width: calc(100% - 18px); border-radius: 0 var(--radius-control) var(--radius-control) 0; box-shadow: inset 1px 0 0 var(--border-strong); }
