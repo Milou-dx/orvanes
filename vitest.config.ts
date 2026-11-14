@@ -1,7 +1,7 @@
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
-  resolve: { alias: { 'astro:middleware': 'astro/virtual-modules/middleware.js' } },
+  resolve: { alias: { 'astro:middleware': 'astro/virtual-modules/middleware.js', 'astro:transitions/client': 'astro/virtual-modules/transitions-router.js' } },
   test: {
     include: ['tests/**/*.test.ts', 'modules/*/tests/**/*.test.ts'],
     globalSetup: ['tests/global-tmp.ts'],

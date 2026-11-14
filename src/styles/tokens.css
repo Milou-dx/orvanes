@@ -413,6 +413,9 @@
 @media (max-width: 1000px) { :root { --page-gutter: var(--space-6); } }
 @media (max-width: 640px) { :root { --page-gutter: var(--space-4); } }
 
+/* Au doigt, la barre et ses capsules prennent la hauteur d'une cible tactile. */
+@media (pointer: coarse) { .window { --island-h: var(--touch-target); } }
+
 /* Préférences système : !important pour passer devant les blocs de thème, quelle que soit leur spécificité. */
 @media (prefers-contrast: more) {
   :root, .window, #agent {

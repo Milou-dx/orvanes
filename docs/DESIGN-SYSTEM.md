@@ -111,15 +111,27 @@ registerShortcuts(list: Shortcut[], scope?: 'page' | 'global'): () => void
 
 Portée « page » par défaut : vidée à chaque navigation, actualisation comprise. Enregistrer donc dans un écouteur `astro:page-load`, avec une garde sur un élément de la page.
 
-Globaux : Ctrl/⌘ K (palette), Ctrl/⌘ F ou `/` (recherche de la page), `?` (aide), Échap. Aucun raccourci sous `.xterm` ni sous `[data-no-shortcuts]`.
+Globaux : Ctrl/⌘ K (palette), Ctrl/⌘ F ou `/` (champ de recherche de la page ; sans champ, `/` ouvre la palette et Ctrl/⌘ F reste la recherche du navigateur), `?` (aide), Échap. Aucun raccourci sous `.xterm` ni sous `[data-no-shortcuts]`.
 
 ## Fenêtres (`src/scripts/ui/dialog.ts`)
 
 `openModal`, `confirmDialog`, `promptDialog`, `toast(message, 'info' | 'success' | 'warning' | 'error')` : signatures inchangées. Modales empilables : Échap et Tab ne concernent que celle du dessus.
 
-Recherche du haut : masquée quand la page a un champ `Toolbar topSearch` visible (Ctrl+F et `/` vont alors à ce champ).
+Recherche : la barre n'a pas de champ à elle. Un champ de page marqué `data-search-target` (`Toolbar topSearch`) reçoit Ctrl+F, `/`, la valeur de `?q=` au chargement et l'entrée « Filtrer cette page » de la palette.
 
 ## Cadre (PanelLayout)
+
+Barre du haut, sur toute la largeur, comme la barre de mistraOS : trois zones de capsules noires (`.capsule`, `.island`, hautes de `--island-h`), noires en clair comme en sombre.
+
+| Zone | Contenu |
+|---|---|
+| Gauche | le bouton du menu (`data-nav-toggle`, le seul : il replie le volet, ou ouvre le tiroir sous 640 px) et le fil d'Ariane |
+| Centre | l'îlot « Rechercher… » (`.island`, `data-cmdk-open`) : un clic, Ctrl/⌘ K ou `/` le transforme en palette |
+| Droite | l'état de l'actualisation (`#refresh-state`), puis le compte (`data-account-menu` : thème, paramètres, sécurité, aide, déconnexion), présent seulement quand la protection est activée |
+
+Tout ce qui se pose sur du noir porte la classe `.on-island` : elle redéfinit les jetons de fond, de texte, de filet et de focus aux jetons de l'îlot, les composants posés dedans (`Kbd`, icônes) suivent sans style propre.
+
+Palette (`src/scripts/layout/palette.ts`) : c'est l'îlot lui-même. La forme noire part du rectangle de l'îlot et prend la taille de son contenu sur le ressort `--ease-spring-morph` ; le contenu arrive en fondu quand la forme est presque là, et la liste fait grandir la forme à chaque frappe. Un seul fond (`.cmdk__fill`) voyage vers la ligne active. Échap, un clic ailleurs ou une navigation la referment ; `prefers-reduced-motion` supprime le morph et le voyage. Résultats : les pages et actions dont le nom porte la saisie, puis « Filtrer cette page : « q » » (page avec `data-search-target`) et « Chercher le processus « q » » (onglet Processus permis), puis les rapprochements lettre à lettre.
 
 Props : `title`, `subtitle?`, `refreshMs?` (`null` désactive l'actualisation), `favicon?`, `bare?` ; slot `actions`. `title`, `subtitle` et `actions` forment l'en-tête de page (`PageHeader`), identique sur tous les onglets du cœur et des modules : titre égal au libellé du menu, description courte, actions à droite (elles passent sous le titre sur téléphone). En-tête et contenu partagent la largeur `--content-max` et la marge `--page-gutter` (32 px, 24 px sous 1000 px, 16 px sur téléphone).
 
@@ -131,7 +143,7 @@ Menu (`src/layouts/nav.ts`, source unique du volet, du fil d'Ariane et de la pal
 | Modules | onglets des modules installés, modules triés par nom, onglets dans l’ordre du manifeste ; section absente sans module installé |
 | Paramètres | Modules, Utilisateurs (`/acces`), Paramètres (`/parametres` : thème, menu compact, informations de l'instance) |
 
-Un module désinstallé sort du menu, du fil d'Ariane et de la palette. Libellés courts (« Messages », « Outils », « Graphes ») : le contexte va dans la description de la page. Le filtrage par droits (`allowedTabs`) est inchangé. Pied du volet : le compte connecté et « Se déconnecter » (protection activée seulement). Pour suspendre l'actualisation pendant une action, poser `data-busy` sur un élément.
+Un module désinstallé sort du menu, du fil d'Ariane et de la palette. Libellés courts (« Messages », « Outils », « Graphes ») : le contexte va dans la description de la page. Le filtrage par droits (`allowedTabs`) est inchangé. Pour suspendre l'actualisation pendant une action, poser `data-busy` sur un élément.
 
 Exceptions assumées, dans le même cadre : l'onglet Claude (`bare`, rendu de claude.ai) et la console Tailscale (reproduction de la console officielle, avec son propre menu latéral dans la zone de contenu).
 

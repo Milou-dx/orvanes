@@ -69,8 +69,10 @@ document.addEventListener('keydown', (e) => {
   }
   if (isPaletteOpen() || document.querySelector('.dlg-overlay')) return;
 
-  if (!isClaude() && (matchKeys(e, 'Mod+F') || (matchKeys(e, '/') && !typing(target)))) {
+  const slash = matchKeys(e, '/') && !typing(target);
+  if (!isClaude() && (matchKeys(e, 'Mod+F') || slash)) {
     if (focusSearch()) e.preventDefault();
+    else if (slash) { e.preventDefault(); openPalette(); }
     return;
   }
 

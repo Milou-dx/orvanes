@@ -106,10 +106,6 @@ const favicon = faviconProp ?? `/icons/${logoKey}.svg?v=${ICON_V}`;
             <span class="brand__mark"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true" set:html={PANEL_MARK} /></span>
             <span class="brand__name">{PANEL_NAME}</span>
           </a>
-          <button type="button" class="iconbtn pane__toggle" data-nav-toggle aria-controls="nav-pane" aria-expanded="true"
-                  aria-label="Réduire ou afficher le menu de navigation" title="Réduire le menu">
-            <Icon name="panelLeft" size={16} />
-          </button>
         </div>
 
         <div class="pane__scroll">
@@ -152,57 +148,53 @@ const favicon = faviconProp ?? `/icons/${logoKey}.svg?v=${ICON_V}`;
         </div>
         <script is:inline>window.__applyPanelPrefs && window.__applyPanelPrefs();</script>
 
-        {authOn && user && (
-          <div class="pane__foot">
-            <button type="button" class="account" data-account-menu aria-haspopup="menu" aria-expanded="false" aria-label={`Compte de ${user.name}`}
-                    data-name={user.name} data-email={user.email && user.email !== user.name ? user.email : ''} data-admin={user.role === 'admin' ? '' : undefined}>
-              <span class="account__avatar" aria-hidden="true">{(user.name ?? '?').trim().slice(0, 1).toUpperCase()}</span>
-              <span class="account__name">{user.name}</span>
-              <Sym name="chevronUp" size={14} class="account__chev" />
-            </button>
-          </div>
-        )}
       </nav>
       <div class="scrim" data-nav-close aria-hidden="true"></div>
 
       <header class="topbar" transition:name="titlebar">
-        <button type="button" class="iconbtn topbar__menu" data-nav-toggle aria-controls="nav-pane" aria-expanded="true"
-                aria-label="Afficher ou masquer le menu de navigation" title="Menu">
-          <Icon name="menu" size={16} />
+        <div class="topbar__left">
+          <div class="capsule on-island">
+            <button type="button" class="capsule__btn" data-nav-toggle aria-controls="nav-pane" aria-expanded="true"
+                    aria-label="Afficher ou masquer le menu de navigation" title="Menu">
+              <Icon name="panelLeft" size={16} />
+            </button>
+            <nav class="crumbs" aria-label="Fil d’Ariane">
+              {section && <span class="crumbs__sec">{section.label}</span>}
+              {section && <Sym name="chevronRight" size={16} class="crumbs__sep" />}
+              {page && path !== page.href ? (
+                <>
+                  <a class="crumbs__link" href={page.href} data-astro-prefetch="hover">{page.label}</a>
+                  <Sym name="chevronRight" size={16} class="crumbs__sep" />
+                  <span class="crumbs__page" aria-current="page">{title === page.label && subtitle ? subtitle : title}</span>
+                </>
+              ) : (
+                <span class="crumbs__page" aria-current="page">{page?.label ?? title}</span>
+              )}
+            </nav>
+          </div>
+        </div>
+
+        <button type="button" class="island on-island" data-cmdk-open aria-haspopup="dialog" aria-keyshortcuts="Control+K Meta+K"
+                aria-label="Rechercher une page ou une action" data-processus={NAV.some((i) => i.tab === 'processus') ? '' : undefined}>
+          <Icon name="search" size={16} />
+          <span class="island__txt">Rechercher…</span>
+          <Kbd keys="Mod+K" class="island__keys" />
         </button>
-        <nav class="crumbs" aria-label="Fil d’Ariane">
-          {section && <span class="crumbs__sec">{section.label}</span>}
-          {section && <Sym name="chevronRight" size={16} class="crumbs__sep" />}
-          {page && path !== page.href ? (
-            <>
-              <a class="crumbs__link" href={page.href} data-astro-prefetch="hover">{page.label}</a>
-              <Sym name="chevronRight" size={16} class="crumbs__sep" />
-              <span class="crumbs__page" aria-current="page">{title === page.label && subtitle ? subtitle : title}</span>
-            </>
-          ) : (
-            <span class="crumbs__page" aria-current="page">{page?.label ?? title}</span>
-          )}
-        </nav>
 
         <div class="topbar__right">
           {refreshMs && (
-            <p class="refresh" id="refresh-state" data-idle={`Actualisation · ${Math.round(refreshMs / 1000)} s`}>
+            <p class="refresh capsule on-island" id="refresh-state" data-idle={`Actualisation · ${Math.round(refreshMs / 1000)} s`}>
               <span class="refresh__dot" aria-hidden="true"></span>
               <span class="refresh__txt">Actualisation · {Math.round(refreshMs / 1000)} s</span>
             </p>
           )}
-          <button type="button" class="cmdk-btn" data-cmdk-open aria-haspopup="dialog" aria-keyshortcuts="Control+K Meta+K"
-                  title="Palette de commandes">
-            <Icon name="command" size={16} />
-            <span class="cmdk-btn__txt">Aller à…</span>
-            <Kbd keys="Mod+K" class="cmdk-btn__keys" />
-          </button>
-          <form class="tsearch" role="search" data-tsearch data-processus={NAV.some((i) => i.tab === 'processus') ? '' : undefined}>
-            <Icon name="search" size={16} />
-            <label class="visually-hidden" for="tsearch-input">Rechercher</label>
-            <input id="tsearch-input" type="search" autocomplete="off" spellcheck="false"
-                   placeholder="Chercher un processus ou un PID" />
-          </form>
+          {authOn && user && (
+            <button type="button" class="account capsule on-island" data-account-menu aria-haspopup="menu" aria-expanded="false" aria-label={`Compte de ${user.name}`}
+                    data-name={user.name} data-email={user.email && user.email !== user.name ? user.email : ''} data-admin={user.role === 'admin' ? '' : undefined}>
+              <span class="account__avatar" aria-hidden="true">{(user.name ?? '?').trim().slice(0, 1).toUpperCase()}</span>
+              <span class="account__name">{user.name}</span>
+            </button>
+          )}
         </div>
       </header>
 
@@ -227,7 +219,7 @@ const favicon = faviconProp ?? `/icons/${logoKey}.svg?v=${ICON_V}`;
         display: grid;
         grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
         grid-template-rows: var(--titlebar-height) minmax(0, 1fr);
-        grid-template-areas: 'pane top' 'pane content';
+        grid-template-areas: 'top top' 'pane content';
         height: 100dvh;
         background: var(--bg-mica);
         color: var(--text-primary);
@@ -241,11 +233,11 @@ const favicon = faviconProp ?? `/icons/${logoKey}.svg?v=${ICON_V}`;
         position: relative; z-index: 5;
       }
       .pane__head {
-        display: flex; align-items: center; gap: var(--space-1); flex: none;
-        height: var(--titlebar-height); padding: 0 var(--space-2) 0 var(--space-3);
+        display: flex; align-items: center; flex: none;
+        height: var(--control-h-lg); padding: 0 var(--space-2) 0 var(--space-3);
       }
       .brand {
-        display: inline-flex; align-items: center; gap: var(--space-2); flex: 1; min-width: 0;
+        display: inline-flex; align-items: center; gap: var(--space-2); min-width: 0;
         margin-left: -6px; padding: 4px 6px; border-radius: var(--radius-control);
         color: inherit; text-decoration: none;
         transition: background-color var(--dur-fast) var(--ease-out);
@@ -256,16 +248,6 @@ const favicon = faviconProp ?? `/icons/${logoKey}.svg?v=${ICON_V}`;
         font-size: var(--dense-size); line-height: var(--dense-lh); font-weight: 600;
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       }
-
-      .iconbtn {
-        display: inline-grid; place-items: center; flex: none; width: 28px; height: 28px;
-        border: 0; border-radius: var(--radius-control); background: transparent; color: var(--text-secondary);
-        cursor: pointer;
-        transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out),
-                    transform var(--dur-fast) var(--ease-out);
-      }
-      .iconbtn:hover { background: var(--nav-hover); color: var(--text-primary); }
-      .iconbtn:active { transform: scale(var(--press-scale)); }
 
       .pane__scroll {
         flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
@@ -351,48 +333,57 @@ const favicon = faviconProp ?? `/icons/${logoKey}.svg?v=${ICON_V}`;
         :global(:root[data-nav]) .navlink--sub, :global(:root:not([data-nav])) .navlink--sub { margin-left: 18px; width: calc(100% - 18px); box-shadow: inset 1px 0 0 var(--border-strong); }
       }
 
-      .pane__foot {
-        flex: none; display: flex; align-items: center; gap: var(--space-2);
-        padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3); border-top: var(--border-width) solid var(--border);
-      }
-      .account {
-        display: flex; align-items: center; gap: var(--space-2); flex: 1; min-width: 0; font: inherit; font-size: var(--dense-size);
-        padding: var(--space-1) var(--space-2); margin-left: calc(-1 * var(--space-2)); border: 0; border-radius: var(--radius-md);
-        background: none; color: inherit; cursor: pointer; text-align: left;
-      }
-      .account:hover, .account[aria-expanded='true'] { background: var(--bg-hover); }
-      .account__avatar {
-        display: inline-grid; place-items: center; flex: none; width: 20px; height: 20px; border-radius: var(--radius-full);
-        background: var(--bg-hover); color: var(--text-secondary); font-size: var(--micro-size); font-weight: 600;
-      }
-      .account__name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-secondary); }
-      .account__chev { flex: none; color: var(--text-tertiary); }
-
       .scrim { display: none; }
 
       .topbar {
         grid-area: top;
-        display: flex; align-items: center; gap: var(--space-3); min-width: 0;
-        padding: 0 var(--space-4) 0 var(--space-5);
-        background: var(--bg-app);
-        box-shadow: inset var(--border-width) 0 0 var(--border);
+        display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: var(--island-gap);
+        min-width: 0; padding: 0 var(--space-3);
+        background: var(--bg-mica);
       }
-      .topbar__menu { display: none; }
-      .crumbs { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: var(--dense-size); line-height: var(--dense-lh); color: var(--text-secondary); }
+      .topbar__left { display: flex; min-width: 0; }
+      .topbar__right { display: flex; align-items: center; justify-content: flex-end; gap: var(--island-gap); min-width: 0; }
+
+      .capsule {
+        display: inline-flex; align-items: center; gap: var(--space-2); min-width: 0;
+        height: var(--island-h); padding: 0 var(--island-pad);
+        border: 0; border-radius: var(--radius-full);
+        font: inherit; font-size: var(--dense-size); line-height: var(--dense-lh);
+      }
+      .capsule:has(> .capsule__btn), .account { padding-left: var(--space-1); }
+      .capsule__btn {
+        display: inline-grid; place-items: center; flex: none;
+        width: calc(var(--island-h) - 2 * var(--space-1)); height: calc(var(--island-h) - 2 * var(--space-1));
+        border: 0; border-radius: var(--radius-full); background: transparent; color: var(--text-secondary); cursor: pointer;
+        transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out),
+                    transform var(--dur-fast) var(--ease-out);
+      }
+      .capsule__btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+      .capsule__btn:active { transform: scale(var(--press-scale)); }
+
+      .crumbs { display: flex; align-items: center; gap: var(--space-1); min-width: 0; color: var(--text-secondary); }
       .crumbs__sec { white-space: nowrap; }
-      .crumbs :global(.crumbs__sep) { color: var(--text-tertiary); }
+      .crumbs :global(.crumbs__sep) { flex: none; color: var(--text-tertiary); }
       .crumbs__page { color: var(--text-primary); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .crumbs__link {
-        color: inherit; text-decoration: none; white-space: nowrap; padding: 2px 4px; margin: -2px -4px; border-radius: var(--radius-control);
+        color: inherit; text-decoration: none; white-space: nowrap; padding: var(--space-0-5) var(--space-1); margin: calc(-1 * var(--space-0-5)) calc(-1 * var(--space-1)); border-radius: var(--radius-sm);
         transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
       }
       .crumbs__link:hover { background: var(--bg-hover); color: var(--text-primary); }
-      .topbar__right { margin-left: auto; display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
 
-      .refresh {
-        display: flex; align-items: center; gap: var(--space-2);
-        font-size: var(--meta-size); line-height: var(--meta-lh); color: var(--text-tertiary); white-space: nowrap;
+      .island {
+        display: inline-flex; align-items: center; gap: var(--space-2);
+        width: clamp(12rem, 34vw, 25.5rem); height: var(--island-h); padding: 0 var(--space-1) 0 var(--island-pad);
+        border: 0; border-radius: var(--radius-full); color: var(--text-secondary);
+        font: inherit; font-size: var(--dense-size); line-height: var(--dense-lh); text-align: left; cursor: text;
+        transition: color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
       }
+      .island:hover { color: var(--text-primary); }
+      .island:active { transform: scale(var(--press-scale)); }
+      .island__txt { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      :global(.island--away) { opacity: 0; }
+
+      .refresh { color: var(--text-secondary); white-space: nowrap; }
       .refresh__dot { position: relative; width: 7px; height: 7px; border-radius: 50%; background: var(--status-online); flex: none; }
       .refresh__dot::after {
         content: ''; position: absolute; inset: 0; border-radius: 50%; background: inherit;
@@ -401,38 +392,15 @@ const favicon = faviconProp ?? `/icons/${logoKey}.svg?v=${ICON_V}`;
       .refresh--paused .refresh__dot { background: var(--status-offline); }
       .refresh--paused .refresh__dot::after { animation: none; opacity: 0; }
 
-      .cmdk-btn {
-        display: inline-flex; align-items: center; gap: var(--space-2); flex: none;
-        height: var(--control-h); padding: 0 var(--space-1) 0 var(--space-3);
-        border: var(--border-width) solid var(--border); border-radius: var(--radius-control);
-        background: var(--bg-surface); color: var(--text-secondary);
-        font-size: var(--dense-size); cursor: pointer;
-        transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+      .account { cursor: pointer; transition: transform var(--dur-fast) var(--ease-out); }
+      .account:active { transform: scale(var(--press-scale)); }
+      .account__avatar {
+        display: inline-grid; place-items: center; flex: none;
+        width: calc(var(--island-h) - 2 * var(--space-1)); height: calc(var(--island-h) - 2 * var(--space-1)); border-radius: var(--radius-full);
+        background: var(--bg-hover); color: var(--text-primary); font-size: var(--micro-size); font-weight: 600;
       }
-      .cmdk-btn:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--border-strong); }
-      .cmdk-btn:active { background: var(--nav-selected); }
-      .cmdk-btn :global(.kbd) { height: 22px; }
-
-      .tsearch {
-        display: flex; align-items: center; gap: var(--space-2);
-        width: clamp(200px, 24vw, 320px); min-width: 0; height: 32px; padding-inline: var(--space-3);
-        background: var(--control-fill); color: var(--text-secondary);
-        border: var(--border-width) solid var(--field-stroke); border-radius: var(--radius-control);
-        transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out),
-                    box-shadow var(--dur-fast) var(--ease-out);
-      }
-      .tsearch:hover { border-color: var(--text-tertiary); }
-      .tsearch:focus-within {
-        border-color: var(--accent);
-        box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
-        outline: 2px solid transparent;
-      }
-      .tsearch input {
-        flex: 1; min-width: 0; height: 100%; border: 0; outline: none; background: transparent;
-        color: var(--text-primary); font-size: var(--dense-size);
-      }
-      .tsearch input::placeholder { color: var(--text-secondary); }
-      .tsearch input::-webkit-search-cancel-button { cursor: pointer; }
+      .account__name { min-width: 0; max-width: 10rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-secondary); }
+      .account:hover .account__name, .account[aria-expanded='true'] .account__name { color: var(--text-primary); }
 
       .content {
         grid-area: content;
@@ -440,8 +408,7 @@ const favicon = faviconProp ?? `/icons/${logoKey}.svg?v=${ICON_V}`;
         min-width: 0; min-height: 0;
         overflow-y: auto;
         background: var(--bg-app);
-        border-top: var(--border-width) solid var(--border);
-        border-left: var(--border-width) solid var(--border);
+        border-top-left-radius: var(--radius-lg);
         view-transition-name: page;
       }
       .main {
@@ -452,12 +419,10 @@ const favicon = faviconProp ?? `/icons/${logoKey}.svg?v=${ICON_V}`;
       .main--bare { padding: 0; gap: 0; max-width: none; margin: 0; flex: 1; min-height: 0; }
 
       :global(:root[data-nav='compact']) .window { grid-template-columns: var(--sidebar-width-collapsed) minmax(0, 1fr); }
-      :global(:root[data-nav='compact']) .brand,
+      :global(:root[data-nav='compact']) .brand__name,
       :global(:root[data-nav='compact']) .navsec__head,
-      :global(:root[data-nav='compact']) .navlink__label, :global(:root[data-nav='compact']) .navlink__badge,
-      :global(:root[data-nav='compact']) .account__name, :global(:root[data-nav='compact']) .account__chev { display: none; }
-      :global(:root[data-nav='compact']) .account { flex: none; margin: 0; }
-      :global(:root[data-nav='compact']) .pane__foot { justify-content: center; padding-inline: 0; }
+      :global(:root[data-nav='compact']) .navlink__label, :global(:root[data-nav='compact']) .navlink__badge { display: none; }
+      :global(:root[data-nav='compact']) .brand { margin: 0; }
       :global(:root[data-nav='compact']) .pane__head { justify-content: center; padding: 0; }
       :global(:root[data-nav='compact']) .pane__scroll { padding-inline: var(--space-2); gap: var(--space-2); }
       :global(:root[data-nav='compact']) .navsec + .navsec { border-top: var(--border-width) solid var(--border); padding-top: var(--space-2); }
@@ -466,12 +431,10 @@ const favicon = faviconProp ?? `/icons/${logoKey}.svg?v=${ICON_V}`;
       :global(:root[data-nav='compact']) .navlink { justify-content: center; padding: 0; }
       @media (max-width: 1000px) {
         :global(:root:not([data-nav])) .window { grid-template-columns: var(--sidebar-width-collapsed) minmax(0, 1fr); }
-        :global(:root:not([data-nav])) .brand,
+        :global(:root:not([data-nav])) .brand__name,
         :global(:root:not([data-nav])) .navsec__head,
-        :global(:root:not([data-nav])) .navlink__label, :global(:root:not([data-nav])) .navlink__badge,
-        :global(:root:not([data-nav])) .account__name, :global(:root:not([data-nav])) .account__chev { display: none; }
-        :global(:root:not([data-nav])) .account { flex: none; margin: 0; }
-        :global(:root:not([data-nav])) .pane__foot { justify-content: center; padding-inline: 0; }
+        :global(:root:not([data-nav])) .navlink__label, :global(:root:not([data-nav])) .navlink__badge { display: none; }
+        :global(:root:not([data-nav])) .brand { margin: 0; }
         :global(:root:not([data-nav])) .pane__head { justify-content: center; padding: 0; }
         :global(:root:not([data-nav])) .pane__scroll { padding-inline: var(--space-2); gap: var(--space-2); }
         :global(:root:not([data-nav])) .navsec + .navsec { border-top: var(--border-width) solid var(--border); padding-top: var(--space-2); }
@@ -499,24 +462,17 @@ const favicon = faviconProp ?? `/icons/${logoKey}.svg?v=${ICON_V}`;
           transform: none; visibility: visible;
           transition: transform var(--dur-base) var(--ease-out);
         }
-        :global(:root[data-nav]) .brand, :global(:root:not([data-nav])) .brand { display: inline-flex; }
+        :global(:root[data-nav]) .brand__name, :global(:root:not([data-nav])) .brand__name { display: block; }
         :global(:root[data-nav]) .navsec__head, :global(:root:not([data-nav])) .navsec__head { display: flex; }
         :global(:root[data-nav]) .navlink__label, :global(:root:not([data-nav])) .navlink__label { display: block; }
         :global(:root[data-nav]) .navlink__badge:not([hidden]), :global(:root:not([data-nav])) .navlink__badge:not([hidden]) { display: inline-grid; }
-        :global(:root[data-nav]) .account, :global(:root:not([data-nav])) .account { display: flex; flex: 1; margin-left: calc(-1 * var(--space-2)); }
-        :global(:root[data-nav]) .account__name, :global(:root:not([data-nav])) .account__name { display: block; }
-        :global(:root[data-nav]) .account__chev, :global(:root:not([data-nav])) .account__chev { display: inline; }
-        :global(:root[data-nav]) .pane__foot, :global(:root:not([data-nav])) .pane__foot { justify-content: flex-start; padding-inline: var(--space-3) var(--space-2); }
         :global(:root[data-nav]) .pane__head, :global(:root:not([data-nav])) .pane__head { justify-content: flex-start; padding: 0 var(--space-2) 0 var(--space-3); }
         :global(:root[data-nav]) .navsec + .navsec, :global(:root:not([data-nav])) .navsec + .navsec { border-top: 0; padding-top: 0; }
         :global(:root[data-nav]) .navlink, :global(:root:not([data-nav])) .navlink { justify-content: flex-start; padding: 0 var(--space-2); height: 36px; }
-        .topbar__menu { display: inline-grid; width: 36px; height: 36px; }
-        .topbar { gap: var(--space-2); padding-inline: var(--space-1) var(--space-2); box-shadow: none; }
+        .topbar { padding-inline: var(--space-2); }
         .crumbs__sec, .crumbs__link, .crumbs :global(.crumbs__sep) { display: none; }
-        .tsearch { display: none; }
-        .cmdk-btn { width: 36px; height: 36px; padding: 0; justify-content: center; }
-        .cmdk-btn :global(.cmdk-btn__keys) { display: none; }
-        .refresh__txt { display: none; }
+        .island { width: var(--island-h); padding: 0; justify-content: center; cursor: pointer; }
+        .island__txt, .island :global(.island__keys) { display: none; }
 
         .scrim {
           display: block; position: fixed; inset: 0; z-index: 30; background: var(--scrim);
@@ -525,15 +481,20 @@ const favicon = faviconProp ?? `/icons/${logoKey}.svg?v=${ICON_V}`;
         }
         :global(body.nav-open) .scrim { opacity: 1; visibility: visible; transition: opacity var(--dur-base) var(--ease-out); }
 
-        .content { border-left: 0; }
+        .content { border-radius: 0; }
+      }
+      @media (max-width: 900px) {
+        .refresh__txt, .account__name, .island :global(.island__keys) { display: none; }
+        .refresh { padding: 0; width: var(--island-h); justify-content: center; }
+        .account { padding: 0 var(--space-1); }
       }
       @media (pointer: coarse) {
-        .iconbtn { width: 44px; height: 44px; } .navlink { height: 44px; }
+        .navlink { height: 44px; }
         .navsub-toggle { width: 44px; height: 44px; right: 0; }
         .navitem:has(.navsub-toggle) .navlink { padding-right: 48px; }
       }
       @media (prefers-reduced-motion: reduce) {
-        .iconbtn:active { transform: none; }
+        .capsule__btn:active, .island:active, .account:active { transform: none; }
         .refresh__dot::after { display: none; }
       }
     </style>

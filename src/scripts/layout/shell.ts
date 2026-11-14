@@ -1,7 +1,7 @@
 import { openMenu } from '../ui/menu';
 import { openFeedback } from './feedback';
 
-export const MOBILE = window.matchMedia('(max-width: 640px)');
+const MOBILE = window.matchMedia('(max-width: 640px)');
 const NARROW = window.matchMedia('(max-width: 1000px)');
 
 function store(key: string, value: string | null) {
@@ -52,7 +52,7 @@ function setDrawer(open: boolean) {
   document.querySelectorAll('.topbar, .content').forEach((el) => el.toggleAttribute('inert', open));
   paintNavButton();
   if (open) (document.querySelector<HTMLElement>('#nav-pane .navlink--on') ?? document.querySelector<HTMLElement>('#nav-pane .navlink'))?.focus();
-  else if (document.getElementById('nav-pane')?.contains(document.activeElement)) document.querySelector<HTMLElement>('.topbar__menu')?.focus();
+  else if (document.getElementById('nav-pane')?.contains(document.activeElement)) document.querySelector<HTMLElement>('[data-nav-toggle]')?.focus();
 }
 export function toggleNav() {
   if (MOBILE.matches) { setDrawer(!document.body.classList.contains('nav-open')); return; }
@@ -110,7 +110,7 @@ document.addEventListener('click', (e) => {
     const pick = (v: 'light' | 'dark' | 'system', label: string, icon: 'sun' | 'moon' | 'monitor') =>
       ({ label, icon, checked: theme === v, run: () => setTheme(v) });
     openMenu({
-      anchor: account, label: 'Compte', matchWidth: true, items: [
+      anchor: account, label: 'Compte', items: [
         { head: { name: account.dataset.name ?? '', sub: account.dataset.email || undefined } },
         'sep',
         { label: 'Thème', choices: [pick('light', 'Clair', 'sun'), pick('dark', 'Sombre', 'moon'), pick('system', 'Système', 'monitor')] },
@@ -136,7 +136,7 @@ document.addEventListener('click', (e) => {
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && document.body.classList.contains('nav-open')) {
     setDrawer(false);
-    document.querySelector<HTMLElement>('.topbar__menu')?.focus();
+    document.querySelector<HTMLElement>('[data-nav-toggle]')?.focus();
   }
 });
 
