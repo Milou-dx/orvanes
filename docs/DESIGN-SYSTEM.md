@@ -76,7 +76,7 @@ Tableaux sous 640 px : `.dt` passe en cartes (1re cellule = titre, `data-label` 
 | `PageHeader` | `title`, `description?` ; slot `actions`. Posé par `PanelLayout` : une page ne l'écrit pas elle-même |
 | `ModuleLogo` | `id` (module), `size?` (16) ; logo du module en SVG dans la page (voir « Logos des modules ») |
 | `Card` | `title?`, `description?`, `icon?` (Lucide, monochrome), `flush?`, `interactive?`, `id?` ; slot `actions` |
-| `SettingsRow` | `title`, `desc?`, `icon?`, `href?` ; `check`, `info`, `warning` sont teintées (état), les autres neutres |
+| `SettingsRow` | `title`, `desc?`, `icon?`, `tint?` (jeton de couleur de l'icône), `href?` ; tuile neutre, seules les icônes d'état (`check`, `circleCheck`, `warning`, `circleAlert`, `circleX`) prennent leur couleur |
 | `Button` (+ `title`, `hidden`, `pressed`, `data-*` ; classes `.btn` globales), `Badge`, `Stat`, `Meter`, `Input`, `Select`, `Toggle`, `Skeleton`, `Spinner`, `ActionButton`, `Icon` | inchangés |
 
 Colonne (`columns`) : `key`, `label`, `sortable?`, `type?: text\|number\|date`, `align?`, `mono?`, `muted?`, `nowrap?`, `actions?`, `width?`, `hideBelow?: sm\|md\|lg`, `hideLabel?`, côté serveur `format?(row)`, `value?(row)`, côté client `render?(row)`, `value?(row)`.

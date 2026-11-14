@@ -123,8 +123,7 @@ export function openPalette() {
     const r = island?.getBoundingClientRect();
     const width = inner.offsetWidth;
     const centre = r ? r.left + r.width / 2 : window.innerWidth / 2;
-    const edge = Math.min(EDGE, (window.innerWidth - width) / 2);
-    const left = Math.max(edge, Math.min(centre - width / 2, window.innerWidth - width - edge));
+    const left = Math.max(EDGE, Math.min(centre - width / 2, window.innerWidth - width - EDGE));
     Object.assign(card.style, { left: `${left}px`, top: r ? `${r.top}px` : '', width: `${width}px`, height: `${inner.offsetHeight}px`, borderRadius: '' });
   }
   // Un seul fond va à la ligne active ; il apparaît sur place après un nouveau tri au lieu de traverser la liste.
