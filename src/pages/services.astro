@@ -44,7 +44,7 @@ const tone = (raw: string) => TONE[toStatus(raw)];
 const label = (raw: string) => (raw === 'active' ? 'Actif' : raw === 'failed' ? 'Échec' : raw === 'inactive' ? 'Inactif' : raw);
 const down = keyServices.filter((k) => k.s.active !== 'active');
 const keySummary = down.length === 0
-  ? `Les ${keyServices.length} services importants fonctionnent.`
+  ? (keyServices.length === 1 ? 'Le service important fonctionne.' : `Les ${keyServices.length} services importants fonctionnent.`)
   : `À l’arrêt ou en échec : ${down.map((k) => k.label).join(', ')}.`;
 const keyTone = down.length === 0 ? 'good' : 'bad';
 const keyHeadline = down.length === 0 ? 'Tout fonctionne' : `${down.length} à vérifier`;
@@ -109,7 +109,7 @@ const stats: { label: string; value: number; note: string; tone?: string }[] = [
         <header class="v-card__head">
           <div class="v-card__titles">
             <h2 class="v-card__title">Tous les services</h2>
-            <p class="v-card__desc">Services systemd du serveur. Arrêtez, démarrez ou redémarrez chacun depuis sa ligne.</p>
+            <p class="v-card__desc">Services systemd du serveur.</p>
           </div>
         </header>
         <div class="v-toolbar" role="group" aria-label="Filtres des services">

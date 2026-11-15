@@ -13,10 +13,6 @@ function typing(el: Element | null) {
 const exempt = (el: Element | null) => Boolean(el?.closest('.xterm, [data-no-shortcuts]'));
 const isClaude = () => Boolean(document.getElementById('agent'));
 
-export function openGlobalPalette(): void {
-  if (!isPaletteOpen()) openPalette();
-}
-
 let helpOpen = false;
 async function showShortcuts() {
   if (helpOpen) return;

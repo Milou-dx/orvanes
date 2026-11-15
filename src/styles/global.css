@@ -349,7 +349,6 @@ a { color: var(--accent-text); text-underline-offset: 3px; }
 @keyframes n-toast  { from { opacity: 0; transform: translateY(-8px); } }
 @keyframes n-pulse  { 0% { transform: scale(1); opacity: 0.55; } 70%, 100% { transform: scale(2.6); opacity: 0; } }
 @keyframes n-spin   { to { transform: rotate(1turn); } }
-@keyframes n-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
 
 ::view-transition-old(page) { animation: n-fade-out var(--dur-fast, 150ms) var(--ease-in, ease-in) both; }
 ::view-transition-new(page) { animation: n-rise var(--dur-base, 200ms) var(--ease-out, ease-out) both; }

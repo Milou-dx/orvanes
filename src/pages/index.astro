@@ -191,6 +191,7 @@ const sub = os?.hostname ? [os.hostname, os.osName, `${cores} cœurs`, up ? `en 
   #home :global(.card) { display: flex; flex-direction: column; }
   #home :global(.card__body) { flex: 1; display: flex; flex-direction: column; }
   .g2 { display: grid; gap: var(--space-4); grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
+  .g2:has(> :only-child) { grid-template-columns: minmax(0, 1fr); }
   .g3 { display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr)); }
   .more { color: var(--accent-text); text-decoration: none; font-size: var(--meta-size); }
   .more:hover { text-decoration: underline; }

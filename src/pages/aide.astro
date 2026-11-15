@@ -24,7 +24,7 @@ const TOPICS = [
 
 const FAQ = [
   ['Je ne vois pas un onglet dont j’ai besoin.', 'Chaque compte n’a accès qu’aux onglets que l’administrateur lui a ouverts. Demandez-lui de l’ajouter dans Utilisateurs.'],
-  ['Comment passer en thème sombre ?', 'Cliquez sur votre nom en bas du menu, puis choisissez Clair, Sombre ou Système. Le choix est gardé dans ce navigateur.'],
+  ['Comment passer en thème sombre ?', 'Cliquez sur votre nom en haut à droite, puis choisissez Clair, Sombre ou Système. Le choix est gardé dans ce navigateur.'],
   ['Les chiffres ne bougent plus.', 'L’actualisation se met en pause quand une fenêtre ou un menu est ouvert, et quand l’onglet du navigateur est caché. L’indicateur en haut à droite affiche l’état.'],
   ['Ma règle de pare-feu a disparu après un redémarrage.', 'Une règle ajoutée dans Réseau s’applique tout de suite mais doit être enregistrée pour rester après un redémarrage du serveur.'],
   ['Comment me déconnecter de tous mes appareils ?', 'Un administrateur peut fermer vos sessions depuis Utilisateurs, dans le menu de votre compte.'],
@@ -35,7 +35,6 @@ const KEYS = [['Ctrl/⌘', 'K', 'Palette de commandes : aller à une page, lance
 <PanelLayout title="Aide" subtitle="Comment se servir du panel" refreshMs={null}>
   <div class="v-page help">
     <section class="help__hero">
-      <h2 class="help__title">Comment pouvons-nous vous aider ?</h2>
       <label class="help__search">
         <Icon name="search" size={16} />
         <input type="search" data-help-search placeholder="Rechercher : pare-feu, thème, services…" aria-label="Rechercher dans l’aide" autocomplete="off" />
@@ -77,11 +76,11 @@ const KEYS = [['Ctrl/⌘', 'K', 'Palette de commandes : aller à une page, lance
     <section class="v-card help__cta">
       <span class="help__icon"><Icon name="message" size={18} /></span>
       <div class="help__cta-txt">
-        <h2 class="v-card__title">Vous n’avez pas trouvé ?</h2>
+        <h2 class="v-card__title">Écrire à l’administrateur</h2>
         <p class="v-card__desc">Décrivez le problème ou proposez une amélioration, l’administrateur le reçoit dans Paramètres.</p>
       </div>
       <button type="button" class="v-btn v-btn--outline" data-feedback="bug"><Icon name="warning" size={16} />Signaler un bug</button>
-      <button type="button" class="v-btn" data-feedback="idee"><Icon name="spark" size={16} />Proposer une idée</button>
+      <button type="button" class="v-btn" data-feedback="idee"><Icon name="message" size={16} />Proposer une idée</button>
     </section>
   </div>
 </PanelLayout>
@@ -114,7 +113,6 @@ const KEYS = [['Ctrl/⌘', 'K', 'Palette de commandes : aller à une page, lance
     border-radius: var(--radius-lg); border: 1px solid var(--border);
     background: var(--bg-surface);
   }
-  .help__title { margin: 0; font: 600 1.5rem/1.2 var(--font-ui); letter-spacing: -0.02em; color: var(--text-primary); text-wrap: balance; }
   .help__search {
     display: flex; align-items: center; gap: 0.5rem; width: min(32rem, 100%); height: 2.75rem; padding: 0 0.875rem;
     border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-surface); color: var(--text-tertiary); box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);

@@ -54,7 +54,6 @@ const canTerminal = tabAllowed(Astro.locals)('terminal');
         <header class="v-card__head">
           <div class="v-card__titles">
             <h2 class="v-card__title">Tous les processus</h2>
-            <p class="v-card__desc">Triez par colonne, groupez par nom, ou ouvrez le menu d’une ligne pour terminer un processus.</p>
           </div>
         </header>
         <div class="v-toolbar" role="group" aria-label="Filtres des processus">
@@ -175,7 +174,7 @@ const canTerminal = tabAllowed(Astro.locals)('terminal');
   :global(#pm td.pm-heat) { position: relative; padding-bottom: 0.875rem; font-variant-numeric: tabular-nums; }
   :global(#pm td.pm-heat::after) {
     content: ''; position: absolute; left: 0.5rem; right: 0.5rem; bottom: 0.3125rem; height: 3px; border-radius: 2px;
-    background: linear-gradient(90deg, color-mix(in srgb, var(--danger) calc(var(--h) * 100%), var(--accent)) calc(var(--h) * 100%), var(--bg-hover) 0);
+    background: linear-gradient(90deg, var(--accent) calc(var(--h) * 100%), var(--bg-hover) 0);
   }
   :global(#pm .dt__sort) { display: inline-flex; align-items: center; gap: 0.25rem; margin: 0 -0.25rem; padding: 0.125rem 0.25rem; border: 0; border-radius: var(--radius-sm); background: transparent; color: inherit; font: inherit; cursor: pointer; white-space: nowrap; }
   :global(#pm .al-right > .dt__sort) { flex-direction: row-reverse; }

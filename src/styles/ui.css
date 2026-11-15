@@ -105,9 +105,8 @@ th[aria-sort='descending'] .dt__arrow { transform: rotate(180deg); }
 .dt__foot:empty { display: none; }
 
 .skeleton {
-  background: linear-gradient(90deg, var(--bg-hover) 0%, var(--bg-surface-2) 50%, var(--bg-hover) 100%);
-  background-size: 200% 100%;
-  animation: n-shimmer 1.6s var(--ease-in-out) infinite;
+  background: var(--bg-hover);
+  animation: pulse-subtle 1.6s var(--ease-in-out) infinite;
 }
 
 .ui-state {
