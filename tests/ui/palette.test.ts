@@ -5,6 +5,7 @@ const navigate = vi.hoisted(() => vi.fn());
 vi.mock('astro:transitions/client', () => ({ navigate }));
 
 import { isPaletteOpen, openPalette, searchItems } from '../../src/scripts/layout/palette';
+import { openMenu, isMenuOpen } from '../../src/scripts/ui/menu';
 
 const input = () => document.querySelector<HTMLInputElement>('.cmdk__input')!;
 const titles = () => [...document.querySelectorAll('.cmdk__label')].map((el) => el.textContent);
@@ -75,6 +76,65 @@ describe('palette née de l’îlot', () => {
     expect(document.querySelector('.cmdk-overlay')).toBeNull();
     expect(document.activeElement).toBe(island);
     expect(island.classList.contains('island--away')).toBe(false);
+  });
+
+  it('un mot de la section ne passe pas devant la recherche de processus', () => {
+    openPalette();
+    type('système');
+    expect(titles()[0]).toBe('Chercher le processus « système »');
+  });
+
+  it('ouverte au clavier sans focus, elle rend le focus à l’îlot', () => {
+    (document.activeElement as HTMLElement | null)?.blur();
+    openPalette();
+    press('Escape');
+    expect(document.activeElement).toBe(document.querySelector('.island'));
+  });
+
+  it('referme le menu ouvert', () => {
+    openMenu({ items: [{ label: 'Un', run: () => {} }], x: 0, y: 0 });
+    openPalette();
+    expect(isMenuOpen()).toBe(false);
+  });
+
+  it('un appui en dehors la referme sans bloquer le clic', () => {
+    openPalette();
+    const link = document.querySelector<HTMLElement>('.navlink')!;
+    const down = new MouseEvent('pointerdown', { bubbles: true, cancelable: true });
+    link.dispatchEvent(down);
+    expect(isPaletteOpen()).toBe(false);
+    expect(down.defaultPrevented).toBe(false);
+  });
+
+  describe('avec le mouvement', () => {
+    beforeEach(() => { vi.useFakeTimers(); window.matchMedia = (() => ({ matches: false })) as unknown as typeof window.matchMedia; });
+    afterEach(() => { vi.runAllTimers(); vi.useRealTimers(); delete (window as { matchMedia?: unknown }).matchMedia; });
+
+    it('Échap laisse la forme revenir à l’îlot avant de la retirer', () => {
+      const island = document.querySelector<HTMLElement>('.island')!;
+      openPalette();
+      expect(island.classList.contains('island--away')).toBe(true);
+      press('Escape');
+      expect(document.querySelectorAll('.cmdk-overlay').length).toBe(1);
+      expect(island.classList.contains('island--away')).toBe(true);
+      vi.advanceTimersByTime(700);
+      expect(document.querySelector('.cmdk-overlay')).toBeNull();
+      expect(island.classList.contains('island--away')).toBe(false);
+    });
+
+    it('rouverte pendant la fermeture, il n’en reste qu’une', () => {
+      openPalette();
+      press('Escape');
+      openPalette();
+      expect(document.querySelectorAll('.cmdk-overlay').length).toBe(1);
+      expect(document.querySelector('.island')!.classList.contains('island--away')).toBe(true);
+    });
+
+    it('une navigation la retire tout de suite', () => {
+      openPalette();
+      document.dispatchEvent(new Event('astro:before-swap'));
+      expect(document.querySelector('.cmdk-overlay')).toBeNull();
+    });
   });
 
   it('se ferme sans attendre quand la page change', () => {

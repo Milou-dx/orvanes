@@ -332,7 +332,7 @@
   /* Les états gardent leur couleur : une panne se lit avant son libellé. */
   --success: light-dark(#196b2f, #30d158);
   --warning: light-dark(#9c4600, #ff9f0a);
-  --danger:  light-dark(#c50013, #ff6961);
+  --danger:  light-dark(#c50013, #ff7069);
   --info:    var(--accent);
   --status-online:  light-dark(#34c759, #30d158);
   --status-warning: light-dark(#ff9500, #ff9f0a);

@@ -190,10 +190,12 @@ th[aria-sort='descending'] .dt__arrow { transform: rotate(180deg); }
   --accent: var(--island-text); --accent-text: var(--island-text); --focus-ring: var(--island-text);
   background: var(--island); color: var(--island-text); color-scheme: dark;
 }
+/* L'anneau se pose sur le noir : hors de la capsule, il serait clair sur la barre claire. */
+.on-island:focus-visible { outline-offset: calc(-1 * var(--space-1)); }
 
-.cmdk-overlay { position: fixed; inset: 0; z-index: var(--z-overlay); }
+.cmdk-overlay { position: fixed; inset: 0; z-index: var(--z-overlay); pointer-events: none; }
 .cmdk {
-  position: fixed; top: var(--space-2); overflow: hidden;
+  position: fixed; pointer-events: auto; top: var(--space-2); overflow: hidden;
   border-radius: var(--radius-lg); box-shadow: var(--shadow-md);
   transition: left var(--dur-spring-morph) var(--ease-spring-morph), width var(--dur-spring-morph) var(--ease-spring-morph),
               height var(--dur-spring-morph) var(--ease-spring-morph), border-radius var(--dur-spring-morph) var(--ease-spring-morph);
@@ -212,7 +214,6 @@ th[aria-sort='descending'] .dt__arrow { transform: rotate(180deg); }
 }
 .cmdk__input:focus-visible { outline: none; }
 .cmdk__input::placeholder { color: var(--text-secondary); }
-.cmdk__input::selection { background: var(--island-text-dim); color: var(--island); }
 .cmdk__scroll { position: relative; max-height: min(22rem, 100dvh - 8rem); overflow-y: auto; overscroll-behavior: contain; padding: var(--space-1) var(--space-2) var(--space-2); }
 .cmdk__fill {
   position: absolute; top: 0; left: var(--space-2); right: var(--space-2); height: 0; pointer-events: none;
@@ -250,7 +251,7 @@ th[aria-sort='descending'] .dt__arrow { transform: rotate(180deg); }
 }
 @media (pointer: coarse) {
   .dt__sort { min-height: 44px; }
-  .cmdk__item { min-height: 44px; }
+  .cmdk__item { min-height: var(--touch-target); }
 }
 
 @media (max-width: 1200px) { .tbl .hide-lg { display: none; } }
@@ -284,8 +285,8 @@ th[aria-sort='descending'] .dt__arrow { transform: rotate(180deg); }
 .ui-menu {
   position: fixed; z-index: var(--z-menu); min-width: 13rem; max-width: calc(100vw - var(--space-4));
   display: flex; flex-direction: column; gap: var(--space-0-5); padding: var(--space-1);
-  background: var(--bg-surface); border: var(--border-width) solid var(--border);
-  border-radius: var(--radius-md); box-shadow: var(--shadow-md);
+  background: var(--bg-surface-2); border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-md);
 }
 .ui-menu__item {
   display: flex; align-items: center; gap: var(--space-2); min-height: var(--control-h); padding-inline: var(--space-2);

@@ -100,6 +100,53 @@ const favicon = faviconProp ?? `/icons/${logoKey}.svg?v=${ICON_V}`;
     </svg>
 
     <div class="window">
+      <header class="topbar" transition:name="titlebar">
+        <div class="topbar__left">
+          <div class="capsule on-island">
+            <button type="button" class="capsule__btn" data-nav-toggle aria-controls="nav-pane" aria-expanded="true"
+                    aria-label="Afficher ou masquer le menu de navigation" title="Menu">
+              <Icon name="panelLeft" size={16} />
+            </button>
+            <nav class="crumbs" aria-label="Fil d’Ariane">
+              {section && <span class="crumbs__sec">{section.label}</span>}
+              {section && <Sym name="chevronRight" size={16} class="crumbs__sep" />}
+              {page && path !== page.href ? (
+                <>
+                  <a class="crumbs__link" href={page.href} data-astro-prefetch="hover">{page.label}</a>
+                  <Sym name="chevronRight" size={16} class="crumbs__sep" />
+                  <span class="crumbs__page" aria-current="page">{title === page.label && subtitle ? subtitle : title}</span>
+                </>
+              ) : (
+                <span class="crumbs__page" aria-current="page">{page?.label ?? title}</span>
+              )}
+            </nav>
+          </div>
+        </div>
+
+        <button type="button" class="island on-island" data-cmdk-open aria-haspopup="dialog" aria-keyshortcuts="Control+K Meta+K"
+                aria-label="Rechercher une page ou une action" data-processus={NAV.some((i) => i.tab === 'processus') ? '' : undefined}>
+          <Icon name="search" size={16} />
+          <span class="island__txt">Rechercher…</span>
+          <Kbd keys="Mod+K" class="island__keys" />
+        </button>
+
+        <div class="topbar__right">
+          {refreshMs && (
+            <p class="refresh capsule on-island" id="refresh-state" data-idle={`Actualisation · ${Math.round(refreshMs / 1000)} s`}>
+              <span class="refresh__dot" aria-hidden="true"></span>
+              <span class="refresh__txt">Actualisation · {Math.round(refreshMs / 1000)} s</span>
+            </p>
+          )}
+          {authOn && user && (
+            <button type="button" class="account capsule on-island" data-account-menu aria-haspopup="menu" aria-expanded="false" aria-label={`Compte de ${user.name}`}
+                    data-name={user.name} data-email={user.email && user.email !== user.name ? user.email : ''} data-admin={user.role === 'admin' ? '' : undefined}>
+              <span class="account__avatar" aria-hidden="true">{(user.name ?? '?').trim().slice(0, 1).toUpperCase()}</span>
+              <span class="account__name">{user.name}</span>
+            </button>
+          )}
+        </div>
+      </header>
+
       <nav class="pane" id="nav-pane" aria-label="Navigation principale" transition:name="navpane">
         <div class="pane__head">
           <a class="brand" href="/" title="Accueil" aria-label={`${PANEL_NAME}, accueil`} data-astro-prefetch="hover">
@@ -149,55 +196,10 @@ const favicon = faviconProp ?? `/icons/${logoKey}.svg?v=${ICON_V}`;
         <script is:inline>window.__applyPanelPrefs && window.__applyPanelPrefs();</script>
 
       </nav>
-      <div class="scrim" data-nav-close aria-hidden="true"></div>
+      <button type="button" class="scrim" data-nav-close aria-label="Fermer le menu"></button>
 
-      <header class="topbar" transition:name="titlebar">
-        <div class="topbar__left">
-          <div class="capsule on-island">
-            <button type="button" class="capsule__btn" data-nav-toggle aria-controls="nav-pane" aria-expanded="true"
-                    aria-label="Afficher ou masquer le menu de navigation" title="Menu">
-              <Icon name="panelLeft" size={16} />
-            </button>
-            <nav class="crumbs" aria-label="Fil d’Ariane">
-              {section && <span class="crumbs__sec">{section.label}</span>}
-              {section && <Sym name="chevronRight" size={16} class="crumbs__sep" />}
-              {page && path !== page.href ? (
-                <>
-                  <a class="crumbs__link" href={page.href} data-astro-prefetch="hover">{page.label}</a>
-                  <Sym name="chevronRight" size={16} class="crumbs__sep" />
-                  <span class="crumbs__page" aria-current="page">{title === page.label && subtitle ? subtitle : title}</span>
-                </>
-              ) : (
-                <span class="crumbs__page" aria-current="page">{page?.label ?? title}</span>
-              )}
-            </nav>
-          </div>
-        </div>
 
-        <button type="button" class="island on-island" data-cmdk-open aria-haspopup="dialog" aria-keyshortcuts="Control+K Meta+K"
-                aria-label="Rechercher une page ou une action" data-processus={NAV.some((i) => i.tab === 'processus') ? '' : undefined}>
-          <Icon name="search" size={16} />
-          <span class="island__txt">Rechercher…</span>
-          <Kbd keys="Mod+K" class="island__keys" />
-        </button>
-
-        <div class="topbar__right">
-          {refreshMs && (
-            <p class="refresh capsule on-island" id="refresh-state" data-idle={`Actualisation · ${Math.round(refreshMs / 1000)} s`}>
-              <span class="refresh__dot" aria-hidden="true"></span>
-              <span class="refresh__txt">Actualisation · {Math.round(refreshMs / 1000)} s</span>
-            </p>
-          )}
-          {authOn && user && (
-            <button type="button" class="account capsule on-island" data-account-menu aria-haspopup="menu" aria-expanded="false" aria-label={`Compte de ${user.name}`}
-                    data-name={user.name} data-email={user.email && user.email !== user.name ? user.email : ''} data-admin={user.role === 'admin' ? '' : undefined}>
-              <span class="account__avatar" aria-hidden="true">{(user.name ?? '?').trim().slice(0, 1).toUpperCase()}</span>
-              <span class="account__name">{user.name}</span>
-            </button>
-          )}
-        </div>
-      </header>
-
+      <span class="corner" aria-hidden="true"></span>
       <div class="content">
         {bare ? (
           <h1 class="visually-hidden">{title}</h1>
@@ -408,8 +410,13 @@ const favicon = faviconProp ?? `/icons/${logoKey}.svg?v=${ICON_V}`;
         min-width: 0; min-height: 0;
         overflow-y: auto;
         background: var(--bg-app);
-        border-top-left-radius: var(--radius-lg);
         view-transition-name: page;
+      }
+      /* Le coin arrondi du contenu est un cache posé dessus : arrondir la zone qui défile laisse un trou d'un pixel dans Chromium. */
+      .corner {
+        grid-area: content; align-self: start; justify-self: start; z-index: var(--z-sticky); pointer-events: none;
+        width: var(--radius-lg); height: var(--radius-lg);
+        background: radial-gradient(circle at 100% 100%, transparent calc(var(--radius-lg) - 0.5px), var(--bg-mica) var(--radius-lg));
       }
       .main {
         width: 100%; max-width: var(--content-max); margin-inline: auto;
@@ -469,26 +476,29 @@ const favicon = faviconProp ?? `/icons/${logoKey}.svg?v=${ICON_V}`;
         :global(:root[data-nav]) .pane__head, :global(:root:not([data-nav])) .pane__head { justify-content: flex-start; padding: 0 var(--space-2) 0 var(--space-3); }
         :global(:root[data-nav]) .navsec + .navsec, :global(:root:not([data-nav])) .navsec + .navsec { border-top: 0; padding-top: 0; }
         :global(:root[data-nav]) .navlink, :global(:root:not([data-nav])) .navlink { justify-content: flex-start; padding: 0 var(--space-2); height: 36px; }
-        .topbar { padding-inline: var(--space-2); }
+        .topbar { grid-template-columns: minmax(0, 1fr) auto auto; padding-inline: var(--space-2); }
+        .refresh__txt { display: none; }
+        .refresh { padding: 0; width: var(--island-h); justify-content: center; }
         .crumbs__sec, .crumbs__link, .crumbs :global(.crumbs__sep) { display: none; }
         .island { width: var(--island-h); padding: 0; justify-content: center; cursor: pointer; }
         .island__txt, .island :global(.island__keys) { display: none; }
 
         .scrim {
-          display: block; position: fixed; inset: 0; z-index: 30; background: var(--scrim);
+          display: block; position: fixed; inset: 0; z-index: 30; border: 0; padding: 0; background: var(--scrim);
           opacity: 0; visibility: hidden;
           transition: opacity var(--dur-base) var(--ease-out), visibility 0s linear var(--dur-base);
         }
         :global(body.nav-open) .scrim { opacity: 1; visibility: visible; transition: opacity var(--dur-base) var(--ease-out); }
 
-        .content { border-radius: 0; }
+        .corner { display: none; }
       }
       @media (max-width: 900px) {
-        .refresh__txt, .account__name, .island :global(.island__keys) { display: none; }
-        .refresh { padding: 0; width: var(--island-h); justify-content: center; }
+        .crumbs__sec, .crumbs__sec + :global(.crumbs__sep), .account__name, .island :global(.island__keys) { display: none; }
         .account { padding: 0 var(--space-1); }
       }
       @media (pointer: coarse) {
+        .capsule__btn { width: var(--island-h); height: var(--island-h); }
+        .capsule:has(> .capsule__btn) { padding-left: 0; }
         .navlink { height: 44px; }
         .navsub-toggle { width: 44px; height: 44px; right: 0; }
         .navitem:has(.navsub-toggle) .navlink { padding-right: 48px; }

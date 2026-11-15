@@ -2,6 +2,7 @@ import { navigate } from 'astro:transitions/client';
 import type { IconName } from '../../components/ui/lucide';
 import { getCommands, formatKeys, type Command } from '../ui/commands';
 import { esc, iconSVG } from '../ui/html';
+import { closeMenu } from '../ui/menu';
 import { pushSearch } from './search';
 
 type Item = { id: string; title: string; group: string; hint?: string; glyph: string; keywords: string; shortcut?: string; run: () => void | Promise<void> };
@@ -74,9 +75,11 @@ let finishClose: (() => void) | null = null;
 export function openPalette() {
   if (open) return;
   finishClose?.();
+  closeMenu();
   open = true;
-  const previous = document.activeElement as HTMLElement | null;
   const island = document.querySelector<HTMLElement>('.island');
+  // Sans focus (page fraîche, ou clic dans un navigateur qui ne focalise pas les boutons), il revient à l'îlot.
+  const previous = (document.activeElement && document.activeElement !== document.body ? document.activeElement : island) as HTMLElement | null;
   const still = !island || (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? true);
   const ctx = { target: Boolean(document.querySelector('[data-search-target]')), processus: island?.dataset.processus !== undefined };
   const { page, global } = getCommands();
@@ -85,7 +88,7 @@ export function openPalette() {
   const overlay = document.createElement('div');
   overlay.className = 'cmdk-overlay';
   overlay.innerHTML = `
-    <div class="cmdk on-island${still ? ' cmdk--still' : ''}" role="dialog" aria-modal="true" aria-label="Palette de commandes">
+    <div class="cmdk on-island${still ? ' cmdk--still' : ''}" role="dialog" aria-label="Palette de commandes">
       <div class="cmdk__inner">
         <div class="cmdk__field">
           ${iconSVG('search', 16)}
@@ -141,9 +144,9 @@ export function openPalette() {
       .map((it) => ({ it, s: Math.max(score(q, it.title), score(q, `${it.title} ${it.keywords}`) * 0.8) }))
       .filter((x) => x.s > 0)
       .sort((a, b) => (q ? b.s - a.s : 0));
-    // Ce qui porte la saisie dans son nom passe devant la recherche, les rapprochements lettre à lettre derrière.
-    const named = scored.filter((x) => x.s >= NAMED).map((x) => x.it);
-    shown = [...named, ...found, ...scored.filter((x) => x.s < NAMED).map((x) => x.it)];
+    // Ce qui porte la saisie dans son nom passe devant la recherche ; un mot-clé ou des lettres éparses, derrière.
+    const named = (it: Item) => score(q, it.title) >= NAMED;
+    shown = [...scored.filter((x) => named(x.it)), ...found.map((it) => ({ it })), ...scored.filter((x) => !named(x.it))].map((x) => x.it);
     const groups = [...new Set(shown.map((it) => it.group))];
     shown = groups.flatMap((g) => shown.filter((it) => it.group === g));
     active = Math.min(active, Math.max(0, shown.length - 1));
@@ -183,6 +186,7 @@ export function openPalette() {
     if (!open) return;
     open = false;
     document.removeEventListener('astro:before-swap', onSwap);
+    document.removeEventListener('pointerdown', onDown, true);
     window.removeEventListener('resize', grow);
     const finish = () => {
       if (finishClose !== finish) return;
@@ -194,7 +198,7 @@ export function openPalette() {
     if (restore) previous?.focus?.({ preventScroll: true });
     if (!animate) { finish(); return; }
     // Le contenu s'efface tout de suite, la forme revient à l'îlot, qui ne reparaît qu'à la fin.
-    overlay.style.pointerEvents = 'none';
+    card.style.pointerEvents = 'none';
     card.classList.remove('cmdk--open');
     rest();
     card.addEventListener('transitionend', (e) => { if (e.target === card && e.propertyName === 'height') finish(); });
@@ -208,6 +212,8 @@ export function openPalette() {
     void it.run();
   }
   const onSwap = () => close(false, false);
+  // Un appui ailleurs referme et garde son effet : le lien visé s'ouvre, comme sous un menu.
+  const onDown = (e: Event) => { if (!card.contains(e.target as Node)) close(false); };
 
   input.addEventListener('input', () => { active = 0; paint(); });
   overlay.addEventListener('keydown', (e) => {
@@ -227,8 +233,8 @@ export function openPalette() {
     const o = (e.target as Element).closest<HTMLElement>('[role="option"]');
     if (o) run(Number(o.dataset.i));
   });
-  overlay.addEventListener('mousedown', (e) => { if (e.target === overlay) { e.preventDefault(); close(); } });
   document.addEventListener('astro:before-swap', onSwap);
+  document.addEventListener('pointerdown', onDown, true);
   window.addEventListener('resize', grow);
 
   // Dans .window : les jetons de l'îlot y sont définis, y compris sur l'onglet Claude.

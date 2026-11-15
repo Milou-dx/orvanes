@@ -62,7 +62,7 @@ document.addEventListener('keydown', (e) => {
   if (exempt(target)) return;
 
   if (matchKeys(e, 'Mod+K')) {
-    if (isClaude() && !isPaletteOpen()) return;
+    if ((isClaude() && !isPaletteOpen()) || document.body.classList.contains('nav-open')) return;
     e.preventDefault();
     if (!isPaletteOpen()) openPalette();
     return;

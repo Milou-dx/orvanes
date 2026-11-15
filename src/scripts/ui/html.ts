@@ -3,6 +3,19 @@ import { STATUS_LABEL, toStatus, type Status } from '../../components/ui/status'
 
 
 const ESC: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+/** Valeur d'un jeton pour un canvas, qui ne sait pas lire light-dark() : la moitié du thème en cours. */
+export function pickScheme(value: string, dark: boolean): string {
+  if (!value.startsWith('light-dark(') || !value.endsWith(')')) return value;
+  const inner = value.slice('light-dark('.length, -1);
+  let depth = 0;
+  for (let i = 0; i < inner.length; i++) {
+    if (inner[i] === '(') depth++;
+    else if (inner[i] === ')') depth--;
+    else if (inner[i] === ',' && depth === 0) return (dark ? inner.slice(i + 1) : inner.slice(0, i)).trim();
+  }
+  return value;
+}
+
 export function esc(value: unknown): string {
   return String(value ?? '').replace(/[&<>"']/g, (c) => ESC[c]);
 }

@@ -31,6 +31,21 @@ const RULES: [text: string, on: string[], min: number][] = [
   ['--island-text-dim', ['--island', '--island-highlight'], 4.5],
 ];
 
+const channels = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+const hexOf = (rgb: number[]) => `#${rgb.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')}`;
+// Fonds teintés : color-mix(in srgb, <point d'état> <part> %, carte), comme tokens.css les compose.
+const SUBTLE: [text: string, dot: string, share: number][] = [
+  ['--success', '--status-online', 14], ['--warning', '--status-warning', 16], ['--danger', '--status-error', 12],
+];
+for (const [text, dot, share] of SUBTLE) {
+  const mixed = ([0, 1] as const).map((mode) => {
+    const [a, b] = [channels(pairs.get(dot)![mode]), channels(pairs.get('--m-card')![mode])];
+    return hexOf(a.map((v, i) => (v * share + b[i] * (100 - share)) / 100));
+  });
+  pairs.set(`${text}-subtle`, [mixed[0], mixed[1]]);
+  RULES.push([text, [`${text}-subtle`], 4.5]);
+}
+
 describe('contraste des jetons', () => {
   for (const [mode, name] of [[0, 'clair'], [1, 'sombre']] as const) {
     for (const [text, grounds, min] of RULES) {
