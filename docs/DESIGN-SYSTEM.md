@@ -12,13 +12,13 @@ Référence vivante : la page `/design` (réservée aux administrateurs, absente
 
 ## Jetons canoniques
 
-L'interface est celle de mistraOS telle que son mainteneur la règle (`themes/mistra/theme.toml` et `~/.config/mistra` : accent « blue », fenêtres à décoration « macos » de rayon 30, boutons de fenêtre en couleur, fonds `3-colonnade` et `1-stairs`, Dock masqué) : duotone strict, surfaces grises, un seul accent bleu pour les contrôles, les liens et le focus. Un état se lit par sa forme et son libellé, jamais par une teinte. Ont une couleur : l'accent, les trois boutons de fenêtre, le fond d'écran, le logo Orvanes et les logos de marque des modules. Chaque jeton de couleur est déclaré une fois, en `light-dark(clair, sombre)`.
+L'interface est celle de mistraOS telle que son mainteneur la règle (`themes/mistra/theme.toml` et `~/.config/mistra` : accent « blue », fenêtres de rayon 30, fonds `3-colonnade` et `1-stairs`) : duotone strict, surfaces grises, un seul accent bleu pour les contrôles, les liens et le focus. Un état se lit par sa forme et son libellé, jamais par une teinte. L'usage passe avant la ressemblance : le Dock reste affiché, l'îlot garde son texte, la barre nomme la page. Ont une couleur : l'accent, le fond d'écran, le logo Orvanes et les logos de marque des modules. Chaque jeton de couleur est déclaré une fois, en `light-dark(clair, sombre)`.
 
 | Famille | Jetons |
 |---|---|
 | Palette source | `--m-surface` (contenu), `--m-sidebar` (fond des panneaux latéraux d'une page), `--m-card`, `--m-popover`, `--m-text`, `--m-text-dim`, `--m-border`, `--m-accent`, `--m-accent-text`, `--m-shade` : les valeurs de mistraOS, dont dérivent les jetons ci-dessous. Une page lit les jetons dérivés, jamais `--m-*` |
 | Terminal et journaux | `--console-bg`, `--console-fg`, `--console-muted`, `--console-strong`, `--console-select`, `--console-black/-blue/-magenta/-cyan` (+ `-bright-`) : fond et encre de la fenêtre, gris ANSI de mistraOS ; `--console-red/-green/-yellow` viennent de `--danger`, `--success`, `--warning`. Un script qui lit un jeton pour un canvas ou xterm passe par `pickScheme` (`src/scripts/ui/html.ts`) |
-| Fenêtre et Dock | `--window-radius` 30, `--window-border` 2 (couleur `--m-border-active`), `--window-gap` 12, `--window-gap-inner` 6, `--window-titlebar` 32, `--control-size` 12, `--control-gap` 8, `--control-close/-minimize/-maximize` ; pastilles des bureaux `--space-dot` 8, `--space-dot-active` 20 ; `--dock-icon` 48, `--dock-gap` 6, `--dock-dot` 4, `--dock-tile-radius` 26 % ; `--dur-settle`, `--dur-shake`, `--dur-hide`, `--dur-hide-delay` |
+| Fenêtre et Dock | `--window-radius` 30, `--window-border` 2 (couleur `--m-border-active`), `--window-gap` 12, `--window-gap-inner` 6 ; `--dock-icon` 48, `--dock-gap` 6, `--dock-dot` 4, `--dock-tile-radius` 26 % ; `--dur-settle`, `--dur-shake` |
 | Écran de connexion | `--lock-ink`, `--lock-ink-glass` (encre blanche à 62 %), `--lock-field` (noir dépoli), `--lock-field-w` 300, `--lock-field-h` 44 |
 | Îlot | `--island`, `--island-text`, `--island-text-dim`, `--island-highlight` (noirs dans les deux modes), `--island-h`, `--island-pad`, `--island-gap` |
 | Fonds | `--bg-app`, `--bg-surface`, `--bg-surface-2`, `--bg-hover` |
@@ -130,13 +130,13 @@ Barre du haut : des capsules noires (`.capsule`, `.island`, hautes de `--island-
 
 | Zone | Contenu |
 |---|---|
-| Gauche | les bureaux (`.spaces`) : une pastille par section du menu, la section ouverte en pilule large ; un clic ouvre le premier onglet de la section |
-| Centre | l'îlot (`.island`, `data-cmdk-open`) : noir et nu au repos, sa loupe et « Rechercher… » viennent sous le pointeur ou au focus (toujours visibles au doigt) ; un clic, Ctrl/⌘ K ou `/` le transforme en palette |
+| Gauche | le logo (lien vers l'accueil) et le fil d'Ariane : section, puis page |
+| Centre | l'îlot « Rechercher… » (`.island`, `data-cmdk-open`), toujours lisible : un clic, Ctrl/⌘ K ou `/` le transforme en palette |
 | Droite | l'état de l'actualisation (`#refresh-state`), la date et l'heure (`data-clock`, « dim. 15 nov. 14:39 »), puis le compte (`data-account-menu` : thème, paramètres, sécurité, aide, déconnexion), présent seulement quand la protection est activée |
 
-Fenêtre (`.frame` > `.frame__bar` + `.content`) : rayon, bord de la fenêtre active et marges de mistraOS, sans ombre. La barre de titre porte les trois boutons de fenêtre (décor, `aria-hidden`) et le fil d'Ariane, centré. Le cadre porte l'arrondi, `.content` défile dedans.
+Fenêtre (`.frame` > `.content`) : rayon, bord de la fenêtre active et marges de mistraOS, sans ombre ni barre de titre (pas de boutons de fenêtre : une page n'a rien à fermer). Le cadre porte l'arrondi, `.content` défile dedans.
 
-Dock (`#dock`, `src/scripts/layout/dock.ts`) : la navigation du panel. Une tuile noire par onglet (`.dock__tile`, icône Phosphor ou logo du module), un séparateur entre sections, un point sous l'onglet ouvert, une pastille pour les non lus (`data-badge`). À la souris il est masqué, comme sur le bureau : il glisse sous le bord et revient quand le pointeur touche le bas de l'écran ou qu'une tuile reçoit le focus ; les tuiles grandissent sous le pointeur (1,2 sous lui, plus rien à 2,5 tuiles) et le nom de l'onglet monte dans une capsule. Au doigt ou sous 640 px, il reste affiché, la rangée défile et rien ne grandit. Il n'y a ni volet, ni tiroir, ni mode compact.
+Dock (`#dock`, `src/scripts/layout/dock.ts`) : la navigation du panel. Une tuile noire par onglet (`.dock__tile`, icône Phosphor ou logo du module), un séparateur entre sections, un point sous l'onglet ouvert, une pastille pour les non lus (`data-badge`). Il reste affiché en permanence, sous la fenêtre. À la souris, les tuiles grandissent sous le pointeur (1,2 sous lui, plus rien à 2,5 tuiles) et le nom de l'onglet monte dans une capsule. Au doigt ou sous 640 px, la rangée défile et rien ne grandit. Il n'y a ni volet, ni tiroir, ni mode compact.
 
 Ce qui naît de la barre reste noir comme elle : le menu du compte (`openMenu({ island: true })`) et les notifications (`toast`, affichées sous l'îlot, au centre).
 

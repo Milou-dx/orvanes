@@ -2,8 +2,8 @@
 
 ## 0.4.0 (2026-11-15)
 
-- Bureau de mistraOS : fond d'écran, page dans une fenêtre à barre de titre (rayon 30, boutons de fenêtre), Dock à la place du menu latéral, masqué à la souris et rappelé par le bas de l'écran. Le réglage « Menu » disparaît.
-- Barre du haut comme celle du bureau : pastilles des sections à gauche, îlot nu au repos, date et heure à droite, texte à chasse fixe.
+- Bureau de mistraOS : fond d'écran, page dans une fenêtre de rayon 30, Dock toujours affiché en bas à la place du menu latéral. Le réglage « Menu » disparaît.
+- Barre du haut comme celle du bureau, texte à chasse fixe : fil d'Ariane à gauche, recherche au centre, date et heure à droite.
 - Accent bleu de mistraOS pour les contrôles, les liens et le focus.
 - Duotone strict : plus de vert, d'orange ni de rouge. Un état se lit à la forme de son point (plein, anneau, triangle, carré) et à son libellé ; graphes et terminal en gris.
 - Icônes Phosphor Bold à la place de Lucide, mêmes noms.

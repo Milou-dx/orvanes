@@ -52,9 +52,9 @@ describe('duotone strict', () => {
   it.each(['--success', '--warning', '--danger', '--info', '--status-online', '--status-warning', '--status-error'])('%s est l’encre du texte', (name) => {
     expect(css).toMatch(new RegExp(`${name}:\\s*var\\(--m-text\\)`));
   });
-  it('seuls l’accent et les trois boutons de fenêtre ont une teinte', () => {
+  it('seul l’accent a une teinte', () => {
     const layer = css.slice(css.indexOf('Interface de mistraOS'));
     const tinted = [...layer.matchAll(/(--[\w-]+):[^;]*?#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})\b[^;]*;/g)].filter((m) => m[2] !== m[3] || m[3] !== m[4]).map((m) => m[1]);
-    expect(tinted).toEqual(['--m-accent', '--control-close', '--control-minimize', '--control-maximize']);
+    expect(tinted).toEqual(['--m-accent']);
   });
 });
