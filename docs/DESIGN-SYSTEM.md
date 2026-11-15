@@ -19,6 +19,7 @@ L'interface est celle de mistraOS (`themes/mistra/theme.toml`, accent « slate �
 | Palette source | `--m-surface` (contenu), `--m-sidebar` (fond des panneaux latéraux d'une page), `--m-card`, `--m-popover`, `--m-text`, `--m-text-dim`, `--m-border`, `--m-accent`, `--m-accent-text`, `--m-shade` : les valeurs de mistraOS, dont dérivent les jetons ci-dessous. Une page lit les jetons dérivés, jamais `--m-*` |
 | Terminal et journaux | `--console-bg`, `--console-fg`, `--console-muted`, `--console-strong`, `--console-select`, `--console-black/-blue/-magenta/-cyan` (+ `-bright-`) : fond et encre de la fenêtre, gris ANSI de mistraOS ; `--console-red/-green/-yellow` viennent de `--danger`, `--success`, `--warning`. Un script qui lit un jeton pour un canvas ou xterm passe par `pickScheme` (`src/scripts/ui/html.ts`) |
 | Fenêtre et Dock | `--window-radius` 10, `--window-border` 2, `--window-gap` 12, `--window-gap-inner` 6, `--shadow-window` ; `--dock-icon` 48, `--dock-pad`, `--dock-gap` 6, `--dock-dot` 4, `--dock-tile-radius` 26 % ; `--dur-settle`, `--dur-shake` |
+| Écran de connexion | `--lock-ink`, `--lock-ink-glass` (encre blanche à 62 %), `--lock-field` (noir dépoli), `--lock-field-w` 300, `--lock-field-h` 44 |
 | Îlot | `--island`, `--island-text`, `--island-text-dim`, `--island-highlight` (noirs dans les deux modes), `--island-h`, `--island-pad`, `--island-gap` |
 | Fonds | `--bg-app`, `--bg-surface`, `--bg-surface-2`, `--bg-hover` |
 | Filets | `--border`, `--border-strong`, `--field-stroke` (bord des champs, 3:1) |
@@ -156,6 +157,10 @@ Menu (`src/layouts/nav.ts`, source unique du Dock, du fil d'Ariane et de la pale
 Un module désinstallé sort du menu, du fil d'Ariane et de la palette. Libellés courts (« Messages », « Outils », « Graphes ») : le contexte va dans la description de la page. Le filtrage par droits (`allowedTabs`) est inchangé. Pour suspendre l'actualisation pendant une action, poser `data-busy` sur un élément.
 
 Exceptions assumées, dans le même cadre : l'onglet Claude (`bare`, rendu de claude.ai) et la console Tailscale (reproduction de la console officielle, avec son propre menu latéral dans la zone de contenu).
+
+## Écran de connexion (AuthLayout)
+
+L'écran de connexion de mistraOS, pour `/connexion`, `/portail`, 404 et 500 : le fond d'écran flouté et assombri (`.auth__bg`), l'horloge et la date en verre à 8,5 % du haut (`.auth__clock`, heure du navigateur), le contenu à 9 % du bas sur 300 px. Champs et boutons : noir dépoli (`--lock-field`), encre blanche, dans les deux thèmes. Un champ en erreur se secoue (`--dur-shake`) et prend un liseré blanc.
 
 ## Icônes
 

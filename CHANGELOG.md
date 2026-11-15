@@ -1,5 +1,12 @@
 # Historique
 
+## 0.4.0 (2026-11-15)
+
+- Bureau de mistraOS : fond d'écran, page dans une fenêtre, Dock en bas à la place du menu latéral (agrandissement sous le pointeur, point sous l'onglet ouvert). Le réglage « Menu » disparaît.
+- Duotone strict : plus de vert, d'orange ni de rouge. Un état se lit à la forme de son point (plein, anneau, triangle, carré) et à son libellé ; graphes et terminal en gris.
+- Icônes Phosphor Bold à la place de Lucide, mêmes noms.
+- Écran de connexion de mistraOS : fond flouté, horloge, champs dépolis.
+
 ## 0.3.0 (2026-11-15)
 
 - Interface de mistraOS : surfaces grises en duotone, accent blanc ou noir, rayons 8, 10 et 14, texte en Inter 13 px, mouvements à ressort. Les états et les graphes gardent leur couleur.

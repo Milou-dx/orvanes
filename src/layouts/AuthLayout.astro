@@ -3,6 +3,7 @@ import '../styles/inter-latin.css';
 import '../styles/global.css';
 import { PANEL_MARK } from '../components/ui/icons';
 import { PANEL_NAME } from '../server/core/panel';
+import { WALLPAPER } from '../components/ui/wallpaper';
 
 interface Props { title: string }
 const { title } = Astro.props;
@@ -26,6 +27,19 @@ const { title } = Astro.props;
     </script>
   </head>
   <body class="auth">
+    <div class="auth__bg wallpaper" style={WALLPAPER} aria-hidden="true"></div>
+    <p class="auth__clock" aria-hidden="true"><span id="auth-time"></span><span class="auth__date" id="auth-date"></span></p>
+    <script is:inline>
+      (function () {
+        function paint() {
+          var now = new Date();
+          document.getElementById('auth-time').textContent = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+          document.getElementById('auth-date').textContent = now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+        }
+        paint();
+        setInterval(paint, 10000);
+      })();
+    </script>
     <main class="auth__wrap" id="main">
       <section class="auth__card">
         <header class="auth__brand">
@@ -39,35 +53,44 @@ const { title } = Astro.props;
 </html>
 
 <style is:global>
-  body.auth { background: var(--bg-app); color: var(--text-primary); min-height: 100vh; margin: 0; }
-  .auth__wrap { min-height: 100vh; display: grid; place-items: center; padding: var(--space-5); }
+  /* L'écran de connexion de mistraOS : le fond d'écran flouté et assombri, l'horloge en verre en haut, les champs dépolis en bas. */
+  body.auth { position: relative; min-height: 100dvh; margin: 0; overflow: hidden; background: var(--island); color: var(--lock-ink); }
+  .auth__bg { position: fixed; inset: calc(-1 * var(--space-10)); filter: blur(24px) brightness(0.6); }
+  .auth__clock {
+    position: fixed; top: 8.5dvh; left: 0; right: 0; margin: 0; display: flex; flex-direction: column; align-items: center; pointer-events: none;
+    color: var(--lock-ink-glass); font-family: var(--font-display); font-weight: 600; font-variant-numeric: tabular-nums;
+    font-size: clamp(4.5rem, 18vw, 10.9rem); line-height: 1; letter-spacing: -0.04em;
+  }
+  .auth__date { font-size: var(--section-size); line-height: var(--section-lh); letter-spacing: 0; font-weight: 500; }
+  .auth__wrap { position: relative; min-height: 100dvh; display: grid; place-items: end center; padding: var(--space-5) var(--space-5) 9dvh; }
   .auth__card {
-    width: min(420px, 100%); background: var(--bg-surface);
-    border: var(--border-width) solid var(--border); border-radius: var(--radius-control);
-    padding: var(--space-6) var(--space-6) var(--space-5);
-    display: flex; flex-direction: column; gap: var(--space-4);
+    width: min(var(--lock-field-w), 100%);
+    --text-primary: var(--lock-ink); --text-secondary: var(--lock-ink-glass); --text-tertiary: var(--lock-ink-glass);
+    --border: var(--lock-ink-glass); --accent: var(--lock-ink); --accent-text: var(--lock-ink); --focus-ring: var(--lock-ink);
+    --bg-hover: var(--lock-field); color: var(--lock-ink); color-scheme: dark;
+    display: flex; flex-direction: column; gap: var(--space-3);
   }
   .auth__brand { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); }
-  .auth__app { font-size: 20px; line-height: 28px; font-weight: 600; margin: 0; }
+  .auth__app { font-size: var(--card-size); line-height: var(--card-lh); font-weight: 600; margin: 0; }
   .auth__title { font-size: var(--body-size); line-height: 22px; font-weight: 600; text-align: center; margin: 0; }
   .auth__lead { text-align: center; color: var(--text-secondary); font-size: var(--dense-size); line-height: var(--dense-lh); margin: 0; }
   .auth__form { display: flex; flex-direction: column; gap: var(--space-3); }
   .auth__btn {
     display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
-    height: 40px; padding: 0 var(--space-4); border-radius: var(--radius-control);
-    border: var(--border-width) solid var(--border); background: var(--bg-surface-2, var(--bg-surface));
+    height: var(--lock-field-h); padding: 0 var(--space-4); border-radius: var(--radius-sm);
+    border: 0; background: var(--lock-field); backdrop-filter: blur(20px);
     color: var(--text-primary); font: inherit; font-weight: 500; cursor: pointer; text-decoration: none;
     transition: background-color var(--duration-micro) var(--ease);
   }
   .auth__btn:hover:not(:disabled) { background: var(--bg-hover); }
   .auth__btn:disabled { opacity: .55; cursor: not-allowed; }
-  .auth__btn--primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg, #fff); }
-  .auth__btn--primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
+  .auth__btn--primary { background: var(--lock-ink); color: var(--island); }
+  .auth__btn--primary:hover:not(:disabled) { background: var(--lock-ink-glass); }
   .auth__error { color: var(--danger); font-size: var(--dense-size); margin: 0; min-height: 18px; text-align: center; }
 
   .wait { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); text-align: center; }
   .wait__avatar { position: relative; width: 84px; height: 84px; display: grid; place-items: center; margin-bottom: var(--space-1); }
-  .wait__img { width: 68px; height: 68px; border-radius: 50%; object-fit: cover; background: var(--bg-surface-2, var(--bg-app)); }
+  .wait__img { width: 68px; height: 68px; border-radius: 50%; object-fit: cover; background: var(--lock-field); }
   .wait__initial { display: grid; place-items: center; font-size: 28px; font-weight: 600; color: var(--accent-text); background: var(--accent-subtle); }
   .wait__ring {
     position: absolute; inset: 0; border-radius: 50%;
@@ -78,18 +101,18 @@ const { title } = Astro.props;
   .wait__avatar::before { content: ''; position: absolute; inset: 0; border-radius: 50%; border: 3px solid var(--border); }
   .wait__badge {
     position: absolute; right: -2px; bottom: 2px; width: 26px; height: 26px; border-radius: 50%;
-    display: grid; place-items: center; background: var(--accent); color: var(--accent-fg, #fff);
-    border: 3px solid var(--bg-surface);
+    display: grid; place-items: center; background: var(--lock-ink); color: var(--island);
+    border: 3px solid var(--island);
   }
   .wait__title { margin: 0; font-size: 20px; line-height: 28px; font-weight: 600; }
   .wait__text { margin: 0; max-width: 32ch; color: var(--text-secondary); font-size: var(--dense-size); line-height: 22px; text-wrap: balance; }
-  .wait__who { margin: 0; padding: 4px 12px; border-radius: var(--radius-full); background: var(--bg-app); border: var(--border-width) solid var(--border); font-size: var(--meta-size); line-height: 18px; color: var(--text-secondary); }
+  .wait__who { margin: 0; padding: 4px 12px; border-radius: var(--radius-full); background: var(--lock-field); font-size: var(--meta-size); line-height: 18px; color: var(--text-secondary); }
   .wait__steps { list-style: none; margin: var(--space-2) 0; padding: 0; width: 100%; max-width: 280px; display: flex; flex-direction: column; text-align: left; }
   .wait__steps li { position: relative; display: flex; align-items: center; gap: var(--space-3); padding: 7px 0; font-size: var(--dense-size); color: var(--text-tertiary); }
   .wait__steps li:not(:last-child)::after { content: ''; position: absolute; left: 9px; top: 100%; width: 2px; height: 8px; margin-top: -4px; background: var(--border); }
   .wait__dot { position: relative; flex-shrink: 0; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; border: 2px solid var(--border); }
   .wait__steps .is-done { color: var(--text-primary); }
-  .wait__steps .is-done .wait__dot { background: var(--success); border-color: var(--success); color: #fff; }
+  .wait__steps .is-done .wait__dot { background: var(--lock-ink); border-color: var(--lock-ink); color: var(--island); }
   .wait__steps .is-now { color: var(--text-primary); font-weight: 500; }
   .wait__steps .is-now .wait__dot { border-color: var(--accent); }
   .wait__steps .is-now .wait__dot::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
@@ -102,32 +125,31 @@ const { title } = Astro.props;
 
   .field { position: relative; }
   .field input {
-    width: 100%; box-sizing: border-box; height: 48px; padding: 20px var(--space-3) 4px;
-    border-radius: var(--radius-control); border: var(--border-width) solid var(--text-tertiary);
-    background: var(--bg-app); color: var(--text-primary); font: inherit; font-size: var(--body-size);
+    width: 100%; box-sizing: border-box; height: var(--lock-field-h); padding: 18px var(--island-pad) 4px;
+    border-radius: var(--radius-sm); border: 0;
+    background: var(--lock-field); backdrop-filter: blur(20px); color: var(--lock-ink); font: inherit; font-size: var(--body-size);
     transition: border-color var(--duration-ui) var(--ease), box-shadow var(--duration-ui) var(--ease);
   }
-  .field input:hover { border-color: var(--text-secondary); }
-  .field input:focus { outline: 2px solid var(--focus-ring); outline-offset: 1px; border-color: var(--accent); }
+  .field input:focus { outline: 2px solid var(--lock-ink-glass); outline-offset: 1px; }
   .field label {
-    position: absolute; left: var(--space-3); top: 50%; transform: translateY(-50%); pointer-events: none;
+    position: absolute; left: var(--island-pad); top: 50%; transform: translateY(-50%); pointer-events: none;
     color: var(--text-secondary); font-size: var(--body-size); transform-origin: left top;
     transition: transform var(--dur-enter) var(--ease-out), color var(--duration-ui) var(--ease);
   }
   .field input:focus + label,
   .field input:not(:placeholder-shown) + label,
-  .field input:-webkit-autofill + label { transform: translateY(-16px) scale(.85); }
+  .field input:-webkit-autofill + label { transform: translateY(-15px) scale(.85); }
   .field input:focus + label { color: var(--accent-text); }
-  .field.is-error input { border-color: var(--danger); box-shadow: 0 0 0 3px var(--danger-subtle); }
+  .field.is-error input { box-shadow: inset 0 0 0 1.5px var(--lock-ink); }
   .field.is-error label { color: var(--danger); }
 
   .go {
-    position: relative; overflow: hidden; isolation: isolate; width: 100%; height: 48px;
+    position: relative; overflow: hidden; isolation: isolate; width: 100%; height: var(--lock-field-h);
     display: inline-flex; align-items: center; justify-content: center;
-    gap: var(--space-2); border: 0; border-radius: var(--radius-control); background: var(--accent); color: var(--accent-fg, #fff); cursor: pointer;
+    gap: var(--space-2); border: 0; border-radius: var(--radius-sm); background: var(--lock-ink-glass); color: var(--island); cursor: pointer;
     transition: background-color 150ms var(--ease-out);
   }
-    .go:hover:not(:disabled), .go:focus-visible { background: color-mix(in srgb, var(--accent) 85%, #000); }
+  .go:hover:not(:disabled), .go:focus-visible { background: var(--lock-ink); }
   .go:focus-visible, .bubble:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
   .go__arrow, .go__spin { transition: transform .45s var(--ease-out-expo), opacity .25s var(--ease); }
   .go:hover:not(:disabled) .go__arrow { transform: translateX(4px); }
@@ -144,8 +166,8 @@ const { title } = Astro.props;
   .auth__alt { display: flex; justify-content: center; }
   .bubble {
     position: relative; width: 52px; height: 52px; padding: 0; display: grid; place-items: center;
-    border-radius: 50%; border: var(--border-width) solid var(--border); background: var(--bg-surface-2, var(--bg-surface));
-    color: var(--text-primary); cursor: pointer; text-decoration: none;
+    border-radius: 50%; border: 0; background: var(--lock-field); backdrop-filter: blur(20px);
+    color: var(--lock-ink); cursor: pointer; text-decoration: none;
     transition: border-color var(--duration-ui) var(--ease), box-shadow var(--duration-ui) var(--ease);
   }
   .bubble:hover:not(:disabled) { border-color: var(--text-tertiary); }
@@ -176,7 +198,7 @@ const { title } = Astro.props;
     .auth__logo { animation: auth-rise .32s var(--ease-out) 30ms both; }
     .mask__in { animation: auth-mask .32s var(--ease-out) 60ms both; }
     .auth__form .field, .auth__form .go, .auth__alt { animation: auth-rise .32s var(--ease-out) both; animation-delay: calc(90ms + var(--i, 0) * 30ms); }
-    .field.is-error { animation: auth-shake .45s var(--ease) both; }
+    .field.is-error { animation: auth-shake var(--dur-shake) var(--ease) both; }
     .wait__ring { animation: wait-spin 2.4s linear infinite; }
     .wait__badge { animation: wait-pop .32s var(--ease-out) .2s both; }
     .wait > * { animation: auth-rise .32s var(--ease-out) both; }
