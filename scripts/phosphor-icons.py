@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Genere src/components/ui/glyphs.ts a partir du paquet officiel @phosphor-icons/core (licence MIT), graisse Bold.
+"""Genere src/components/ui/glyphs.ts (graisse Bold) et glyphs-duotone.ts (graisse Duotone, tuiles du Dock)
+a partir du paquet officiel @phosphor-icons/core (licence MIT).
 
 Ajouter une icone : l'ajouter a ICONS ci-dessous (cle du panel -> nom de fichier Phosphor, sans « -bold »), puis
     cd "$(mktemp -d)" && npm pack @phosphor-icons/core && tar xzf phosphor-icons-core-*.tgz
@@ -54,6 +55,23 @@ export const GLYPHS = {{
 }} as const;
 
 export type IconName = keyof typeof GLYPHS;
+"""
+)
+duo = []
+for key, name in ICONS.items():
+    svg = (package / 'assets' / 'duotone' / f'{name}-duotone.svg').read_text()
+    paths = re.findall(r'<path d="([^"]+)"( opacity="[^"]+")?', svg)
+    duo.append(f"  {key}: '" + ''.join(f'<path d="{d}"{o}/>' for d, o in paths) + "',")
+
+# Fichier a part : lu seulement par le Dock (serveur), il ne grossit pas le paquet client de iconSVG().
+Path('src/components/ui/glyphs-duotone.ts').write_text(
+    f"""// Icônes Phosphor (https://phosphoricons.com), graisse Duotone, licence MIT (THIRD_PARTY_NOTICES.md), @phosphor-icons/core {version}.
+// Fichier généré par scripts/phosphor-icons.py : ne pas le modifier à la main.
+import type {{ IconName }} from './glyphs';
+
+export const DUOTONE: Record<IconName, string> = {{
+{chr(10).join(duo)}
+}};
 """
 )
 print(f'{len(out)} icones -> src/components/ui/glyphs.ts (@phosphor-icons/core {version})')

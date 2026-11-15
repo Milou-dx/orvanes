@@ -1,8 +1,10 @@
 ---
 import { GLYPHS, type IconName } from './glyphs';
+import { DUOTONE } from './glyphs-duotone';
 
-interface Props { name: IconName; size?: number; class?: string; }
-const { name, size = 16, class: className = '' } = Astro.props;
+// duotone : réservé aux tuiles du Dock ; partout ailleurs, la graisse Bold.
+interface Props { name: IconName; size?: number; class?: string; duotone?: boolean; }
+const { name, size = 16, class: className = '', duotone = false } = Astro.props;
 ---
 <svg
   class:list={['icon', className]}
@@ -11,7 +13,7 @@ const { name, size = 16, class: className = '' } = Astro.props;
   viewBox="0 0 256 256"
   fill="currentColor"
   aria-hidden="true"
-  set:html={GLYPHS[name]}
+  set:html={(duotone ? DUOTONE : GLYPHS)[name]}
 />
 
 <style>

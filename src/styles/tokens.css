@@ -302,6 +302,10 @@
   --window-radius: 30px;  --window-border: 2px;  --window-gap: 12px;  --window-gap-inner: 6px;
 
   --dock-icon: 48px;  --dock-gap: 6px;  --dock-dot: 4px;  --dock-tile-radius: 26%;
+  /* Dock : barre en verre dépoli, tuiles claires à icône duotone de l'accent. */
+  --dock-glass:        light-dark(rgb(255 255 255 / 0.18), rgb(0 0 0 / 0.28));
+  --dock-glass-border: light-dark(rgb(255 255 255 / 0.4), rgb(255 255 255 / 0.16));
+  --dock-tile:         color-mix(in srgb, var(--m-accent) 8%, var(--m-card));
   /* Écran de connexion : [lock] de theme.toml. L'encre blanche laisse voir le fond à 62 %, le champ est un noir dépoli. */
   --lock-ink: #ffffff;  --lock-ink-glass: rgb(255 255 255 / 62%);  --lock-field: #0000008c;  --lock-field-w: 300px;  --lock-field-h: 44px;
   --dur-settle: 220ms;  --dur-shake: 250ms;

@@ -133,9 +133,9 @@ const favicon = faviconProp ?? `/icons/${logoKey}.svg?v=${ICON_V}`;
               {n > 0 && <li class="dock__sep" role="separator"></li>}
               {NAV.filter((i) => i.sec === s.id).map((item) => (
                 <li class="dock__cell">
-                  <a href={item.href} class="dock__tile on-island" aria-current={isCurrent(item) ? 'page' : undefined}
+                  <a href={item.href} class="dock__tile" aria-current={isCurrent(item) ? 'page' : undefined}
                      aria-label={item.label} data-label={item.label} data-section={s.label} data-astro-prefetch="hover">
-                    <span class="dock__glyph">{item.module ? <ModuleLogo id={item.module} size={24} /> : <Icon name={item.icon!} size={24} />}</span>
+                    <span class="dock__glyph">{item.module ? <ModuleLogo id={item.module} size={24} /> : <Icon name={item.icon!} size={24} duotone />}</span>
                     {(item.badge || item.badgeId) && <span class="dock__badge" data-badge={item.badgeId} aria-label={`${item.badge ?? 0} non lus`} hidden={!item.badge}>{item.badge ?? 0}</span>}
                   </a>
                 </li>
@@ -260,18 +260,24 @@ const favicon = faviconProp ?? `/icons/${logoKey}.svg?v=${ICON_V}`;
       /* Dans le code, le Dock précède la fenêtre : au clavier on l'atteint avant le contenu. */
       .topbar { grid-row: 1; } .frame { grid-row: 2; } .dock { grid-row: 3; }
       .dock { display: flex; justify-content: center; min-width: 0; padding: var(--window-gap-inner) var(--window-gap) var(--window-gap); z-index: var(--z-pane); }
-      .dock__row { display: flex; align-items: flex-end; gap: var(--dock-gap); height: var(--dock-icon); margin: 0; padding: 0; list-style: none; }
+      /* La barre du Dock : du verre dépoli posé sur le fond d'écran. */
+      .dock__row {
+        display: flex; align-items: flex-end; gap: var(--dock-gap); box-sizing: content-box; height: var(--dock-icon); margin: 0; padding: var(--dock-gap); list-style: none;
+        border-radius: calc(var(--dock-icon) * 0.26 + var(--dock-gap)); border: 1px solid var(--dock-glass-border);
+        background: var(--dock-glass); backdrop-filter: blur(18px) saturate(1.4); -webkit-backdrop-filter: blur(18px) saturate(1.4);
+      }
       .dock__cell { display: flex; }
-      .dock__sep { align-self: center; width: var(--border-width); height: calc(var(--dock-icon) / 2); margin-inline: var(--dock-gap); background: var(--island-text-dim); }
+      .dock__sep { align-self: center; width: var(--border-width); height: calc(var(--dock-icon) / 2); margin-inline: var(--dock-gap); background: var(--dock-glass-border); }
       .dock__tile {
         position: relative; display: grid; place-items: center; flex: none;
         width: calc(var(--dock-icon) * var(--s, 1)); height: calc(var(--dock-icon) * var(--s, 1));
-        border-radius: var(--dock-tile-radius); color: var(--island-text); text-decoration: none;
+        border-radius: var(--dock-tile-radius); background: var(--dock-tile); color: var(--accent); text-decoration: none;
         box-shadow: var(--shadow-sm);
         transition: width var(--dur-settle) var(--ease-out), height var(--dur-settle) var(--ease-out), filter var(--dur-fast) var(--ease-out);
       }
       .dock__tile:active { filter: brightness(0.7); }
-      .dock__tile:focus-visible { outline-offset: var(--space-0-5); outline-color: var(--island-text); }
+      .dock__tile[aria-current='page'] { background: var(--accent); color: var(--accent-fg); }
+      .dock__tile:focus-visible { outline-offset: var(--space-0-5); outline-color: var(--accent); }
       .dock__glyph { display: grid; place-items: center; width: 50%; height: 50%; }
       .dock__glyph :global(svg) { width: 100%; height: 100%; }
       /* L'onglet ouvert : un point sous sa tuile, dans la marge du Dock. */
