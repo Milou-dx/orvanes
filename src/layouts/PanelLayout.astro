@@ -114,6 +114,25 @@ const favicon = faviconProp ?? `/icons/${logoKey}.svg?v=${ICON_V}`;
         </div>
       </header>
 
+      <nav class="dock" id="dock" aria-label="Navigation principale" transition:name="dock">
+        <ul class="dock__row">
+          {SECTIONS.filter((s) => NAV.some((i) => i.sec === s.id)).map((s, n) => (
+            <>
+              {n > 0 && <li class="dock__sep" role="separator"></li>}
+              {NAV.filter((i) => i.sec === s.id).map((item) => (
+                <li class="dock__cell">
+                  <a href={item.href} class="dock__tile on-island" aria-current={isCurrent(item) ? 'page' : undefined}
+                     aria-label={item.label} data-label={item.label} data-section={s.label} data-astro-prefetch="hover">
+                    <span class="dock__glyph">{item.module ? <ModuleLogo id={item.module} size={24} /> : <Icon name={item.icon!} size={24} />}</span>
+                    {(item.badge || item.badgeId) && <span class="dock__badge" data-badge={item.badgeId} aria-label={`${item.badge ?? 0} non lus`} hidden={!item.badge}>{item.badge ?? 0}</span>}
+                  </a>
+                </li>
+              ))}
+            </>
+          ))}
+        </ul>
+      </nav>
+
       <div class="frame">
         <div class="frame__bar">
           <span class="lights" aria-hidden="true"><i></i><i></i><i></i></span>
@@ -143,24 +162,6 @@ const favicon = faviconProp ?? `/icons/${logoKey}.svg?v=${ICON_V}`;
         </div>
       </div>
 
-      <nav class="dock" id="dock" aria-label="Navigation principale" transition:name="dock">
-        <ul class="dock__row">
-          {SECTIONS.filter((s) => NAV.some((i) => i.sec === s.id)).map((s, n) => (
-            <>
-              {n > 0 && <li class="dock__sep" role="separator"></li>}
-              {NAV.filter((i) => i.sec === s.id).map((item) => (
-                <li class="dock__cell">
-                  <a href={item.href} class="dock__tile on-island" aria-current={isCurrent(item) ? 'page' : undefined}
-                     aria-label={item.label} data-label={item.label} data-section={s.label} data-astro-prefetch="hover">
-                    <span class="dock__glyph">{item.module ? <ModuleLogo id={item.module} size={24} /> : <Icon name={item.icon!} size={24} />}</span>
-                    {(item.badge || item.badgeId) && <span class="dock__badge" data-badge={item.badgeId} aria-label={`${item.badge ?? 0} non lus`} hidden={!item.badge}>{item.badge ?? 0}</span>}
-                  </a>
-                </li>
-              ))}
-            </>
-          ))}
-        </ul>
-      </nav>
     </div>
 
     <script>
@@ -269,7 +270,8 @@ const favicon = faviconProp ?? `/icons/${logoKey}.svg?v=${ICON_V}`;
       .lights i:nth-child(2) { background: var(--control-minimize); }
       .lights i:nth-child(3) { background: var(--control-maximize); }
       .content {
-        display: flex; flex-direction: column; flex: 1;
+        /* En relatif : un élément en absolu du contenu (texte masqué, infobulle) défile avec lui au lieu d'allonger la page. */
+        position: relative; display: flex; flex-direction: column; flex: 1;
         min-width: 0; min-height: 0; overflow-y: auto;
         view-transition-name: page;
       }
@@ -281,6 +283,8 @@ const favicon = faviconProp ?? `/icons/${logoKey}.svg?v=${ICON_V}`;
       .main--bare { padding: 0; gap: 0; max-width: none; margin: 0; flex: 1; min-height: 0; }
 
       /* Le Dock : des tuiles noires qui flottent, une par onglet. */
+      /* Dans le code, le Dock précède la fenêtre : au clavier on l'atteint avant le contenu. */
+      .topbar { grid-row: 1; } .frame { grid-row: 2; } .dock { grid-row: 3; }
       .dock { display: flex; justify-content: center; min-width: 0; padding: var(--window-gap-inner) var(--window-gap) var(--window-gap); z-index: var(--z-pane); }
       /* À la souris, le Dock se masque comme sur le bureau : il glisse sous le bord et revient quand le pointeur le touche. */
       @media (hover: hover) and (pointer: fine) and (min-width: 640.02px) {

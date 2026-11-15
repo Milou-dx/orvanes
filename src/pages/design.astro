@@ -138,7 +138,7 @@ document.addEventListener('astro:page-load', () => {
         ))}
       </div>
     </Card>
-    <Card title="Teintes" description="--tone-<teinte>-bg / -fg : palette de base des couleurs d’état (succès, avertissement, erreur, information) et des graphes. Ne l’utilisez pas pour décorer une icône.">
+    <Card title="Teintes" description="--tone-<teinte>-bg / -fg : tous gris depuis le passage en duotone, gardés pour les modules qui les nomment. Code neuf : --bg-hover et --text-secondary.">
       <div class="tones">
         {TONES.map((t) => <span class="tone" style={`background:var(--tone-${t}-bg);color:var(--tone-${t}-fg)`}>{t}</span>)}
       </div>

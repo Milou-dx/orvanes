@@ -208,6 +208,8 @@ const sub = os?.hostname ? [os.hostname, os.osName, `${cores} cœurs`, up ? `en 
   .strip--unknown { --tone: var(--text-secondary); --dot: var(--text-tertiary); }
   .strip__head { display: flex; align-items: center; gap: var(--space-2); margin: 0; font-weight: 600; color: var(--tone); white-space: nowrap; }
   .strip__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dot); box-shadow: 0 0 0 3px color-mix(in srgb, var(--dot) 22%, transparent); }
+  .strip--warning .strip__dot { border-radius: 0; box-shadow: none; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+  .strip--error .strip__dot { border-radius: 1px; box-shadow: none; }
   .strip__text { flex: 1; min-width: 14rem; margin: 0; color: var(--text-secondary); font-size: var(--meta-size); line-height: var(--meta-lh); }
   .strip__go { color: var(--accent-text); text-decoration: none; font-size: var(--meta-size); font-weight: 500; }
   .strip__go:hover { text-decoration: underline; }
@@ -225,8 +227,9 @@ const sub = os?.hostname ? [os.hostname, os.osName, `${cores} cœurs`, up ? `en 
   .kpi__note { color: var(--text-tertiary); font-size: var(--micro-size); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .kpi__bar { height: 4px; margin-top: var(--space-2); border-radius: var(--radius-pill); background: var(--bg-hover); overflow: hidden; }
   .kpi__bar span { display: block; height: 100%; width: var(--p); background: var(--c); border-radius: inherit; transition: width var(--dur-base) var(--ease-out); }
-  .kpi__bar--warning span { background: var(--status-warning); }
-  .kpi__bar--danger span { background: var(--status-error); }
+  /* Sans teinte, une jauge élevée ou critique se lit à son épaisseur. */
+  .kpi__bar--warning { height: 6px; }
+  .kpi__bar--danger { height: 8px; }
   .kpi__bar--none { background: repeating-linear-gradient(90deg, var(--bg-hover) 0 6px, transparent 6px 10px); }
   :global(:root[data-enter]) .kpi__bar span { animation: grow 700ms var(--ease-out) both; }
   @keyframes grow { from { width: 0; } }

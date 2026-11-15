@@ -35,6 +35,11 @@ function swell(dock: HTMLElement, x: number | null) {
   });
 }
 
+// Quand la rangée défile (au doigt, à l'étroit), l'onglet ouvert doit être sous les yeux.
+document.addEventListener('astro:page-load', () => {
+  document.querySelector<HTMLElement>('#dock [aria-current="page"]')?.scrollIntoView?.({ block: 'nearest', inline: 'center' });
+});
+
 let grown = false;
 function follow(x: number | null) {
   const dock = document.getElementById('dock');
