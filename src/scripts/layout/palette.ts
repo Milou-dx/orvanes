@@ -34,12 +34,12 @@ function highlight(title: string, query: string) {
 }
 
 function pages(): Item[] {
-  return [...document.querySelectorAll<HTMLAnchorElement>('#nav-pane a.navlink[href]')].map((a) => {
-    const title = a.querySelector('.navlink__label')?.textContent?.trim() ?? a.title;
-    const section = a.closest('.navsec')?.querySelector('.navsec__head span')?.textContent?.trim() ?? '';
+  return [...document.querySelectorAll<HTMLAnchorElement>('#dock a.dock__tile[href]')].map((a) => {
+    const title = a.dataset.label ?? '';
+    const section = a.dataset.section ?? '';
     return {
       id: `page:${a.getAttribute('href')}`, title, group: 'Pages', hint: section,
-      glyph: a.querySelector('.navlink__glyph')?.innerHTML ?? iconSVG('file'),
+      glyph: a.querySelector('.dock__glyph')?.innerHTML ?? iconSVG('file'),
       keywords: `${section} ${a.getAttribute('href')}`,
       run: () => navigate(a.getAttribute('href')!),
     };

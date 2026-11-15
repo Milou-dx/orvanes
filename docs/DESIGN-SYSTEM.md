@@ -12,19 +12,20 @@ Référence vivante : la page `/design` (réservée aux administrateurs, absente
 
 ## Jetons canoniques
 
-L'interface est celle de mistraOS (`themes/mistra/theme.toml`, accent « slate ») : surfaces grises en duotone, accent blanc en sombre et noir en clair, couleur réservée aux états et aux graphes. Chaque jeton de couleur est déclaré une fois, en `light-dark(clair, sombre)`.
+L'interface est celle de mistraOS (`themes/mistra/theme.toml`, accent « slate ») : duotone strict, surfaces grises, accent blanc en sombre et noir en clair. Aucune teinte dans l'interface : un état se lit par sa forme et son libellé. Seuls le fond d'écran, le logo Orvanes et les logos de marque des modules ont une couleur. Chaque jeton de couleur est déclaré une fois, en `light-dark(clair, sombre)`.
 
 | Famille | Jetons |
 |---|---|
-| Palette source | `--m-surface` (contenu), `--m-sidebar` (volet, barre), `--m-card`, `--m-popover`, `--m-text`, `--m-text-dim`, `--m-border`, `--m-accent`, `--m-accent-text`, `--m-shade` : les valeurs de mistraOS, dont dérivent les jetons ci-dessous. Une page lit les jetons dérivés, jamais `--m-*` |
+| Palette source | `--m-surface` (contenu), `--m-sidebar` (fond des panneaux latéraux d'une page), `--m-card`, `--m-popover`, `--m-text`, `--m-text-dim`, `--m-border`, `--m-accent`, `--m-accent-text`, `--m-shade` : les valeurs de mistraOS, dont dérivent les jetons ci-dessous. Une page lit les jetons dérivés, jamais `--m-*` |
 | Terminal et journaux | `--console-bg`, `--console-fg`, `--console-muted`, `--console-strong`, `--console-select`, `--console-black/-blue/-magenta/-cyan` (+ `-bright-`) : fond et encre de la fenêtre, gris ANSI de mistraOS ; `--console-red/-green/-yellow` viennent de `--danger`, `--success`, `--warning`. Un script qui lit un jeton pour un canvas ou xterm passe par `pickScheme` (`src/scripts/ui/html.ts`) |
+| Fenêtre et Dock | `--window-radius` 10, `--window-border` 2, `--window-gap` 12, `--window-gap-inner` 6, `--shadow-window` ; `--dock-icon` 48, `--dock-pad`, `--dock-gap` 6, `--dock-dot` 4, `--dock-tile-radius` 26 % ; `--dur-settle`, `--dur-shake` |
 | Îlot | `--island`, `--island-text`, `--island-text-dim`, `--island-highlight` (noirs dans les deux modes), `--island-h`, `--island-pad`, `--island-gap` |
 | Fonds | `--bg-app`, `--bg-surface`, `--bg-surface-2`, `--bg-hover` |
 | Filets | `--border`, `--border-strong`, `--field-stroke` (bord des champs, 3:1) |
 | Texte | `--text-primary`, `--text-secondary`, `--text-tertiary`, `--text-disabled` |
 | Accent | `--accent`, `--accent-hover`, `--accent-active`, `--accent-subtle`, `--accent-border`, `--accent-fg` |
-| Sémantique | `--success`, `--warning`, `--danger`, `--info` (+ `-subtle`, `-border`) ; points : `--status-online/-warning/-error/-offline` |
-| Teintes | `--tone-<gray\|brown\|orange\|yellow\|green\|blue\|purple\|pink\|red>-bg/-fg` : palette de base des couleurs sémantiques et des graphes, jamais pour teinter une icône |
+| Sémantique | `--success`, `--warning`, `--danger`, `--info` (+ `-subtle`, `-border`) ; points : `--status-online/-warning/-error/-offline`. Tous valent l'encre du texte (`-offline` : l'encre secondaire) : ils disent le rôle, pas une couleur |
+| Teintes | `--tone-<gray\|brown\|orange\|yellow\|green\|blue\|purple\|pink\|red>-bg/-fg` : tous gris, gardés pour les modules qui les nomment ; code neuf : `--bg-hover` et `--text-secondary` |
 | Rayons | `--radius-xs` 4, `--radius-sm` 8 (lignes, entrées de menu), `--radius-md` 10 (contrôles), `--radius-lg` 14 (cartes, menus, dialogues), `--radius-full` (capsules, interrupteurs, points) |
 | Ombres | `--shadow-xs`, `--shadow-sm`, `--shadow-md` |
 | Mouvement | `--dur-fast`, `--dur-base`, `--dur-enter`, `--ease-out`, `--ease-in`, `--ease-in-out` ; ressorts `--ease-spring-morph` + `--dur-spring-morph` (îlot), `--ease-spring-toggle` + `--dur-spring-toggle` (interrupteur) ; fondu `--ease-fade` + `--dur-fade` ; survol qui voyage `--ease-hover` + `--dur-hover-move`, `--dur-hover-fade` ; appui `--press-scale` |
@@ -122,13 +123,19 @@ Recherche : la barre n'a pas de champ à elle. Un champ de page marqué `data-se
 
 ## Cadre (PanelLayout)
 
-Barre du haut, sur toute la largeur, comme la barre de mistraOS : trois zones de capsules noires (`.capsule`, `.island`, hautes de `--island-h`), noires en clair comme en sombre.
+Le bureau de mistraOS, de haut en bas : la barre à îlot, la fenêtre de la page, le Dock, posés sur le fond d'écran (`.wallpaper`, images `4-tholos` de mistraOS dans `src/assets/`, claire ou sombre selon le thème, passées par `WALLPAPER` de `src/components/ui/wallpaper.ts`).
+
+Barre du haut : trois zones de capsules noires (`.capsule`, `.island`, hautes de `--island-h`), noires en clair comme en sombre.
 
 | Zone | Contenu |
 |---|---|
-| Gauche | le bouton du menu (`data-nav-toggle`, le seul : il replie le volet, ou ouvre le tiroir sous 640 px) et le fil d'Ariane |
+| Gauche | le logo (lien vers l'accueil) et le fil d'Ariane |
 | Centre | l'îlot « Rechercher… » (`.island`, `data-cmdk-open`) : un clic, Ctrl/⌘ K ou `/` le transforme en palette |
 | Droite | l'état de l'actualisation (`#refresh-state`), puis le compte (`data-account-menu` : thème, paramètres, sécurité, aide, déconnexion), présent seulement quand la protection est activée |
+
+Fenêtre (`.frame` > `.content`) : rayon, bord de la fenêtre active (2 px, couleur d'accent) et marges de mistraOS. Le cadre porte l'arrondi, `.content` défile dedans.
+
+Dock (`#dock`, `src/scripts/layout/dock.ts`) : la navigation du panel. Une tuile noire par onglet (`.dock__tile`, icône Phosphor ou logo du module), un séparateur entre sections, un point sous l'onglet ouvert, une pastille pour les non lus (`data-badge`). Sous le pointeur, les tuiles grandissent (1,6 sous lui, plus rien à 2,5 tuiles) et le nom de l'onglet monte dans une capsule. Au doigt ou sous 640 px, la rangée défile et rien ne grandit. Il n'y a ni volet, ni tiroir, ni mode compact.
 
 Ce qui naît de la barre reste noir comme elle : le menu du compte (`openMenu({ island: true })`) et les notifications (`toast`, affichées sous l'îlot, au centre).
 
@@ -138,13 +145,13 @@ Palette (`src/scripts/layout/palette.ts`) : c'est l'îlot lui-même. La forme no
 
 Props : `title`, `subtitle?`, `refreshMs?` (`null` désactive l'actualisation), `favicon?`, `bare?` ; slot `actions`. `title`, `subtitle` et `actions` forment l'en-tête de page (`PageHeader`), identique sur tous les onglets du cœur et des modules : titre égal au libellé du menu, description courte, actions à droite (elles passent sous le titre sur téléphone). En-tête et contenu partagent la largeur `--content-max` et la marge `--page-gutter` (32 px, 24 px sous 1000 px, 16 px sur téléphone).
 
-Menu (`src/layouts/nav.ts`, source unique du volet, du fil d'Ariane et de la palette Ctrl+K, qui relit les liens du volet) :
+Menu (`src/layouts/nav.ts`, source unique du Dock, du fil d'Ariane et de la palette Ctrl+K, qui relit les tuiles du Dock) :
 
 | Section | Contenu |
 |---|---|
 | Système | Vue d'ensemble, Performances, Processus, Services, Journaux, Fichiers, Terminal, Réseau |
 | Modules | onglets des modules installés, modules triés par nom, onglets dans l’ordre du manifeste ; section absente sans module installé |
-| Paramètres | Modules, Utilisateurs (`/acces`), Paramètres (`/parametres` : thème, menu compact, informations de l'instance) |
+| Paramètres | Modules, Utilisateurs (`/acces`), Paramètres (`/parametres` : thème, informations de l'instance) |
 
 Un module désinstallé sort du menu, du fil d'Ariane et de la palette. Libellés courts (« Messages », « Outils », « Graphes ») : le contexte va dans la description de la page. Le filtrage par droits (`allowedTabs`) est inchangé. Pour suspendre l'actualisation pendant une action, poser `data-busy` sur un élément.
 
@@ -155,9 +162,9 @@ Exceptions assumées, dans le même cadre : l'onglet Claude (`bare`, rendu de cl
 Une seule famille, celle de mistraOS : Phosphor Bold (`src/components/ui/glyphs.ts`, généré par `scripts/phosphor-icons.py`, licence MIT dans `THIRD_PARTY_NOTICES.md`), via `Icon.astro`, `Sym.astro` (même icône, tracé partagé par un sprite `<use>` pour les chevrons répétés) ou `iconSVG()` côté client.
 
 - Une seule graisse, Bold, en tracés pleins sur la grille de 256 ; aucune prop pour la changer.
-- Tailles : 16 px dans le menu, les boutons, les tableaux ; 20 px pour une icône isolée (boutons `lg`, zones de dépôt).
-- Monochromes (`currentColor`, gris secondaire au repos). L'élément actif du menu se marque par son fond et son texte, pas par une couleur d'icône.
-- Couleur réservée au sens : succès, avertissement, erreur, information (`StatusBadge`, `Badge`, icônes d'état de `SettingsRow`).
+- Tailles : 24 px dans une tuile du Dock, 16 px dans les boutons, les tableaux ; 20 px pour une icône isolée (boutons `lg`, zones de dépôt).
+- Monochromes (`currentColor`, gris secondaire au repos).
+- Aucune couleur : un état se lit à sa forme et à son libellé. `StatusBadge` : point plein (actif), anneau (arrêté, inconnu), triangle (avertissement), carré (erreur).
 - Pas d'emoji ni de glyphe Unicode décoratif ; les flèches de données (↑ émis, ↓ reçu) restent du texte.
 - Application ou élément sans logo : une icône Phosphor neutre ou ses initiales sur une tuile neutre. Compte : ses initiales sur l'accent, dans un carré arrondi (`.v-avatar`), jamais une couleur tirée du nom.
 
@@ -168,4 +175,4 @@ Une seule famille, celle de mistraOS : Phosphor Bold (`src/components/ui/glyphs.
 - logo de couleur (Docker, Discord, Claude) : couleur officielle dans les deux thèmes ;
 - encre quasi noire (luminance < 0,05 : GitHub `#181717`, Tailscale `#242424`, monochromes par nature) : remplacée par `currentColor`, donc blanche en thème sombre comme le recommande Simple Icons.
 
-Affichage : page `/modules` (20 px dans un carré neutre de 32 px) et section « Modules » du menu (16 px), quand l'onglet ne déclare pas d'`icon` du panel. Le logo Minecraft de Simple Icons est un logotype illisible à 16 px : l'onglet déclare `"icon": "cube"`, le logotype reste sur `/modules`. Le logo du panel (`PANEL_MARK`, `src/components/ui/icons.ts`) sert au volet, à l'écran de connexion et aux favicons.
+Affichage : page `/modules` (20 px dans un carré neutre de 32 px) et tuile du Dock (24 px), quand l'onglet ne déclare pas d'`icon` du panel. Le logo Minecraft de Simple Icons est un logotype illisible à 16 px : l'onglet déclare `"icon": "cube"`, le logotype reste sur `/modules`. Le logo du panel (`PANEL_MARK`, `src/components/ui/icons.ts`) sert à la barre, à l'écran de connexion et aux favicons.

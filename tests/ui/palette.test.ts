@@ -34,8 +34,7 @@ describe('palette née de l’îlot', () => {
   beforeEach(() => {
     navigate.mockClear();
     document.body.innerHTML = `
-      <nav id="nav-pane"><section class="navsec"><button class="navsec__head"><span>Système</span></button>
-        <a class="navlink" href="/services"><span class="navlink__glyph"></span><span class="navlink__label">Services</span></a></section></nav>
+      <nav id="dock"><a class="dock__tile" href="/services" data-label="Services" data-section="Système"><span class="dock__glyph"></span></a></nav>
       <button class="island" data-cmdk-open data-processus>Rechercher…</button>`;
   });
   afterEach(() => { if (isPaletteOpen()) press('Escape'); });
@@ -99,7 +98,7 @@ describe('palette née de l’îlot', () => {
 
   it('un appui en dehors la referme sans bloquer le clic', () => {
     openPalette();
-    const link = document.querySelector<HTMLElement>('.navlink')!;
+    const link = document.querySelector<HTMLElement>('.dock__tile')!;
     const down = new MouseEvent('pointerdown', { bubbles: true, cancelable: true });
     link.dispatchEvent(down);
     expect(isPaletteOpen()).toBe(false);

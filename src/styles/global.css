@@ -1,5 +1,10 @@
 @import './tokens.css';
 
+/* Le fond d'écran de mistraOS (4-tholos), derrière le bureau et l'écran de connexion. */
+.wallpaper { background: var(--bg-mica) var(--wallpaper-light) center / cover no-repeat; }
+:root[data-theme='dark'] .wallpaper { background-image: var(--wallpaper-dark); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme='light']) .wallpaper { background-image: var(--wallpaper-dark); } }
+
 
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -413,11 +418,6 @@ a { color: var(--accent-text); text-underline-offset: 3px; }
 :root[data-ui='notion'] .dlg__btn:active:not(:disabled) { transform: scale(var(--press-scale)); }
 :root[data-ui='notion'] .dlg__ok { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
 :root[data-ui='notion'] .dlg__ok:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
-:root[data-ui='notion'] .dlg__ok--danger, :root[data-ui='notion'] .dlg__ok--danger:hover:not(:disabled) {
-  background: var(--tone-red-fg); border-color: var(--tone-red-fg); color: #fff; filter: none;
-}
-:root[data-ui='notion'][data-theme='dark'] .dlg__ok--danger,
-:root[data-ui='notion'][data-theme='dark'] .dlg__ok--danger:hover:not(:disabled) { background: #c0322d; border-color: #c0322d; color: #fff; }
 :root[data-ui='notion'] .toast {
   align-items: center; border-radius: var(--radius-md); border: var(--border-width) solid var(--border);
   padding: var(--space-2) var(--space-3); box-shadow: var(--shadow-overlay);

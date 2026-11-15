@@ -297,6 +297,12 @@
   --island-gap: 10px;
   --toggle-w: 38px;  --toggle-h: 22px;  --toggle-pad: 3px;
 
+  /* Fenêtre et Dock : [window] et [dock] de theme.toml, dock.toml pour la taille et l'agrandissement. */
+  --window-radius: 10px;  --window-border: 2px;  --window-gap: 12px;  --window-gap-inner: 6px;
+  --dock-icon: 48px;  --dock-pad: 8px;  --dock-gap: 6px;  --dock-dot: 4px;  --dock-tile-radius: 26%;
+  --shadow-window: 0 0 12px light-dark(#00000055, #000000aa);
+  --dur-settle: 220ms;  --dur-shake: 250ms;
+
   --bg-app:       var(--m-surface);
   --bg-mica:      var(--m-sidebar);
   --bg-surface:   var(--m-card);
@@ -329,33 +335,40 @@
   --focus-ring: var(--m-accent);
   --scrim: light-dark(rgb(15 15 15 / 30%), rgb(0 0 0 / 50%));
 
-  /* Les états gardent leur couleur : une panne se lit avant son libellé. */
-  --success: light-dark(#196b2f, #30d158);
-  --warning: light-dark(#9c4600, #ff9f0a);
-  --danger:  light-dark(#c50013, #ff7069);
-  --info:    var(--accent);
-  --status-online:  light-dark(#34c759, #30d158);
-  --status-warning: light-dark(#ff9500, #ff9f0a);
-  --status-error:   light-dark(#ff3b30, #ff453a);
-  --status-offline: light-dark(#aeaeb2, #636366);
-  --success-subtle: color-mix(in srgb, var(--status-online) 14%, var(--bg-surface));
-  --warning-subtle: color-mix(in srgb, var(--status-warning) 16%, var(--bg-surface));
-  --danger-subtle:  color-mix(in srgb, var(--status-error) 12%, var(--bg-surface));
-  --info-subtle:    var(--accent-subtle);
-  --success-border: color-mix(in srgb, var(--tone-green-fg) 24%, var(--tone-green-bg));
-  --warning-border: color-mix(in srgb, var(--tone-orange-fg) 24%, var(--tone-orange-bg));
-  --danger-border:  color-mix(in srgb, var(--tone-red-fg) 24%, var(--tone-red-bg));
-  --info-border:    var(--accent-border);
+  /* Duotone strict, comme mistraOS : un état se lit par sa forme et son libellé, jamais par une teinte. */
+  --success: var(--m-text);
+  --warning: var(--m-text);
+  --danger:  var(--m-text);
+  --info:    var(--m-text);
+  --status-online:  var(--m-text);
+  --status-warning: var(--m-text);
+  --status-error:   var(--m-text);
+  --status-offline: var(--m-text-dim);
+  --success-subtle: var(--accent-subtle);  --success-border: var(--accent-border);
+  --warning-subtle: var(--accent-subtle);  --warning-border: var(--accent-border);
+  --danger-subtle:  var(--accent-subtle);  --danger-border:  var(--accent-border);
+  --info-subtle:    var(--accent-subtle);  --info-border:    var(--accent-border);
 
-  --res-cpu:  light-dark(#5856d6, #7d7aff);  --res-cpu-fill:  light-dark(#eeeefb, #1f1f33);  --res-cpu-grid:  light-dark(#d9d8f4, #2e2d55);
-  --res-mem:  light-dark(#d1306b, #ff6482);  --res-mem-fill:  light-dark(#fbecf1, #331d24);  --res-mem-grid:  light-dark(#f3d3df, #4f2733);
-  --res-disk: light-dark(#c26400, #ffb340);  --res-disk-fill: light-dark(#fbf0e3, #33281a);  --res-disk-grid: light-dark(#f0dcc2, #4d3a1f);
-  --res-net:  light-dark(#1b8aa0, #5ac8de);  --res-net-fill:  light-dark(#e6f4f7, #16292d);  --res-net-grid:  light-dark(#c9e6ec, #1f4048);
-  --heat-lo: light-dark(#fbf6e6, #33301f);
-  --heat-hi: light-dark(#f2c38b, #6e4519);
+  --tone-gray-bg: var(--bg-hover);    --tone-gray-fg: var(--m-text-dim);
+  --tone-brown-bg: var(--bg-hover);   --tone-brown-fg: var(--m-text-dim);
+  --tone-orange-bg: var(--bg-hover);  --tone-orange-fg: var(--m-text-dim);
+  --tone-yellow-bg: var(--bg-hover);  --tone-yellow-fg: var(--m-text-dim);
+  --tone-green-bg: var(--bg-hover);   --tone-green-fg: var(--m-text-dim);
+  --tone-blue-bg: var(--bg-hover);    --tone-blue-fg: var(--m-text-dim);
+  --tone-purple-bg: var(--bg-hover);  --tone-purple-fg: var(--m-text-dim);
+  --tone-pink-bg: var(--bg-hover);    --tone-pink-fg: var(--m-text-dim);
+  --tone-red-bg: var(--bg-hover);     --tone-red-fg: var(--m-text-dim);
 
-  /* Terminal et journaux, comme le terminal de mistraOS : fond et encre de la fenêtre, gris de sa palette ANSI ;
-     rouge, vert et jaune viennent des états (ADR 0014 : un thème qui teinte ses états teinte son terminal). */
+  /* Graphes : une encre, un fond et une grille. Valeurs directes : un canvas ne sait pas lire color-mix(light-dark()). */
+  --res-fill: light-dark(#eeeeee, #303030);
+  --res-cpu:  var(--m-text);  --res-cpu-fill:  var(--res-fill);  --res-cpu-grid:  var(--m-border);
+  --res-mem:  var(--m-text);  --res-mem-fill:  var(--res-fill);  --res-mem-grid:  var(--m-border);
+  --res-disk: var(--m-text);  --res-disk-fill: var(--res-fill);  --res-disk-grid: var(--m-border);
+  --res-net:  var(--m-text);  --res-net-fill:  var(--res-fill);  --res-net-grid:  var(--m-border);
+  --heat-lo: var(--m-card);
+  --heat-hi: light-dark(#bdbdbd, #5a5a5a);
+
+  /* Terminal et journaux, comme le terminal de mistraOS : fond et encre de la fenêtre, gris de sa palette ANSI. */
   --console-bg:      var(--m-surface);
   --console-border:  var(--m-border);
   --console-fg:      var(--m-text);
@@ -363,9 +376,9 @@
   --console-strong:  light-dark(#111111, #ffffff);
   --console-select:  light-dark(#c4c4c4, #4a4a4a);
   --console-black:   light-dark(#2b2b2b, #3d3d3d);
-  --console-red:     var(--danger);   --console-bright-red:    var(--danger);
-  --console-green:   var(--success);  --console-bright-green:  var(--success);
-  --console-yellow:  var(--warning);  --console-bright-yellow: var(--warning);
+  --console-red:     light-dark(#5a5a5a, #8a8a8a);  --console-bright-red:     light-dark(#5a5a5a, #a0a0a0);
+  --console-green:   light-dark(#4e4e4e, #9a9a9a);  --console-bright-green:   light-dark(#4e4e4e, #b0b0b0);
+  --console-yellow:  light-dark(#444444, #aaaaaa);  --console-bright-yellow:  light-dark(#444444, #c0c0c0);
   --console-blue:    light-dark(#5e5e5e, #909090);  --console-bright-blue:    light-dark(#5e5e5e, #a8a8a8);
   --console-magenta: light-dark(#525252, #9e9e9e);  --console-bright-magenta: light-dark(#525252, #bcbcbc);
   --console-cyan:    light-dark(#3e3e3e, #b0b0b0);  --console-bright-cyan:    light-dark(#3e3e3e, #d0d0d0);

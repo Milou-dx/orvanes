@@ -3,7 +3,7 @@ import { openModal } from '../ui/dialog';
 import { esc } from '../ui/html';
 import { isPaletteOpen, openPalette } from './palette';
 import { focusSearch } from './search';
-import { logout, setTheme, toggleNav } from './shell';
+import { logout, setTheme } from './shell';
 
 function typing(el: Element | null) {
   if (!el) return false;
@@ -45,7 +45,6 @@ registerCommands([
   { id: 'theme-light', title: 'Thème clair', icon: 'sun', keywords: ['apparence', 'light'], run: () => setTheme('light') },
   { id: 'theme-dark', title: 'Thème sombre', icon: 'moon', keywords: ['apparence', 'dark', 'nuit'], run: () => setTheme('dark') },
   { id: 'theme-system', title: 'Thème du système', icon: 'theme', keywords: ['apparence', 'auto'], run: () => setTheme('system') },
-  { id: 'nav-toggle', title: 'Réduire ou afficher le menu', icon: 'panelLeft', keywords: ['volet', 'barre latérale', 'sidebar'], run: () => toggleNav() },
   { id: 'shortcuts', title: 'Raccourcis clavier', icon: 'keyboard', shortcut: '?', keywords: ['aide', 'clavier'], run: () => void showShortcuts() },
 ], 'global');
 
@@ -62,7 +61,7 @@ document.addEventListener('keydown', (e) => {
   if (exempt(target)) return;
 
   if (matchKeys(e, 'Mod+K')) {
-    if ((isClaude() && !isPaletteOpen()) || document.body.classList.contains('nav-open')) return;
+    if (isClaude() && !isPaletteOpen()) return;
     e.preventDefault();
     if (!isPaletteOpen()) openPalette();
     return;

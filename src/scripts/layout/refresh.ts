@@ -5,7 +5,6 @@ const OCCUPE = [
   '.panel:not([hidden])',
   '#bk-job:not([hidden])',
   '[data-busy]',
-  'body.nav-open',
   '.menu:not([hidden])', '[role="menu"]:not([hidden])',
   'dialog[open]',
   '.dlg-overlay',

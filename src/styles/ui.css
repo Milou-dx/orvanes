@@ -144,6 +144,10 @@ th[aria-sort='descending'] .dt__arrow { transform: rotate(180deg); }
   content: ''; position: absolute; inset: 0; border-radius: inherit; background: inherit;
   animation: n-pulse 2s var(--ease-out) infinite; animation-delay: var(--pulse-phase, 0ms);
 }
+/* Sans teinte, l'état se lit à la forme du point : plein (actif), anneau (arrêté, inconnu), triangle (avertissement), carré (erreur). */
+.sbadge--stopped .sbadge__dot, .sbadge--unknown .sbadge__dot { background: transparent; box-shadow: inset 0 0 0 1.5px var(--sb-dot); }
+.sbadge--warning .sbadge__dot { width: 8px; height: 7px; border-radius: 0; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+.sbadge--error .sbadge__dot { border-radius: 1px; }
 .sbadge--running { --sb-fg: var(--success); --sb-bg: var(--success-subtle); --sb-dot: var(--status-online); }
 .sbadge--stopped { --sb-fg: var(--tone-gray-fg); --sb-bg: var(--tone-gray-bg); --sb-dot: var(--status-offline); }
 .sbadge--warning { --sb-fg: var(--warning); --sb-bg: var(--warning-subtle); --sb-dot: var(--status-warning); }

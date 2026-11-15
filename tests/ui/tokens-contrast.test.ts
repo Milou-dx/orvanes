@@ -24,32 +24,17 @@ const RULES: [text: string, on: string[], min: number][] = [
   ['--m-text-dim', ['--m-surface', '--m-sidebar', '--m-card', '--m-popover'], 4.5],
   ['--m-accent-text', ['--m-accent'], 7],
   ['--m-accent', ['--m-surface', '--m-card'], 4.5],
-  ['--success', ['--m-surface', '--m-card', '--m-popover'], 4.5],
-  ['--warning', ['--m-surface', '--m-card', '--m-popover'], 4.5],
-  ['--danger', ['--m-surface', '--m-card', '--m-popover'], 4.5],
   // Terminal et journaux : les gris des couleurs ANSI de mistraOS restent des formes lisibles (3:1) sur leur fond.
   ['--console-blue', ['--m-surface'], 3],
   ['--console-cyan', ['--m-surface'], 3],
   ['--console-magenta', ['--m-surface'], 3],
+  ['--console-red', ['--m-surface'], 3],
+  ['--console-green', ['--m-surface'], 3],
+  ['--console-yellow', ['--m-surface'], 3],
   ['--console-strong', ['--m-surface'], 7],
   ['--island-text', ['--island', '--island-highlight'], 7],
   ['--island-text-dim', ['--island', '--island-highlight'], 4.5],
 ];
-
-const channels = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
-const hexOf = (rgb: number[]) => `#${rgb.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')}`;
-// Fonds teintés : color-mix(in srgb, <point d'état> <part> %, carte), comme tokens.css les compose.
-const SUBTLE: [text: string, dot: string, share: number][] = [
-  ['--success', '--status-online', 14], ['--warning', '--status-warning', 16], ['--danger', '--status-error', 12],
-];
-for (const [text, dot, share] of SUBTLE) {
-  const mixed = ([0, 1] as const).map((mode) => {
-    const [a, b] = [channels(pairs.get(dot)![mode]), channels(pairs.get('--m-card')![mode])];
-    return hexOf(a.map((v, i) => (v * share + b[i] * (100 - share)) / 100));
-  });
-  pairs.set(`${text}-subtle`, [mixed[0], mixed[1]]);
-  RULES.push([text, [`${text}-subtle`], 4.5]);
-}
 
 describe('contraste des jetons', () => {
   for (const [mode, name] of [[0, 'clair'], [1, 'sombre']] as const) {
@@ -59,4 +44,16 @@ describe('contraste des jetons', () => {
       }
     }
   }
+});
+
+describe('duotone strict', () => {
+  // mistraOS : les états se lisent par leur forme et leur libellé, jamais par une teinte.
+  it.each(['--success', '--warning', '--danger', '--info', '--status-online', '--status-warning', '--status-error'])('%s est l’encre du texte', (name) => {
+    expect(css).toMatch(new RegExp(`${name}:\\s*var\\(--m-text\\)`));
+  });
+  it('aucun jeton de la couche mistraOS n’a de teinte', () => {
+    const layer = css.slice(css.indexOf('Interface de mistraOS'));
+    const tinted = [...layer.matchAll(/#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})\b/g)].filter((m) => m[1] !== m[2] || m[2] !== m[3]).map((m) => m[0]);
+    expect(tinted).toEqual([]);
+  });
 });
