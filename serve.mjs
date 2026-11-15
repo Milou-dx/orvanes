@@ -15,7 +15,8 @@ const { handler } = await import(pathToFileURL(join(DIST, 'server/entry.mjs')).h
 const { attachShellWebSocket } = await import('./src/server/shell/ws-shell.js');
 const { closeUnclaimedUpgrade, handleHookRequest } = await import('./src/server/modules/request-hooks.js');
 const { clientIp } = await import('./src/server/core/client-ip.js');
-const { allowUpgrade, isEnabled: isAuthEnabled } = await import('./src/server/auth/auth-core.js');
+const { isDeclaredHost } = await import('./src/server/core/hosts.js');
+const { guarded, isEnabled: isAuthEnabled } = await import('./src/server/auth/auth-core.js');
 const modules = (await import('./src/server/modules/registry.js')).default;
 
 const HOST = process.env.PANEL_HOST || '127.0.0.1';
@@ -84,6 +85,11 @@ async function serveAsset(req, res) {
 
 const hooks = [];
 const server = http.createServer((req, res) => {
+  if (!isDeclaredHost(req.headers.host)) {
+    res.writeHead(421, { 'content-type': 'text/plain; charset=utf-8' });
+    res.end('Adresse non déclarée : ajoutez-la à PANEL_PUBLIC_URL.');
+    return;
+  }
   req.headers['x-forwarded-for'] = clientIp(req.socket.remoteAddress, req.headers['x-forwarded-for']);
   if (handleHookRequest(hooks, (id) => modules.isInstalled(id), req, res)) return;
   serveAsset(req, res).then(
@@ -91,29 +97,6 @@ const server = http.createServer((req, res) => {
     () => { if (!res.headersSent) handler(req, res); },
   );
 });
-function guarded(srv) {
-  const wrap = (fn) => (req, socket, head) => {
-    let sameOrigin = true;
-    if (req.headers.origin) {
-      try { sameOrigin = new URL(req.headers.origin).host === req.headers.host; } catch { sameOrigin = false; }
-    }
-    if (!sameOrigin || !allowUpgrade(req)) {
-      socket.write('HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n');
-      socket.destroy();
-      return;
-    }
-    fn(req, socket, head);
-  };
-  return new Proxy(srv, {
-    get(target, prop) {
-      if (prop === 'on' || prop === 'addListener' || prop === 'once') {
-        return (event, fn) => target[prop](event, event === 'upgrade' ? wrap(fn) : fn);
-      }
-      const v = target[prop];
-      return typeof v === 'function' ? v.bind(target) : v;
-    },
-  });
-}
 attachShellWebSocket(guarded(server));
 for (const m of modules.listModules().filter((x) => x.server)) {
   try {

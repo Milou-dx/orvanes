@@ -2,6 +2,7 @@
 import { createHash, randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
+import { isDeclaredHost } from '../core/hosts.js';
 import { installedTabs, listModules } from '../modules/registry.js';
 
 const DATA_DIR = process.env.PANEL_DATA_DIR ?? resolve('data');
@@ -218,6 +219,30 @@ export function allowUpgrade(req) {
   return decide(pathname, userFromCookie(req.headers.cookie)) === 'allow';
 }
 
+export function guarded(srv) {
+  const wrap = (fn) => (req, socket, head) => {
+    // Origin comparé à la liste et non au Host : après un DNS rebinding, les deux valent le domaine tiers.
+    let declaredOrigin = true;
+    if (req.headers.origin) {
+      try { declaredOrigin = isDeclaredHost(new URL(req.headers.origin).host); } catch { declaredOrigin = false; }
+    }
+    if (!isDeclaredHost(req.headers.host) || !declaredOrigin || !allowUpgrade(req)) {
+      socket.write('HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n');
+      socket.destroy();
+      return;
+    }
+    fn(req, socket, head);
+  };
+  return new Proxy(srv, {
+    get(target, prop) {
+      if (prop === 'on' || prop === 'addListener' || prop === 'once') {
+        return (event, fn) => target[prop](event, event === 'upgrade' ? wrap(fn) : fn);
+      }
+      const v = target[prop];
+      return typeof v === 'function' ? v.bind(target) : v;
+    },
+  });
+}
 const attempts = new Map();
 
 export function throttled(key) {

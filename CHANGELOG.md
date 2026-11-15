@@ -1,5 +1,10 @@
 # Historique
 
+## 0.4.1 (2026-11-15)
+
+- Sécurité (GHSA-fw54-xhg2-vm5h) : le panel répond 421 à toute adresse absente de `PANEL_PUBLIC_URL`, hors 127.0.0.1, localhost, [::1] et `PANEL_HOST` au port `PANEL_PORT`. Une page tierce ne peut plus ouvrir le terminal par DNS rebinding, même protection par mot de passe coupée. Un tunnel SSH garde le même port local.
+- Pour les modules : `guarded()` exige un `Host` déclaré et compare `Origin` à cette liste, plus au `Host` reçu.
+
 ## 0.4.0 (2026-11-15)
 
 - Bureau de mistraOS : fond d'écran, page dans une fenêtre de rayon 30, Dock toujours affiché en bas à la place du menu latéral. Le réglage « Menu » disparaît.
