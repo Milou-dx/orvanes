@@ -67,14 +67,21 @@ function touch(user: any, patch: Record<string, unknown> = {}) {
 
 export function passwordLogin(identifier: string, password: string, ip: string, code?: string): { user: any; totpRequired?: boolean } {
   const id = core.normalizeEmail(identifier);
+  // Le compteur par identifiant seul tient quand l'attaquant change d'IP ; son seuil plus haut évite
+  // qu'un tiers bloque le compte du vrai utilisateur en 5 essais.
   const key = `pw:${ip}:${id}`;
-  const wait = core.throttled(key);
+  const idKey = `pw-id:${id}`;
+  const wait = Math.max(core.throttled(key), core.throttled(idKey));
   if (wait) throw new AuthError(`Trop d'essais. Réessayez dans ${wait} s.`, 429);
+  const fail = () => {
+    core.recordFailure(key);
+    core.recordFailure(idKey, 20);
+  };
 
   const user = core.findUserByEmail(id);
   const ok = core.verifyPassword(password, user?.password);
   if (!user || !ok) {
-    core.recordFailure(key);
+    fail();
     throw new AuthError('Identifiant ou mot de passe incorrect.', 401);
   }
   if (user.status === 'blocked') throw new AuthError('Ce compte est bloqué.', 403);
@@ -82,12 +89,13 @@ export function passwordLogin(identifier: string, password: string, ip: string, 
     if (!code) return { user: null, totpRequired: true };
     const step = verifyCode(user.totp.secret, code, user.totp.lastStep ?? -1);
     if (step === null) {
-      core.recordFailure(key);
+      fail();
       throw new AuthError('Code de vérification incorrect.', 401);
     }
     patchUser(user.id, { totp: { secret: user.totp.secret, lastStep: step } });
   }
   core.recordSuccess(key);
+  core.recordSuccess(idKey);
   touch(user);
   return { user: core.findUserById(user.id) };
 }

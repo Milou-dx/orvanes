@@ -6,6 +6,7 @@
 - Pour les modules : `guarded()` exige un `Host` déclaré et compare `Origin` à cette liste, plus au `Host` reçu.
 - Sécurité (GHSA-4qj6-x664-r75w) : changer `X-Forwarded-For` à chaque essai ne contourne plus le blocage des mots de passe faux. La machine elle-même n'est plus crue sur cet en-tête sans déclaration.
 - À faire derrière un proxy local (nginx, Caddy) : ajouter `PANEL_TRUSTED_PROXIES=127.0.0.1` dans `.env`. Sans cela, tous les clients comptent pour 127.0.0.1 : 5 mots de passe faux bloquent un identifiant pour tout le monde, et les ouvertures de connexion Google sont comptées ensemble.
+- Un identifiant est aussi bloqué après 20 mots de passe faux, quelle que soit l'adresse : même délai croissant, de 30 s à 15 min.
 
 ## 0.4.0 (2026-11-15)
 
