@@ -11,22 +11,27 @@ const { title, description } = Astro.props;
 </header>
 
 <style>
+  /* La barre d'en-tête d'une fenêtre de mistraOS (AdwHeaderBar) : titre et sous-titre au centre, actions au bout. */
   .phead {
-    display: flex; align-items: flex-end; gap: var(--space-4); flex-shrink: 0;
-    width: 100%; max-width: var(--content-max); margin-inline: auto;
-    padding: var(--space-6) var(--page-gutter) var(--space-1);
+    position: sticky; top: 0; z-index: var(--z-sticky); flex-shrink: 0;
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr); align-items: center; gap: var(--space-3);
+    min-height: var(--headerbar-h); padding: var(--space-1) var(--page-gutter);
+    background: var(--bg-app);
   }
-  .phead__titles { display: flex; flex-direction: column; gap: var(--space-0-5); min-width: 0; margin-right: auto; }
+  .phead__titles { grid-column: 2; display: flex; flex-direction: column; align-items: center; min-width: 0; text-align: center; }
   .phead__title {
-    font-family: var(--font-display); font-size: var(--page-size); line-height: var(--page-lh);
-    font-weight: var(--weight-bold); letter-spacing: var(--page-ls); color: var(--text-primary); text-wrap: balance;
+    max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-size: var(--dense-size); line-height: var(--dense-lh); font-weight: var(--weight-bold); color: var(--text-primary);
   }
-  .phead__desc { font-size: var(--dense-size); line-height: var(--dense-lh); color: var(--text-secondary); text-wrap: pretty; }
-  .phead__actions { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); flex-shrink: 0; }
+  .phead__desc {
+    max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-size: var(--meta-size); line-height: var(--meta-lh); color: var(--text-secondary);
+  }
+  .phead__actions { grid-column: 3; justify-self: end; display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-2); min-width: 0; }
   @media (max-width: 640px) {
-    .phead { flex-wrap: wrap; align-items: flex-start; row-gap: var(--space-3); padding-top: var(--space-5); }
-    .phead__title { font-size: 1.375rem; line-height: 1.75rem; letter-spacing: -0.018em; }
-    .phead__actions { flex-shrink: 1; min-width: 0; max-width: 100%; }
+    .phead { grid-template-columns: minmax(0, 1fr) auto; }
+    .phead__titles { grid-column: 1; align-items: flex-start; text-align: left; }
+    .phead__actions { grid-column: 2; }
     .phead__actions > :global(*) { flex-wrap: wrap; max-width: 100%; }
   }
 </style>

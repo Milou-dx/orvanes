@@ -73,7 +73,7 @@ const KEYS = [['Ctrl/⌘', 'K', 'Palette de commandes : aller à une page, lance
       </div>
     </section>
 
-    <section class="v-card help__cta">
+    <section class="help__cta">
       <span class="help__icon"><Icon name="message" size={18} /></span>
       <div class="help__cta-txt">
         <h2 class="v-card__title">Écrire à l’administrateur</h2>
@@ -108,30 +108,26 @@ const KEYS = [['Ctrl/⌘', 'K', 'Palette de commandes : aller à une page, lance
 
 <style>
   .help { gap: 2rem; }
-  .help__hero {
-    display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 2.5rem 1.5rem; text-align: center;
-    border-radius: var(--radius-lg); border: 1px solid var(--border);
-    background: var(--bg-surface);
-  }
+  .help__hero { display: flex; flex-direction: column; align-items: center; text-align: center; }
   .help__search {
     display: flex; align-items: center; gap: 0.5rem; width: min(32rem, 100%); height: 2.75rem; padding: 0 0.875rem;
     border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-surface); color: var(--text-tertiary); box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
   }
   .help__search:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
   .help__search input { flex: 1; min-width: 0; border: 0; background: none; outline: none; color: var(--text-primary); font: var(--body-size) var(--font-ui); }
-  .help__h { margin: 0 0 0.75rem; font: 500 var(--meta-size)/1 var(--font-ui); color: var(--text-tertiary); }
+  .help__h { margin: 0 0 var(--space-2); padding: 0 var(--space-1); font: var(--weight-bold) var(--dense-size)/var(--dense-lh) var(--font-ui); color: var(--text-primary); }
   .help__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 0.75rem; }
   .help__card {
     display: grid; grid-template-columns: auto 1fr; gap: 0.25rem 0.75rem; padding: 1rem; text-decoration: none;
-    border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-surface); transition: border-color 150ms, transform 150ms, box-shadow 150ms;
+    border-radius: var(--radius-card); background: var(--bg-surface); transition: background-color var(--dur-fast) var(--ease-out);
   }
-  .help__card:hover { border-color: var(--border-strong); box-shadow: 0 4px 12px rgb(0 0 0 / 0.06); transform: translateY(-1px); }
+  .help__card:hover { background: var(--bg-hover); }
   .help__card:focus-visible { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent); }
   .help__card[hidden] { display: none; }
   .help__icon { grid-row: span 2; display: inline-grid; place-items: center; width: 2.25rem; height: 2.25rem; border-radius: var(--radius-control); background: var(--bg-hover); color: var(--text-secondary); flex: none; }
   .help__card-t { font: 600 var(--body-size)/1.3 var(--font-ui); color: var(--text-primary); }
   .help__card-d { font-size: var(--meta-size); line-height: 1.45; color: var(--text-secondary); }
-  .help__faq, .help__keys { padding-block: 0.25rem; gap: 0; }
+  .help__faq > details { padding-block: 0; }
   .help__faq details + details { border-top: 1px solid var(--border); }
   .help__faq details[hidden] { display: none; }
   .help__faq summary { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 0; cursor: pointer; list-style: none; font: 500 var(--body-size)/1.4 var(--font-ui); color: var(--text-primary); }
@@ -139,12 +135,11 @@ const KEYS = [['Ctrl/⌘', 'K', 'Palette de commandes : aller à une page, lance
   .help__faq summary :global(svg) { flex: none; color: var(--text-tertiary); transition: transform 200ms; }
   .help__faq details[open] summary :global(svg) { transform: rotate(180deg); }
   .help__faq p { margin: 0 0 1rem; font-size: var(--dense-size); line-height: 1.55; color: var(--text-secondary); max-width: 60ch; }
-  .help__keys .v-row { padding-inline: 1.5rem; font-size: var(--dense-size); color: var(--text-primary); }
+  .help__keys .v-row { font-size: var(--dense-size); color: var(--text-primary); }
   .help__kbd { display: inline-flex; gap: 0.25rem; }
   .help__kbd kbd { min-width: 1.75rem; padding: 0.125rem 0.5rem; text-align: center; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: var(--radius-sm); background: var(--bg-surface); font: 500 var(--micro-size)/1.4 var(--font-ui); color: var(--text-secondary); }
   .help__none { margin: 0; text-align: center; color: var(--text-secondary); }
-  .help__cta { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 1rem; padding: 1.25rem 1.5rem; }
-  .help__cta > :not(.v-btn) { padding-inline: 0; }
+  .help__cta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); padding: var(--space-4) var(--space-3); background: var(--bg-surface); border-radius: var(--radius-card); }
   .help__cta .help__icon { grid-row: auto; }
   .help__cta-txt { flex: 1 1 16rem; display: flex; flex-direction: column; gap: 0.25rem; }
   @media (prefers-reduced-motion: reduce) { .help__card, .help__faq summary :global(svg) { transition: none; } .help__card:hover { transform: none; } }

@@ -23,28 +23,28 @@ const canTerminal = tabAllowed(Astro.locals)('terminal');
     </div>
 
     <section class="v-card" aria-label="Résumé des processus">
-      <div class="stats">
-        <div class="stat">
-          <span class="stat__l">Processeur</span>
-          <strong class="stat__v" id="pm-cpu">-</strong>
+      <div class="v-stats">
+        <div class="v-stat">
+          <span class="v-stat__l">Processeur</span>
+          <strong class="v-stat__v" id="pm-cpu">-</strong>
           <span class="pm-meter" aria-hidden="true"><i id="pm-cpu-bar"></i></span>
-          <span class="stat__c">{`sur ${cores} ${cores > 1 ? 'cœurs' : 'cœur'}`}</span>
+          <span class="v-stat__c">{`sur ${cores} ${cores > 1 ? 'cœurs' : 'cœur'}`}</span>
         </div>
-        <div class="stat">
-          <span class="stat__l">Mémoire</span>
-          <strong class="stat__v" id="pm-mem">-</strong>
+        <div class="v-stat">
+          <span class="v-stat__l">Mémoire</span>
+          <strong class="v-stat__v" id="pm-mem">-</strong>
           <span class="pm-meter" aria-hidden="true"><i id="pm-mem-bar"></i></span>
-          <span class="stat__c">utilisée par les processus</span>
+          <span class="v-stat__c">utilisée par les processus</span>
         </div>
-        <div class="stat">
-          <span class="stat__l">Processus</span>
-          <strong class="stat__v" id="pm-count">-</strong>
-          <span class="stat__c" id="pm-run">en cours d’exécution</span>
+        <div class="v-stat">
+          <span class="v-stat__l">Processus</span>
+          <strong class="v-stat__v" id="pm-count">-</strong>
+          <span class="v-stat__c" id="pm-run">en cours d’exécution</span>
         </div>
-        <div class="stat">
-          <span class="stat__l">Plus gourmand</span>
-          <strong class="stat__v stat__v--txt" id="pm-top">-</strong>
-          <span class="stat__c" id="pm-top-note">en processeur</span>
+        <div class="v-stat">
+          <span class="v-stat__l">Plus gourmand</span>
+          <strong class="v-stat__v v-stat__v--txt" id="pm-top">-</strong>
+          <span class="v-stat__c" id="pm-top-note">en processeur</span>
         </div>
       </div>
     </section>
@@ -124,27 +124,17 @@ const canTerminal = tabAllowed(Astro.locals)('terminal');
   .v-alert[hidden] { display: none; }
 
   /* stat-group-01 */
-  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 1.5rem 0; }
-  .v-card > .stats { padding-inline: 0; }
-  .stat { display: flex; flex-direction: column; gap: 0.25rem; padding-inline: 1.5rem; min-width: 0; }
-  .stat + .stat { border-left: 1px solid var(--border); }
-  .stat__l { font-size: var(--dense-size); color: var(--text-secondary); }
-  .stat__v { font-size: 2rem; line-height: 1.1; font-weight: 300; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--text-primary); }
-  .stat__v--txt { font-size: 1.375rem; line-height: 1.6; font-weight: 500; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .stat__c { font-size: var(--micro-size); color: var(--text-secondary); }
+  .v-stat__v--txt { font-size: 1.375rem; line-height: 1.6; font-weight: 500; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   /* metric-list-03 : barre fine */
   .pm-meter { display: block; height: 0.375rem; border-radius: var(--radius-full); background: var(--bg-hover); overflow: hidden; }
   .pm-meter > i { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--accent); transition: width 400ms ease; }
 
   /* tableau (data-table-01) */
-  .v-card > .v-table-wrap { padding-inline: 0; border-top: 1px solid var(--border); margin-top: -0.5rem; }
-  .v-card > .v-toolbar { padding-block: 0; }
   .v-toolbar > .v-select { flex: none; }
   .v-toolbar .pm-refresh { margin-left: auto; }
   #pm-group[aria-pressed='true'] { background: var(--accent-subtle); border-color: var(--accent); color: var(--accent-text); }
   #pm.v-table-wrap { max-height: 640px; overflow: auto; }
   #pm .v-table thead :global(th) { position: sticky; top: 0; z-index: 1; background: var(--bg-surface); }
-  .v-card__foot:empty { display: none; }
   .pm-kbd { padding: 0 0.3rem; border: 1px solid var(--border); border-radius: var(--radius-xs); font: var(--micro-size) var(--font-mono); }
 
   /* leaderboard-05 : barre derrière la ligne */
@@ -197,9 +187,5 @@ const canTerminal = tabAllowed(Astro.locals)('terminal');
   @media (max-width: 1200px) {
     .pm-grid { grid-template-columns: minmax(0, 1fr); }
     .pm-side { position: static; }
-  }
-  @media (max-width: 640px) {
-    .stats { grid-template-columns: 1fr 1fr; }
-    .stat, .stat + .stat { border-left: 0; padding-inline: 1rem; }
   }
 </style>

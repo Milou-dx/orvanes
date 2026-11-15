@@ -109,10 +109,10 @@ const TABS = [
                 <p class="v-card__desc">{cores} cœurs · {arch}</p>
               </div>
             </header>
-            <dl class="stats">
-              <div class="stat"><dt class="stat__l">Utilisation</dt><dd class="stat__v" id="cpu-use">{cpuPercent != null ? `${num(cpuPercent, 0)} %` : '-'}</dd></div>
-              <div class="stat"><dt class="stat__l">Durée de fonctionnement</dt><dd class="stat__v">{duration(uptime)}</dd></div>
-              <div class="stat"><dt class="stat__l">Charge moyenne (1 · 5 · 15 min)</dt><dd class="stat__v stat__v--sm" id="cpu-load">{loadLine}</dd></div>
+            <dl class="v-stats">
+              <div class="v-stat"><dt class="v-stat__l">Utilisation</dt><dd class="v-stat__v" id="cpu-use">{cpuPercent != null ? `${num(cpuPercent, 0)} %` : '-'}</dd></div>
+              <div class="v-stat"><dt class="v-stat__l">Durée de fonctionnement</dt><dd class="v-stat__v">{duration(uptime)}</dd></div>
+              <div class="v-stat"><dt class="v-stat__l">Charge moyenne (1 · 5 · 15 min)</dt><dd class="v-stat__v v-stat__v--sm" id="cpu-load">{loadLine}</dd></div>
             </dl>
             <div class="graph">
               <p class="cap"><span>% d’utilisation sur 3 minutes</span><span>100 %</span></p>
@@ -150,11 +150,11 @@ const TABS = [
                 <p class="v-card__desc">{mem ? `${bytes(mem.totalBytes)} installés` : ''}</p>
               </div>
             </header>
-            <dl class="stats">
-              <div class="stat"><dt class="stat__l">En cours d’utilisation</dt><dd class="stat__v" id="mem-used">{mem ? bytes(mem.usedBytes) : '-'}</dd></div>
-              <div class="stat"><dt class="stat__l">Disponible</dt><dd class="stat__v" id="mem-avail">{mem ? bytes(mem.availableBytes) : '-'}</dd></div>
-              <div class="stat"><dt class="stat__l">Utilisée</dt><dd class="stat__v" id="mem-pct">{num(memPct, 0)} %</dd></div>
-              <div class="stat"><dt class="stat__l">Fichier d’échange</dt><dd class="stat__v stat__v--sm" id="mem-swap">{mem ? `${bytes(mem.swapUsedBytes)} / ${bytes(mem.swapTotalBytes)}` : '-'}</dd></div>
+            <dl class="v-stats">
+              <div class="v-stat"><dt class="v-stat__l">En cours d’utilisation</dt><dd class="v-stat__v" id="mem-used">{mem ? bytes(mem.usedBytes) : '-'}</dd></div>
+              <div class="v-stat"><dt class="v-stat__l">Disponible</dt><dd class="v-stat__v" id="mem-avail">{mem ? bytes(mem.availableBytes) : '-'}</dd></div>
+              <div class="v-stat"><dt class="v-stat__l">Utilisée</dt><dd class="v-stat__v" id="mem-pct">{num(memPct, 0)} %</dd></div>
+              <div class="v-stat"><dt class="v-stat__l">Fichier d’échange</dt><dd class="v-stat__v v-stat__v--sm" id="mem-swap">{mem ? `${bytes(mem.swapUsedBytes)} / ${bytes(mem.swapTotalBytes)}` : '-'}</dd></div>
             </dl>
             <div class="graph">
               <p class="cap"><span>Utilisation de la mémoire</span><span>{mem ? bytes(mem.totalBytes) : '100 %'}</span></p>
@@ -178,9 +178,9 @@ const TABS = [
                 <p class="v-card__desc">{disks.length > 1 ? `${disks.length} systèmes de fichiers` : disks[0]?.label ?? ''}</p>
               </div>
             </header>
-            <dl class="stats">
-              <div class="stat"><dt class="stat__l">Vitesse de lecture</dt><dd class="stat__v" id="disk-read">-</dd></div>
-              <div class="stat"><dt class="stat__l">Vitesse d’écriture</dt><dd class="stat__v" id="disk-write">-</dd></div>
+            <dl class="v-stats">
+              <div class="v-stat"><dt class="v-stat__l">Vitesse de lecture</dt><dd class="v-stat__v" id="disk-read">-</dd></div>
+              <div class="v-stat"><dt class="v-stat__l">Vitesse d’écriture</dt><dd class="v-stat__v" id="disk-write">-</dd></div>
             </dl>
             <div class="graph">
               <p class="cap"><span class="keys"><span class="key"><i class="sw"></i>Lecture</span><span class="key"><i class="sw sw--dash"></i>Écriture</span></span><span id="disk-scale"></span></p>
@@ -225,9 +225,9 @@ const TABS = [
                 <p class="v-card__desc">Toutes les cartes réseau</p>
               </div>
             </header>
-            <dl class="stats">
-              <div class="stat"><dt class="stat__l">Réception</dt><dd class="stat__v" id="net-rx">-</dd></div>
-              <div class="stat"><dt class="stat__l">Envoi</dt><dd class="stat__v" id="net-tx">-</dd></div>
+            <dl class="v-stats">
+              <div class="v-stat"><dt class="v-stat__l">Réception</dt><dd class="v-stat__v" id="net-rx">-</dd></div>
+              <div class="v-stat"><dt class="v-stat__l">Envoi</dt><dd class="v-stat__v" id="net-tx">-</dd></div>
             </dl>
             <div class="graph">
               <p class="cap"><span class="keys"><span class="key"><i class="sw"></i>Réception</span><span class="key"><i class="sw sw--dash"></i>Envoi</span></span><span id="net-scale"></span></p>
@@ -282,13 +282,7 @@ const TABS = [
   .ttl::before { content: ''; display: inline-block; width: 0.625rem; height: 0.625rem; margin-right: 0.5rem; border-radius: 50%; background: var(--c); }
 
   /* stat-group-01 */
-  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 1.5rem 0; margin: 0; }
-  .v-card > .stats { padding-inline: 0; }
-  .stat { display: flex; flex-direction: column; gap: 0.25rem; padding-inline: 1.5rem; min-width: 0; }
-  .stat + .stat { border-left: 1px solid var(--border); }
-  .stat__l { font-size: var(--dense-size); color: var(--text-secondary); }
-  .stat__v { margin: 0; font-size: 2rem; line-height: 1.1; font-weight: 300; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--text-primary); overflow-wrap: anywhere; }
-  .stat__v--sm { font-size: 1.25rem; line-height: 1.6; font-weight: 400; letter-spacing: 0; }
+  .v-stat__v--sm { font-size: 1.25rem; line-height: 1.6; font-weight: 400; letter-spacing: 0; }
 
   /* realtime-02 */
   .graph { display: flex; flex-direction: column; gap: 0.5rem; }
@@ -323,6 +317,6 @@ const TABS = [
     .tm__list { flex-direction: row; overflow-x: auto; }
     .tile { width: auto; flex: 0 0 auto; }
     .tile .v-who { max-width: 12rem; }
-    .stat { padding-inline: 1rem; }
+    .v-stat { padding-inline: 1rem; }
   }
 </style>
