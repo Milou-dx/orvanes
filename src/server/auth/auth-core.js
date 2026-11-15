@@ -250,10 +250,10 @@ export function throttled(key) {
   return a && a.until > Date.now() ? Math.ceil((a.until - Date.now()) / 1000) : 0;
 }
 
-export function recordFailure(key) {
+export function recordFailure(key, limit = 5) {
   const a = attempts.get(key) ?? { count: 0, until: 0 };
   a.count += 1;
-  if (a.count >= 5) a.until = Date.now() + Math.min(900_000, 30_000 * 2 ** (a.count - 5));
+  if (a.count >= limit) a.until = Date.now() + Math.min(900_000, 30_000 * 2 ** (a.count - limit));
   attempts.set(key, a);
 }
 
