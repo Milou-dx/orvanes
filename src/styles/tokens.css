@@ -299,7 +299,7 @@
 
   /* Fenêtre et Dock : [window] et [dock] de theme.toml, dock.toml pour la taille et l'agrandissement. */
   --window-radius: 10px;  --window-border: 2px;  --window-gap: 12px;  --window-gap-inner: 6px;
-  --dock-icon: 48px;  --dock-pad: 8px;  --dock-gap: 6px;  --dock-dot: 4px;  --dock-tile-radius: 26%;
+  --dock-icon: 48px;  --dock-gap: 6px;  --dock-dot: 4px;  --dock-tile-radius: 26%;
   /* Écran de connexion : [lock] de theme.toml. L'encre blanche laisse voir le fond à 62 %, le champ est un noir dépoli. */
   --lock-ink: #ffffff;  --lock-ink-glass: rgb(255 255 255 / 62%);  --lock-field: #0000008c;  --lock-field-w: 300px;  --lock-field-h: 44px;
   --shadow-window: 0 0 12px light-dark(#00000055, #000000aa);
@@ -310,7 +310,6 @@
   --bg-surface:   var(--m-card);
   --bg-surface-2: var(--m-popover);
   --bg-hover:     color-mix(in srgb, var(--m-text) 7%, var(--m-card));
-  --nav-hover:    color-mix(in srgb, var(--m-text) 7%, var(--m-sidebar));
   --nav-selected: color-mix(in srgb, var(--m-text) 16%, var(--m-sidebar));
   --border:        var(--m-border);
   --border-strong: color-mix(in srgb, var(--m-text) 22%, var(--m-card));
@@ -435,8 +434,6 @@
   --duration-page:  var(--dur-base);
 
   --titlebar-height:         calc(var(--island-h) + 2 * var(--space-2));
-  --sidebar-width:           248px;
-  --sidebar-width-collapsed: 56px;
   --content-max:             1280px;
 }
 
