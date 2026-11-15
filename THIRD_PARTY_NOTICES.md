@@ -27,3 +27,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+## Fonds d'écran
+
+`src/assets/wallpaper-light.webp` et `wallpaper-dark.webp` sont les fonds `3-colonnade` (clair) et `1-stairs` (sombre) de Mistra OS (`rootfs/usr/share/mistra/wallpapers`), réduits à 1920 px. Ils appartiennent au projet Mistra et ne sont pas sous la licence du code.

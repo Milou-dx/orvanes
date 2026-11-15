@@ -8,6 +8,9 @@
 - Duotone strict : plus de vert, d'orange ni de rouge. Un état se lit à la forme de son point (plein, anneau, triangle, carré) et à son libellé ; graphes et terminal en gris.
 - Icônes Phosphor Bold à la place de Lucide, mêmes noms.
 - Écran de connexion de mistraOS : fond flouté, horloge, champs dépolis.
+- Navigateurs : Chrome 123, Firefox 120 ou Safari 17.5 au minimum (`light-dark()`, `linear()`).
+- Pour les modules : les jetons `--mac-*` et la fonction `tone()` n'existent plus ; `#nav-pane` et `.navlink` sont remplacés par `#dock` et `.dock__tile` ; les jetons d'état (`--success`, `--danger`, `--tone-*`) sont gris ; du texte blanc posé en dur sur `var(--accent)` devient illisible en sombre, utiliser `var(--accent-fg)`.
+- La CI lance aussi `astro check` et `astro build`.
 
 ## 0.3.0 (2026-11-15)
 
