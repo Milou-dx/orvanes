@@ -17,6 +17,7 @@
 
 ## 0.4.0 (2026-11-15)
 
+- Dock : barre en verre dépoli, tuiles claires à icônes Phosphor Duotone bleues, onglet ouvert plein bleu.
 - Bureau de mistraOS : fond d'écran, page dans une fenêtre de rayon 30, Dock toujours affiché en bas à la place du menu latéral. Le réglage « Menu » disparaît.
 - Barre du haut comme celle du bureau, texte à chasse fixe : fil d'Ariane à gauche, recherche au centre, date et heure à droite.
 - Accent bleu de mistraOS pour les contrôles, les liens et le focus.

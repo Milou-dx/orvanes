@@ -12,7 +12,7 @@ Référence vivante : la page `/design` (réservée aux administrateurs, absente
 
 ## Jetons canoniques
 
-L'interface est celle de mistraOS telle que son mainteneur la règle (`themes/mistra/theme.toml` et `~/.config/mistra` : accent « blue », fenêtres de rayon 30, fonds `3-colonnade` et `1-stairs`) : duotone strict, surfaces grises, un seul accent bleu pour les contrôles, les liens et le focus. Un état se lit par sa forme et son libellé, jamais par une teinte. L'usage passe avant la ressemblance : le Dock reste affiché, l'îlot garde son texte, la barre nomme la page. Ont une couleur : l'accent, le fond d'écran, le logo Orvanes et les logos de marque des modules. Chaque jeton de couleur est déclaré une fois, en `light-dark(clair, sombre)`.
+L'interface est celle de mistraOS telle que son mainteneur la règle (`themes/mistra/theme.toml` et `~/.config/mistra` : accent « blue », fenêtres de rayon 30, fonds `3-colonnade` et `1-stairs`) : duotone strict, surfaces grises, un seul accent bleu pour les contrôles, les liens et le focus. Un état se lit par sa forme et son libellé, jamais par une teinte. L'usage passe avant la ressemblance : le Dock reste affiché, l'îlot garde son texte, la barre nomme la page. Ont une couleur : l'accent (dont les icônes du Dock), le fond d'écran, le logo Orvanes et les logos de marque des modules. Chaque jeton de couleur est déclaré une fois, en `light-dark(clair, sombre)`.
 
 | Famille | Jetons |
 |---|---|
@@ -137,7 +137,7 @@ Barre du haut : des capsules noires (`.capsule`, `.island`, hautes de `--island-
 
 Fenêtre (`.frame` > `.content`) : rayon, bord de la fenêtre active et marges de mistraOS, sans ombre ni barre de titre (pas de boutons de fenêtre : une page n'a rien à fermer). Le cadre porte l'arrondi, `.content` défile dedans.
 
-Dock (`#dock`, `src/scripts/layout/dock.ts`) : la navigation du panel. Une tuile noire par onglet (`.dock__tile`, icône Phosphor ou logo du module), un séparateur entre sections, un point sous l'onglet ouvert, une pastille pour les non lus (`data-badge`). Il reste affiché en permanence, sous la fenêtre. À la souris, les tuiles grandissent sous le pointeur (1,2 sous lui, plus rien à 2,5 tuiles) et le nom de l'onglet monte dans une capsule. Au doigt ou sous 640 px, la rangée défile et rien ne grandit. Il n'y a ni volet, ni tiroir, ni mode compact.
+Dock (`#dock`, `src/scripts/layout/dock.ts`) : la navigation du panel. Les tuiles sont posées dans une barre en verre dépoli (`--dock-glass`, `--dock-glass-border`). Une tuile claire par onglet (`--dock-tile`, `.dock__tile`, icône Phosphor Duotone de l'accent ou logo du module), pleine d'accent pour l'onglet ouvert, un séparateur entre sections, un point sous l'onglet ouvert, une pastille pour les non lus (`data-badge`). Il reste affiché en permanence, sous la fenêtre. À la souris, les tuiles grandissent sous le pointeur (1,2 sous lui, plus rien à 2,5 tuiles) et le nom de l'onglet monte dans une capsule. Au doigt ou sous 640 px, la rangée défile et rien ne grandit. Il n'y a ni volet, ni tiroir, ni mode compact.
 
 Ce qui naît de la barre reste noir comme elle : le menu du compte (`openMenu({ island: true })`) et les notifications (`toast`, affichées sous l'îlot, au centre).
 
@@ -179,7 +179,7 @@ L'écran de connexion de mistraOS, pour `/connexion`, `/portail`, 404 et 500 : l
 
 Une seule famille, celle de mistraOS : Phosphor Bold (`src/components/ui/glyphs.ts`, généré par `scripts/phosphor-icons.py`, licence MIT dans `THIRD_PARTY_NOTICES.md`), via `Icon.astro`, `Sym.astro` (même icône, tracé partagé par un sprite `<use>` pour les chevrons répétés) ou `iconSVG()` côté client.
 
-- Une seule graisse, Bold, en tracés pleins sur la grille de 256 ; aucune prop pour la changer.
+- Graisse Bold, en tracés pleins sur la grille de 256. Seules les tuiles du Dock prennent la graisse Duotone (`<Icon duotone>`, `src/components/ui/glyphs-duotone.ts`, généré par le même script).
 - Tailles : 24 px dans une tuile du Dock, 16 px dans les boutons, les tableaux ; 20 px pour une icône isolée (boutons `lg`, zones de dépôt).
 - Monochromes (`currentColor`, gris secondaire au repos).
 - Aucune couleur : un état se lit à sa forme et à son libellé. `StatusBadge` : point plein (actif), anneau (arrêté, inconnu), triangle (avertissement), carré (erreur).
