@@ -118,12 +118,12 @@ const routeCols: Col[] = [
     )}
 
     <section class="v-card" aria-label="Résumé du réseau">
-      <div class="stats">
+      <div class="v-stats">
         {stats.map((st) => (
-          <div class="stat">
-            <span class="stat__l">{st.label}</span>
-            <span class="stat__v"><span id={st.id}>{st.value}</span>{st.unit && <span class="stat__u"> {st.unit}</span>}</span>
-            <span class="stat__c">{st.note}</span>
+          <div class="v-stat">
+            <span class="v-stat__l">{st.label}</span>
+            <span class="v-stat__v"><span id={st.id}>{st.value}</span>{st.unit && <span class="v-stat__u"> {st.unit}</span>}</span>
+            <span class="v-stat__c">{st.note}</span>
           </div>
         ))}
       </div>
@@ -452,14 +452,6 @@ const routeCols: Col[] = [
   .duo > .v-card { min-width: 0; }
 
   /* stat-group-01 */
-  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 1.5rem 0; }
-  .v-card > .stats { padding-inline: 0; }
-  .stat { display: flex; flex-direction: column; gap: 0.25rem; padding-inline: 1.5rem; min-width: 0; }
-  .stat + .stat { border-left: 1px solid var(--border); }
-  .stat__l { font-size: var(--dense-size); color: var(--text-secondary); }
-  .stat__v { font-size: 2rem; line-height: 1.1; font-weight: 300; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--text-primary); overflow-wrap: anywhere; }
-  .stat__u { font-size: var(--dense-size); font-weight: 400; letter-spacing: 0; color: var(--text-secondary); }
-  .stat__c { font-size: var(--micro-size); color: var(--text-secondary); }
 
   /* realtime-02 */
   .graph { height: 14rem; }
@@ -479,9 +471,6 @@ const routeCols: Col[] = [
   .traffic strong { color: var(--text-primary); font-weight: 500; font-variant-numeric: tabular-nums; }
 
   /* tableaux (data-table-01) : cartes sans marge latérale, pied de carte vide masqué */
-  .v-card > .v-table-wrap { padding-inline: 0; border-top: 1px solid var(--border); margin-top: -0.5rem; }
-  .v-card > .v-toolbar { padding-block: 0; }
-  .v-card__foot:empty { display: none; }
   .v-toolbar > .v-select { flex: none; }
   .v-tab :global(.v-tag) { margin-left: 0.125rem; }
   .row-deny td { background: var(--danger-subtle); }
@@ -518,7 +507,5 @@ const routeCols: Col[] = [
   @media (max-width: 900px) { :global(.net .hide-md) { display: none; } }
   @media (max-width: 640px) {
     :global(.net .hide-sm) { display: none; }
-    .stats { grid-template-columns: 1fr 1fr; }
-    .stat, .stat + .stat { border-left: 0; padding-inline: 1rem; }
   }
 </style>

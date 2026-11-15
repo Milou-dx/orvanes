@@ -31,7 +31,8 @@ L'interface est celle de mistraOS telle que son mainteneur la règle (`themes/mi
 | Ombres | `--shadow-xs`, `--shadow-sm`, `--shadow-md` |
 | Mouvement | `--dur-fast`, `--dur-base`, `--dur-enter`, `--ease-out`, `--ease-in`, `--ease-in-out` ; ressorts `--ease-spring-morph` + `--dur-spring-morph` (îlot), `--ease-spring-toggle` + `--dur-spring-toggle` (interrupteur) ; fondu `--ease-fade` + `--dur-fade` ; survol qui voyage `--ease-hover` + `--dur-hover-move`, `--dur-hover-fade` ; appui `--press-scale` |
 | Typo | `--{micro,meta,dense,body,card,section,page}-{size,lh,ls}`, `--weight-{regular,medium,semibold,bold}`, `--font-ui`, `--font-mono` |
-| Espaces | `--space-0-5` à `--space-16` (grille de 4 px), `--control-h-sm/-h/-h-lg`, `--row-h`, `--row-h-compact`, `--toggle-w/-h/-pad` |
+| Espaces | `--space-0-5` à `--space-16` (grille de 4 px), `--control-h-sm/-h/-h-lg`, `--row-h`, `--row-h-compact`, `--toggle-w/-h/-pad` ; `--headerbar-h` 47 (barre d'en-tête), `--list-row-h` 50 (ligne de liste), les mesures de libadwaita |
+| Boutons | `--button-fill`, `--button-fill-hover` : voile de l'encre (10 %, 14 %) sans bord ni ombre, le bouton secondaire de mistraOS. Le texte y garde 7:1 sur carte et fond, vérifié par le test de contraste |
 | Empilement | `--z-sticky`, `--z-pane`, `--z-drawer`, `--z-menu`, `--z-overlay`, `--z-toast` |
 
 `--text-disabled` est réservé aux contrôles désactivés (sous 4,5:1 par conception) : une mention informative (« protégé », « Non renseigné ») prend `--text-tertiary`. Un lien posé sur un fond teinté (`-subtle`) garde la couleur du texte, souligné.
@@ -76,9 +77,9 @@ Tableaux sous 640 px : `.dt` passe en cartes (1re cellule = titre, `data-label` 
 | `KeyValue` | `items: {label, value, mono?, html?}[]`, `mono?`, `cols?: 1\|2`, `plain?` |
 | `Kbd` | `keys` (ex. `"Mod+K"`) |
 | `Segmented` | `options: {value, label, icon?, iconOnly?, count?}[]`, `label`, `selected?`, `attr?` (→ `data-<attr>`), `id?` ; classes globales `.seg`, `.seg__btn` (aria-pressed ou aria-current), `.seg__n` |
-| `PageHeader` | `title`, `description?` ; slot `actions`. Posé par `PanelLayout` : une page ne l'écrit pas elle-même |
+| `PageHeader` | `title`, `description?` ; slot `actions`. Posé par `PanelLayout` : une page ne l'écrit pas elle-même. Barre d'en-tête de mistraOS (AdwHeaderBar) : titre et sous-titre centrés, actions au bout, collée en haut de la fenêtre |
 | `ModuleLogo` | `id` (module), `size?` (16) ; logo du module en SVG dans la page (voir « Logos des modules ») |
-| `Card` | `title?`, `description?`, `icon?` (Phosphor, monochrome), `flush?`, `interactive?`, `id?` ; slot `actions` |
+| `Card` | `title?`, `description?`, `icon?` (Phosphor, monochrome), `flush?`, `interactive?`, `id?` ; slot `actions`. Groupe de Réglages de mistraOS : titre et actions sur le fond de la fenêtre, contenu dans la liste arrondie |
 | `SettingsRow` | `title`, `desc?`, `icon?`, `tint?` (jeton de couleur de l'icône), `href?` ; tuile neutre, seules les icônes d'état (`check`, `circleCheck`, `warning`, `circleAlert`, `circleX`) prennent leur couleur |
 | `Button` (+ `title`, `hidden`, `pressed`, `data-*` ; classes `.btn` globales), `Badge`, `Stat`, `Meter`, `Input`, `Select`, `Toggle`, `Skeleton`, `Spinner`, `ActionButton`, `Icon` | inchangés |
 
@@ -144,7 +145,19 @@ Tout ce qui se pose sur du noir porte la classe `.on-island` : elle redéfinit l
 
 Palette (`src/scripts/layout/palette.ts`) : c'est l'îlot lui-même. La forme noire part du rectangle de l'îlot et prend la taille de son contenu sur le ressort `--ease-spring-morph` ; le contenu arrive en fondu quand la forme est presque là, et la liste fait grandir la forme à chaque frappe. Un seul fond (`.cmdk__fill`) voyage vers la ligne active. Échap, un clic ailleurs ou une navigation la referment ; `prefers-reduced-motion` supprime le morph et le voyage. Résultats : les pages et actions dont le nom porte la saisie, puis « Filtrer cette page : « q » » (page avec `data-search-target`) et « Chercher le processus « q » » (onglet Processus permis), puis les rapprochements lettre à lettre.
 
-Props : `title`, `subtitle?`, `refreshMs?` (`null` désactive l'actualisation), `favicon?`, `bare?` ; slot `actions`. `title`, `subtitle` et `actions` forment l'en-tête de page (`PageHeader`), identique sur tous les onglets du cœur et des modules : titre égal au libellé du menu, description courte, actions à droite (elles passent sous le titre sur téléphone). En-tête et contenu partagent la largeur `--content-max` et la marge `--page-gutter` (32 px, 24 px sous 1000 px, 16 px sur téléphone).
+Props : `title`, `subtitle?`, `refreshMs?` (`null` désactive l'actualisation), `favicon?`, `bare?` ; slot `actions`. `title`, `subtitle` et `actions` forment la barre d'en-tête de la fenêtre (`PageHeader`), identique sur tous les onglets du cœur et des modules : titre égal au libellé du menu au centre, description courte dessous, actions au bout (sur téléphone, le titre passe à gauche). Elle reste en haut quand le contenu défile. Barre et contenu prennent la marge `--page-gutter` (32 px, 24 px sous 1000 px, 16 px sur téléphone), le contenu la largeur `--content-max`.
+
+## Intérieur d'un onglet
+
+Comme l'app Réglages de mistraOS (`AdwPreferencesPage`) : des groupes empilés à 24 px, chacun avec son titre en gras (13 px) et sa description (12 px) sur le fond de la fenêtre, puis son contenu dans une liste arrondie (`--bg-surface`, `--radius-card`, ni bord ni ombre). Lignes de 50 px (`--list-row-h`), filets entre les lignes, pas de survol sur une ligne de réglage.
+
+Trois écritures du même groupe, à choisir selon la page :
+
+- `Card` (composant) ;
+- `.v-card` de `src/styles/vault.css`, pour les pages qui l'importent : `.v-card__head` et `.v-toolbar` restent sur le fond ; tous les autres enfants forment la liste, arrondie en haut et en bas. `.v-row`, `.v-list`, `.v-table-wrap`, `.v-stats` et `.v-card__foot` portent leur hauteur ; tout autre bloc (champ, texte, graphe) prend 12 px de marge verticale ;
+- `.v-stats` > `.v-stat` (`__l` libellé, `__v` chiffre en `--page-size`, `__u` unité, `__c` note) : le bandeau de chiffres de Services, Processus, Réseau et Performances, une seule définition dans `vault.css`.
+
+Boutons secondaires (`.v-btn--outline`) : le voile gris `--button-fill`, sans bord.
 
 Menu (`src/layouts/nav.ts`, source unique du Dock, du fil d'Ariane et de la palette Ctrl+K, qui relit les tuiles du Dock) :
 

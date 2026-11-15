@@ -47,6 +47,24 @@ describe('contraste des jetons', () => {
   }
 });
 
+// Le bouton gris de mistraOS est un voile de l'encre (color-mix vers transparent) posé sur une carte ou le fond.
+describe('texte des boutons sur leur voile', () => {
+  const mix = (ink: string, on: string, p: number) => '#' + [1, 3, 5].map((i) => Math.round(parseInt(ink.slice(i, i + 2), 16) * p + parseInt(on.slice(i, i + 2), 16) * (1 - p)).toString(16).padStart(2, '0')).join('');
+  for (const fill of ['--button-fill', '--button-fill-hover']) {
+    const m = css.match(new RegExp(`${fill}:\\s*color-mix\\(in srgb, var\\(--m-text\\) (\\d+)%, transparent\\)`));
+    for (const [mode, name] of [[0, 'clair'], [1, 'sombre']] as const) {
+      for (const on of ['--m-card', '--m-surface']) {
+        it(`${name} : --m-text sur ${fill} posé sur ${on} atteint 7:1`, () => {
+          expect(m, `${fill} absent ou réécrit`).toBeTruthy();
+          const p = Number(m![1]) / 100, ink = pairs.get('--m-text')!, ground = pairs.get(on)!;
+          pairs.set('--probe', [mix(ink[0], ground[0], p), mix(ink[1], ground[1], p)]);
+          expect(ratio('--m-text', '--probe', mode)).toBeGreaterThanOrEqual(7);
+        });
+      }
+    }
+  }
+});
+
 describe('duotone strict', () => {
   // mistraOS : les états se lisent par leur forme et leur libellé, jamais par une teinte.
   it.each(['--success', '--warning', '--danger', '--info', '--status-online', '--status-warning', '--status-error'])('%s est l’encre du texte', (name) => {

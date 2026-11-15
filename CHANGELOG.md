@@ -1,5 +1,10 @@
 # Historique
 
+## Non publié
+
+- L'intérieur des onglets suit l'app Réglages de mistraOS : barre d'en-tête avec le titre au centre et les actions au bout, groupes titrés au-dessus de listes arrondies, lignes de 50 px, boutons secondaires gris sans bord. Vue d'ensemble, Services, Processus, Réseau, Performances, Utilisateurs, Paramètres, Magasin et Aide.
+- Pour les modules : `.v-card` met désormais son en-tête (`.v-card__head`) et sa `.v-toolbar` hors de la liste ; un enfant de `.v-card` qui posait son propre fond ou sa propre marge est à revoir. Le bandeau de chiffres partagé s'écrit `.v-stats` > `.v-stat`.
+
 ## 0.4.1 (2026-11-15)
 
 - Sécurité (GHSA-4qj6-x664-r75w) : changer `X-Forwarded-For` à chaque essai ne contourne plus le blocage des mots de passe faux. La machine elle-même n'est plus crue sur cet en-tête sans déclaration.

@@ -237,7 +237,6 @@
   --dur-enter: 320ms;
   --stagger-step: 40ms;
   --press-scale: 0.97;
-  --lift: -1px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -319,6 +318,9 @@
   --text-tertiary:  var(--m-text-dim);
   --text-disabled:  color-mix(in srgb, var(--m-text-dim) 55%, var(--m-card));
 
+  /* Bouton de mistraOS (libadwaita) : un voile de l'encre, sans bord ni ombre. */
+  --button-fill:           color-mix(in srgb, var(--m-text) 10%, transparent);
+  --button-fill-hover:     color-mix(in srgb, var(--m-text) 14%, transparent);
   --control-fill:          var(--m-card);
   --control-fill-hover:    var(--bg-hover);
   --control-fill-subtle:   var(--m-sidebar);
@@ -436,6 +438,9 @@
 
   --titlebar-height:         calc(var(--island-h) + 2 * var(--window-gap));
   --content-max:             1280px;
+  /* L'intérieur d'un onglet, comme Réglages de mistraOS (libadwaita) : barre d'en-tête, lignes de liste. */
+  --headerbar-h: 47px;
+  --list-row-h:  50px;
 }
 
 :root { --page-gutter: var(--space-8); }
