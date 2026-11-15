@@ -7,6 +7,10 @@
 - Sécurité (GHSA-4qj6-x664-r75w) : changer `X-Forwarded-For` à chaque essai ne contourne plus le blocage des mots de passe faux. La machine elle-même n'est plus crue sur cet en-tête sans déclaration.
 - À faire derrière un proxy local (nginx, Caddy) : ajouter `PANEL_TRUSTED_PROXIES=127.0.0.1` dans `.env`. Sans cela, tous les clients comptent pour 127.0.0.1 : 5 mots de passe faux bloquent un identifiant pour tout le monde, et les ouvertures de connexion Google sont comptées ensemble.
 - Un identifiant est aussi bloqué après 20 mots de passe faux, quelle que soit l'adresse : même délai croissant, de 30 s à 15 min.
+- Sécurité (GHSA-fw54-xhg2-vm5h) : le panel répond 421 à toute adresse absente de `PANEL_PUBLIC_URL`, hors 127.0.0.1, localhost, [::1] et `PANEL_HOST` au port `PANEL_PORT`. Une page tierce ne peut plus ouvrir le terminal par DNS rebinding, même protection par mot de passe coupée. Un tunnel SSH garde le même port local.
+- À faire si le panel s'ouvre par une autre adresse que 127.0.0.1, localhost ou `PANEL_HOST` (IP du réseau local, nom de machine) : l'ajouter à `PANEL_PUBLIC_URL`, par exemple `PANEL_PUBLIC_URL=http://192.168.1.10:4321`, plusieurs adresses séparées par des virgules. Sans cela, elle reçoit 421 après la mise à jour.
+- Pour les modules : `guarded()` exige un `Host` déclaré et compare `Origin` à cette liste, plus au `Host` reçu.
+- Sécurité (GHSA-443x-q9wh-9p62) : avec la double authentification, un mot de passe correct envoyé sans code compte comme un essai. Il ne confirme plus un mot de passe deviné au-delà du blocage.
 
 ## 0.4.0 (2026-11-15)
 

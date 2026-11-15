@@ -18,4 +18,13 @@ describe('connexion avec double authentification', () => {
     expect(passwordLogin('totp@test', 'motdepasse-1', 'c', code).user?.email).toBe('totp@test');
     expect(() => passwordLogin('totp@test', 'motdepasse-1', 'c', code)).toThrow(/Code de vérification/);
   });
+  it('le bon mot de passe sans code compte comme un essai : la 6e demande est refusée', () => {
+    for (let i = 0; i < 5; i++) passwordLogin('totp@test', 'motdepasse-1', 'd');
+    expect(() => passwordLogin('totp@test', 'motdepasse-1', 'd')).toThrow(expect.objectContaining({ status: 429 }));
+  });
+  it('changer d’adresse ne permet pas de confirmer le mot de passe sans code : la 21e demande est refusée', () => {
+    core.saveUsers([...core.listUsers(), core.newUser({ email: 'totp2@test', name: 'T', role: 'admin', password: core.hashPassword('motdepasse-2'), totp: { secret: newSecret(), lastStep: -1 } })]);
+    for (let i = 0; i < 20; i++) passwordLogin('totp2@test', 'motdepasse-2', `ip-${i}`);
+    expect(() => passwordLogin('totp2@test', 'motdepasse-2', 'ip-20')).toThrow(expect.objectContaining({ status: 429 }));
+  });
 });

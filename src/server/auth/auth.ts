@@ -86,7 +86,11 @@ export function passwordLogin(identifier: string, password: string, ip: string, 
   }
   if (user.status === 'blocked') throw new AuthError('Ce compte est bloqué.', 403);
   if (user.totp?.secret) {
-    if (!code) return { user: null, totpRequired: true };
+    if (!code) {
+      // Compté comme un essai : sans cela, cette réponse confirmerait un mot de passe deviné sans limite. Un code valide remet les deux compteurs à zéro.
+      fail();
+      return { user: null, totpRequired: true };
+    }
     const step = verifyCode(user.totp.secret, code, user.totp.lastStep ?? -1);
     if (step === null) {
       fail();
