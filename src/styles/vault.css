@@ -75,8 +75,8 @@
 .v-badge { display: inline-flex; align-items: center; height: 1.375rem; padding: 0 0.5rem; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: var(--micro-size); font-weight: 500; color: var(--text-secondary); white-space: nowrap; }
 
 /* Avatar (team) : initiales, couleur tirée du nom, présence en point */
-.v-avatar { flex: none; position: relative; display: inline-grid; place-items: center; width: 2rem; height: 2rem; border-radius: 50%; background: color-mix(in oklab, var(--c, var(--accent)) 25%, var(--bg-surface)); color: var(--text-primary); font-size: var(--micro-size); font-weight: 500; }
-.v-avatar img { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.v-avatar { flex: none; position: relative; display: inline-grid; place-items: center; width: 2rem; height: 2rem; border-radius: var(--radius-md); background: var(--accent); color: var(--accent-fg); font-size: var(--micro-size); font-weight: 500; }
+.v-avatar img { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: inherit; object-fit: cover; }
 .v-avatar--on::after { content: ''; position: absolute; right: -1px; bottom: -1px; width: 0.625rem; height: 0.625rem; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 2px var(--bg-surface); }
 
 /* Alerte (shadcn Alert) */

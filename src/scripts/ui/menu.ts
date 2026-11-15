@@ -12,6 +12,8 @@ export interface OpenMenuOptions {
   y?: number;
   label?: string;
   returnFocus?: HTMLElement | null;
+  /** Menu né d'une capsule de la barre : noir comme elle. */
+  island?: boolean;
   onClose?: () => void;
 }
 
@@ -37,7 +39,7 @@ export function openMenu(o: OpenMenuOptions): () => void {
   if (toggleOff) return () => {};
   const actions: MenuItem[] = [];
   const el = document.createElement('div');
-  el.className = 'ui-menu';
+  el.className = o.island ? 'ui-menu on-island' : 'ui-menu';
   el.setAttribute('role', 'menu');
   if (o.label) el.setAttribute('aria-label', o.label);
   const item = (it: MenuItem, cls = 'ui-menu__item') => {

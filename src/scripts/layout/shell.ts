@@ -110,7 +110,7 @@ document.addEventListener('click', (e) => {
     const pick = (v: 'light' | 'dark' | 'system', label: string, icon: 'sun' | 'moon' | 'monitor') =>
       ({ label, icon, checked: theme === v, run: () => setTheme(v) });
     openMenu({
-      anchor: account, label: 'Compte', items: [
+      anchor: account, label: 'Compte', island: true, items: [
         { head: { name: account.dataset.name ?? '', sub: account.dataset.email || undefined } },
         'sep',
         { label: 'Thème', choices: [pick('light', 'Clair', 'sun'), pick('dark', 'Sombre', 'moon'), pick('system', 'Système', 'monitor')] },

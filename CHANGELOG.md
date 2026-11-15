@@ -6,6 +6,7 @@
 - Barre du haut en trois capsules noires : le menu et le fil d'Ariane, la recherche, l'actualisation et le compte.
 - La recherche centrale s'ouvre en palette (clic, Ctrl+K ou `/`) : pages, actions, « Chercher le processus » et « Filtrer cette page ». Elle remplace le bouton « Aller à… » et le champ de recherche de processus.
 - Le compte et le choix du thème passent du pied du menu à la barre du haut.
+- Terminal et journaux aux couleurs de la fenêtre, en clair comme en sombre ; notifications sous la barre, noires comme elle ; avatars et icônes de fichiers sans teinte.
 
 ## 0.2.1 (2026-11-06)
 

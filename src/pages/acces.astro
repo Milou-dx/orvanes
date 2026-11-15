@@ -83,7 +83,7 @@ const redirectUri = `${Astro.url.origin}/api/auth/google/callback`;
             <ul class="v-list">
               {pendingUsers.map((u) => (
                 <li data-q={`${u.name} ${u.email}`.toLowerCase()}>
-                  <span class="v-avatar" style={`--c:${tone(u.name)}`} aria-hidden="true">{initials(u.name)}{u.picture && <img src={u.picture} alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()" />}</span>
+                  <span class="v-avatar" aria-hidden="true">{initials(u.name)}{u.picture && <img src={u.picture} alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()" />}</span>
                   <span class="v-who"><span class="v-who__name">{u.name}</span><span class="v-who__sub">{u.email} · inscrit il y a {ago(u.createdAt)}</span></span>
                   <button type="button" class="v-btn v-btn--sm" data-edit={u.id}>Approuver…</button>
                   <button type="button" class="v-btn v-btn--sm v-btn--danger" data-block={u.id} data-name={u.name}>Refuser</button>
@@ -102,7 +102,7 @@ const redirectUri = `${Astro.url.origin}/api/auth/google/callback`;
                 const n = access(u);
                 return (
                   <li data-q={`${u.name} ${u.email} ${u.linuxUser ?? ''}`.toLowerCase()}>
-                    <span class:list={['v-avatar', u.sessions > 0 && 'v-avatar--on']} style={`--c:${tone(u.name)}`} aria-hidden="true">{initials(u.name)}{u.picture && <img src={u.picture} alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()" />}</span>
+                    <span class:list={['v-avatar', u.sessions > 0 && 'v-avatar--on']} aria-hidden="true">{initials(u.name)}{u.picture && <img src={u.picture} alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()" />}</span>
                     <span class="v-who">
                       <span class="v-who__name">{u.name}{u.sessions > 0 && <span class="visually-hidden"> (session ouverte)</span>}</span>
                       <span class="v-who__sub">{u.email}{u.hasPassword ? ' · mot de passe' : ''}{linux && u.role !== 'admin' && (u.linuxUser ? ` · Linux ${u.linuxUser}` : ' · sans compte Linux')}</span>
@@ -152,7 +152,7 @@ const redirectUri = `${Astro.url.origin}/api/auth/google/callback`;
                   <th scope="col" class="mx-tab">Onglet</th>
                   {members.map((u) => (
                     <th scope="col" class:list={['mx-user', u.status !== 'active' && 'is-off']}>
-                      <span class="v-avatar" style={`--c:${tone(u.name)}`} aria-hidden="true">{initials(u.name)}{u.picture && <img src={u.picture} alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()" />}</span>
+                      <span class="v-avatar" aria-hidden="true">{initials(u.name)}{u.picture && <img src={u.picture} alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()" />}</span>
                       <span class="mx-user__n">{u.name}</span>
                       <span class="mx-user__c" data-mx-count={u.id}>{access(u)}/{tabs.length}</span>
                       {u.status !== 'active' && <span class="mx-user__c">{statusOf(u.status).label}</span>}

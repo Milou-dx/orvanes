@@ -195,7 +195,7 @@ export function toast(message: string, kind: ToastKind = 'info', durationMs = 40
     document.body.append(host);
   }
   const t = document.createElement('div');
-  t.className = `toast toast--${kind}`;
+  t.className = `toast toast--${kind} on-island`;
   t.setAttribute('role', 'status');
   const text = document.createElement('span');
   text.className = 'toast__text';

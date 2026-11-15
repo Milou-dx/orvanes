@@ -7,7 +7,6 @@ import ModuleLogo from '../components/ui/ModuleLogo.astro';
 import { storeState } from '../server/modules/store-ops.js';
 import { listSources, publishConfig } from '../server/modules/store-publish.js';
 import { STORE_URL } from '../server/modules/store.js';
-import { tone } from '../server/core/format';
 
 export const prerender = false;
 
@@ -56,7 +55,7 @@ const summary = error
           <li class="mod" id={`module-${m.id}`}>
             <div class="conn">
               {m.state === 'available'
-                ? <span class="conn__logo conn__logo--letter" style={`--c:${tone(m.name)}`} aria-hidden="true">{m.name[0]}</span>
+                ? <span class="conn__logo conn__logo--letter" aria-hidden="true">{m.name[0]}</span>
                 : <span class="conn__logo" aria-hidden="true"><ModuleLogo id={m.id} size={18} /></span>}
               <div class="conn__txt">
                 <p class="conn__name"><strong>{m.name}</strong><span class:list={['conn__state', `conn__state--${m.state}`]}>{STATE[m.state as keyof typeof STATE]}</span></p>
@@ -86,7 +85,7 @@ const summary = error
         {sources.map((m) => (
           <li class="mod" id={`source-${m.id}`}>
             <div class="conn">
-              <span class="conn__logo conn__logo--letter" style={`--c:${tone(m.name)}`} aria-hidden="true">{m.name[0]}</span>
+              <span class="conn__logo conn__logo--letter" aria-hidden="true">{m.name[0]}</span>
               <div class="conn__txt">
                 <p class="conn__name"><strong>{m.name}</strong>{m.errors.length > 0 && <span class="conn__state conn__state--err">Manifeste invalide</span>}</p>
                 <p class="conn__meta">Source {m.version} · publié : {m.published ?? 'non'}</p>
@@ -120,7 +119,7 @@ const summary = error
   .store__empty { margin: 0; padding: var(--space-6) 0; text-align: center; border-top: 0.5px solid var(--border); }
   .conn { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-2) var(--space-3); padding: var(--space-3) 0; }
   .conn__logo { flex: none; display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: var(--radius-sm); border: 0.5px solid var(--border); color: var(--text-primary); background: var(--bg-surface-2); }
-  .conn__logo--letter { border: 0; font-weight: 600; font-size: var(--meta-size); background: color-mix(in oklab, var(--c) 25%, var(--bg-surface)); }
+  .conn__logo--letter { border: 0; font-weight: 600; font-size: var(--meta-size); background: var(--bg-hover); }
   .conn__txt { flex: 1 1 12rem; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
   .conn__txt p { margin: 0; }
   .conn__name { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--space-2); }

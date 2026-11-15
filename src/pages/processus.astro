@@ -150,8 +150,8 @@ const canTerminal = tabAllowed(Astro.locals)('terminal');
 
   /* leaderboard-05 : barre derrière la ligne */
   #pm-lb > :global(li) { position: relative; isolation: isolate; padding-inline: 0.5rem; }
-  #pm-lb > :global(li)::before { content: ''; position: absolute; inset: 0.125rem 0; width: var(--v, 0); z-index: -1; border-radius: var(--radius-sm); background: color-mix(in srgb, var(--accent) 20%, transparent); transition: width 400ms ease; }
-  #pm-lb > :global(li):first-child::before { background: color-mix(in srgb, var(--accent) 32%, transparent); }
+  #pm-lb > :global(li)::before { content: ''; position: absolute; inset: 0.125rem 0; width: var(--v, 0); z-index: -1; border-radius: var(--radius-sm); background: color-mix(in srgb, var(--accent) 7%, transparent); transition: width var(--dur-spring-morph) var(--ease-spring-morph); }
+  #pm-lb > :global(li):first-child::before { background: color-mix(in srgb, var(--accent) 16%, transparent); }
   #pm-lb :global(.pm-rk) { width: 1.25rem; text-align: center; font-size: var(--micro-size); font-variant-numeric: tabular-nums; color: var(--text-secondary); }
   #pm-lb :global(.pm-lb__v) { min-width: 3.5rem; font-size: var(--meta-size); }
 

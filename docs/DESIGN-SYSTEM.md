@@ -17,6 +17,7 @@ L'interface est celle de mistraOS (`themes/mistra/theme.toml`, accent « slate �
 | Famille | Jetons |
 |---|---|
 | Palette source | `--m-surface` (contenu), `--m-sidebar` (volet, barre), `--m-card`, `--m-popover`, `--m-text`, `--m-text-dim`, `--m-border`, `--m-accent`, `--m-accent-text`, `--m-shade` : les valeurs de mistraOS, dont dérivent les jetons ci-dessous. Une page lit les jetons dérivés, jamais `--m-*` |
+| Terminal et journaux | `--console-bg`, `--console-fg`, `--console-muted`, `--console-strong`, `--console-select`, `--console-black/-blue/-magenta/-cyan` (+ `-bright-`) : fond et encre de la fenêtre, gris ANSI de mistraOS ; `--console-red/-green/-yellow` viennent de `--danger`, `--success`, `--warning`. Un script qui lit un jeton pour un canvas ou xterm passe par `pickScheme` (`src/scripts/ui/html.ts`) |
 | Îlot | `--island`, `--island-text`, `--island-text-dim`, `--island-highlight` (noirs dans les deux modes), `--island-h`, `--island-pad`, `--island-gap` |
 | Fonds | `--bg-app`, `--bg-surface`, `--bg-surface-2`, `--bg-hover` |
 | Filets | `--border`, `--border-strong`, `--field-stroke` (bord des champs, 3:1) |
@@ -55,7 +56,7 @@ Tableaux sous 640 px : `.dt` passe en cartes (1re cellule = titre, `data-label` 
 
 ## Menu contextuel (`src/scripts/ui/menu.ts`)
 
-`openMenu({ items, anchor?, x?, y?, label?, returnFocus? })` : menu « … » ou clic droit, un seul ouvert, tenu dans la fenêtre, flèches / Début / Fin / Échap (rend le focus) / Tab. `items` : `{ label, icon?, hint?, danger?, disabled?, run }` ou `'sep'`. `bindContextMenu(el, (ev, cible) => items | null)` ajoute clic droit, touche Menu et Maj+F10. Styles `.ui-menu` dans `ui.css`. Bouton « … » : `Button` ghost `sm` `iconOnly` icône `more`.
+`openMenu({ items, anchor?, x?, y?, label?, returnFocus?, island? })` : menu « … » ou clic droit, un seul ouvert, tenu dans la fenêtre, flèches / Début / Fin / Échap (rend le focus) / Tab. `items` : `{ label, icon?, hint?, danger?, disabled?, run }` ou `'sep'`. `bindContextMenu(el, (ev, cible) => items | null)` ajoute clic droit, touche Menu et Maj+F10. Styles `.ui-menu` dans `ui.css`. Bouton « … » : `Button` ghost `sm` `iconOnly` icône `more`.
 
 ## Composants (`src/components/ui/`)
 
@@ -129,6 +130,8 @@ Barre du haut, sur toute la largeur, comme la barre de mistraOS : trois zones de
 | Centre | l'îlot « Rechercher… » (`.island`, `data-cmdk-open`) : un clic, Ctrl/⌘ K ou `/` le transforme en palette |
 | Droite | l'état de l'actualisation (`#refresh-state`), puis le compte (`data-account-menu` : thème, paramètres, sécurité, aide, déconnexion), présent seulement quand la protection est activée |
 
+Ce qui naît de la barre reste noir comme elle : le menu du compte (`openMenu({ island: true })`) et les notifications (`toast`, affichées sous l'îlot, au centre).
+
 Tout ce qui se pose sur du noir porte la classe `.on-island` : elle redéfinit les jetons de fond, de texte, de filet et de focus aux jetons de l'îlot, les composants posés dedans (`Kbd`, icônes) suivent sans style propre.
 
 Palette (`src/scripts/layout/palette.ts`) : c'est l'îlot lui-même. La forme noire part du rectangle de l'îlot et prend la taille de son contenu sur le ressort `--ease-spring-morph` ; le contenu arrive en fondu quand la forme est presque là, et la liste fait grandir la forme à chaque frappe. Un seul fond (`.cmdk__fill`) voyage vers la ligne active. Échap, un clic ailleurs ou une navigation la referment ; `prefers-reduced-motion` supprime le morph et le voyage. Résultats : les pages et actions dont le nom porte la saisie, puis « Filtrer cette page : « q » » (page avec `data-search-target`) et « Chercher le processus « q » » (onglet Processus permis), puis les rapprochements lettre à lettre.
@@ -156,7 +159,7 @@ Une seule famille : Lucide au trait (`src/components/ui/lucide.ts`, généré pa
 - Monochromes (`currentColor`, gris secondaire au repos). L'élément actif du menu se marque par son fond et son texte, pas par une couleur d'icône.
 - Couleur réservée au sens : succès, avertissement, erreur, information (`StatusBadge`, `Badge`, icônes d'état de `SettingsRow`).
 - Pas d'emoji ni de glyphe Unicode décoratif ; les flèches de données (↑ émis, ↓ reçu) restent du texte.
-- Application ou élément sans logo : une icône Lucide neutre ou ses initiales.
+- Application ou élément sans logo : une icône Lucide neutre ou ses initiales sur une tuile neutre. Compte : ses initiales sur l'accent, dans un carré arrondi (`.v-avatar`), jamais une couleur tirée du nom.
 
 ## Logos des modules
 

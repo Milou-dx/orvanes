@@ -27,6 +27,11 @@ const RULES: [text: string, on: string[], min: number][] = [
   ['--success', ['--m-surface', '--m-card', '--m-popover'], 4.5],
   ['--warning', ['--m-surface', '--m-card', '--m-popover'], 4.5],
   ['--danger', ['--m-surface', '--m-card', '--m-popover'], 4.5],
+  // Terminal et journaux : les gris des couleurs ANSI de mistraOS restent des formes lisibles (3:1) sur leur fond.
+  ['--console-blue', ['--m-surface'], 3],
+  ['--console-cyan', ['--m-surface'], 3],
+  ['--console-magenta', ['--m-surface'], 3],
+  ['--console-strong', ['--m-surface'], 7],
   ['--island-text', ['--island', '--island-highlight'], 7],
   ['--island-text-dim', ['--island', '--island-highlight'], 4.5],
 ];

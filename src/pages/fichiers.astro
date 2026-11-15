@@ -236,14 +236,7 @@ const favorites = [
 
   /* Icônes par type */
   .fx-k-dir { --k: var(--accent); }
-  .fx-k-image { --k: #2f9e6e; }
-  .fx-k-video { --k: #8b5cf6; }
-  .fx-k-audio { --k: #e5487a; }
-  .fx-k-pdf { --k: #e5484d; }
-  .fx-k-archive { --k: #b07d3a; }
-  .fx-k-code { --k: #d97706; }
-  .fx-k-text { --k: var(--text-secondary); }
-  .fx-ic { display: inline-flex; flex: none; color: var(--k); }
+  .fx-ic { display: inline-flex; flex: none; color: var(--k, var(--text-secondary)); }
   .fx-tile__ic .fx-ic svg, .fx-ql-card .fx-ic svg { stroke-width: 1.1; }
   .fx-k-dir .fx-ic svg, .fx-tile.fx-k-dir .fx-tile__ic svg { fill: color-mix(in srgb, var(--accent) 30%, var(--bg-surface)); }
 
@@ -308,7 +301,7 @@ const favorites = [
   .fx-ql__lights { display: flex; gap: 0.5rem; }
   .fx-ql__light { display: grid; place-items: center; width: 1.5rem; height: 1.5rem; padding: 0; border: 1px solid var(--border); border-radius: var(--radius-full); background: var(--bg-surface); color: var(--text-secondary); cursor: default; }
   .fx-ql__light:hover { color: var(--text-primary); background: var(--bg-hover); }
-  .fx-ql__light--close:hover { background: #ff5f57; border-color: #e0443e; color: #4d0000; }
+  .fx-ql__light--close:hover { background: var(--danger-subtle); border-color: var(--danger-border); color: var(--danger); }
   .fx-ql__light:focus-visible, .fx-ql__nav:focus-visible { outline: none; box-shadow: var(--fx-ring); }
   .fx-ql__titles { min-width: 0; text-align: center; }
   .fx-ql__title { margin: 0; font-size: var(--meta-size); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 36rem; }
