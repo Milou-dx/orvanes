@@ -273,7 +273,7 @@
   --shadow-md: 0 0 0 1px rgb(255 255 255 / 6%), 0 3px 6px rgb(0 0 0 / 30%), 0 9px 24px rgb(0 0 0 / 45%);
 }
 
-/* Interface de mistraOS (themes/mistra/theme.toml, accent « slate ») : surfaces grises en duotone,
+/* Interface de mistraOS (themes/mistra/theme.toml, accent « blue ») : surfaces grises en duotone,
    une seule déclaration par jeton, light-dark() suit le color-scheme posé plus haut. */
 :root[data-ui='notion'], .window {
   --m-surface:     light-dark(#ececec, #1a1a1a);
@@ -283,8 +283,9 @@
   --m-text:        light-dark(#2a2a2a, #dcdcdc);
   --m-text-dim:    light-dark(#5a5a5a, #a8a8a8);
   --m-border:      light-dark(#d4d4d4, #333333);
-  --m-accent:      light-dark(#000000, #ffffff);
+  --m-accent:      light-dark(#164997, #92b4ff);
   --m-accent-text: light-dark(#ffffff, #000000);
+  --m-border-active: light-dark(#000000, #ffffff);
   --m-shade:       light-dark(#00000017, #00000059);
 
   /* L'îlot et les capsules de la barre restent noirs dans les deux modes. */
@@ -298,12 +299,14 @@
   --toggle-w: 38px;  --toggle-h: 22px;  --toggle-pad: 3px;
 
   /* Fenêtre et Dock : [window] et [dock] de theme.toml, dock.toml pour la taille et l'agrandissement. */
-  --window-radius: 10px;  --window-border: 2px;  --window-gap: 12px;  --window-gap-inner: 6px;
+  --window-radius: 30px;  --window-border: 2px;  --window-gap: 12px;  --window-gap-inner: 6px;
+  --window-titlebar: 32px;  --control-size: 12px;  --control-gap: 8px;
+  --control-close: #ff5f57;  --control-minimize: #febc2e;  --control-maximize: #28c840;
+  --space-dot: 8px;  --space-dot-active: 20px;
   --dock-icon: 48px;  --dock-gap: 6px;  --dock-dot: 4px;  --dock-tile-radius: 26%;
   /* Écran de connexion : [lock] de theme.toml. L'encre blanche laisse voir le fond à 62 %, le champ est un noir dépoli. */
   --lock-ink: #ffffff;  --lock-ink-glass: rgb(255 255 255 / 62%);  --lock-field: #0000008c;  --lock-field-w: 300px;  --lock-field-h: 44px;
-  --shadow-window: 0 0 12px light-dark(#00000055, #000000aa);
-  --dur-settle: 220ms;  --dur-shake: 250ms;
+  --dur-settle: 220ms;  --dur-shake: 250ms;  --dur-hide: 250ms;  --dur-hide-delay: 400ms;
 
   --bg-app:       var(--m-surface);
   --bg-mica:      var(--m-sidebar);
@@ -433,7 +436,7 @@
   --duration-ui:    var(--dur-base);
   --duration-page:  var(--dur-base);
 
-  --titlebar-height:         calc(var(--island-h) + 2 * var(--space-2));
+  --titlebar-height:         calc(var(--island-h) + 2 * var(--window-gap));
   --content-max:             1280px;
 }
 

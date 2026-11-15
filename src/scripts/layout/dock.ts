@@ -1,5 +1,5 @@
 // Valeurs de mistraOS : dock.toml (magnification) et theme.toml [dock] (reach, en tailles d'icône).
-const MAGNIFICATION = 1.6;
+const MAGNIFICATION = 1.2;
 const REACH = 2.5;
 
 /** Combien une tuile grandit, le pointeur à `distance` tailles d'icône de son centre : tout l'agrandissement

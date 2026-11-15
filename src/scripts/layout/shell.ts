@@ -55,5 +55,14 @@ document.addEventListener('click', (e) => {
   });
 });
 
+// L'horloge de la barre, comme la capsule de date de mistraOS : « dim. 15 nov. 14:39 ».
+function paintClock() {
+  const now = new Date();
+  const text = `${now.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })} ${now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+  document.querySelectorAll('[data-clock]').forEach((el) => { el.textContent = text; });
+}
+setInterval(paintClock, 10_000);
+document.addEventListener('astro:page-load', paintClock);
+
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { applyPrefs(); paintChoices(); });
 document.addEventListener('astro:page-load', paintChoices);

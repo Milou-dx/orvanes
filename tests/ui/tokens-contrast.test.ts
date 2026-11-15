@@ -24,6 +24,7 @@ const RULES: [text: string, on: string[], min: number][] = [
   ['--m-text-dim', ['--m-surface', '--m-sidebar', '--m-card', '--m-popover'], 4.5],
   ['--m-accent-text', ['--m-accent'], 7],
   ['--m-accent', ['--m-surface', '--m-card'], 4.5],
+  ['--m-border-active', ['--m-surface'], 3],
   // Terminal et journaux : les gris des couleurs ANSI de mistraOS restent des formes lisibles (3:1) sur leur fond.
   ['--console-blue', ['--m-surface'], 3],
   ['--console-cyan', ['--m-surface'], 3],
@@ -51,9 +52,9 @@ describe('duotone strict', () => {
   it.each(['--success', '--warning', '--danger', '--info', '--status-online', '--status-warning', '--status-error'])('%s est l’encre du texte', (name) => {
     expect(css).toMatch(new RegExp(`${name}:\\s*var\\(--m-text\\)`));
   });
-  it('aucun jeton de la couche mistraOS n’a de teinte', () => {
+  it('seuls l’accent et les trois boutons de fenêtre ont une teinte', () => {
     const layer = css.slice(css.indexOf('Interface de mistraOS'));
-    const tinted = [...layer.matchAll(/#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})\b/g)].filter((m) => m[1] !== m[2] || m[2] !== m[3]).map((m) => m[0]);
-    expect(tinted).toEqual([]);
+    const tinted = [...layer.matchAll(/(--[\w-]+):[^;]*?#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})\b[^;]*;/g)].filter((m) => m[2] !== m[3] || m[3] !== m[4]).map((m) => m[1]);
+    expect(tinted).toEqual(['--m-accent', '--control-close', '--control-minimize', '--control-maximize']);
   });
 });
