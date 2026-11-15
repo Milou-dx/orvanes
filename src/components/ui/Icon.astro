@@ -1,5 +1,5 @@
 ---
-import { LUCIDE, type IconName } from './lucide';
+import { GLYPHS, type IconName } from './glyphs';
 
 interface Props { name: IconName; size?: number; class?: string; }
 const { name, size = 16, class: className = '' } = Astro.props;
@@ -8,14 +8,10 @@ const { name, size = 16, class: className = '' } = Astro.props;
   class:list={['icon', className]}
   width={size}
   height={size}
-  viewBox="0 0 24 24"
-  fill="none"
-  stroke="currentColor"
-  stroke-width="1.75"
-  stroke-linecap="round"
-  stroke-linejoin="round"
+  viewBox="0 0 256 256"
+  fill="currentColor"
   aria-hidden="true"
-  set:html={LUCIDE[name]}
+  set:html={GLYPHS[name]}
 />
 
 <style>

@@ -1,4 +1,4 @@
-import { LUCIDE, type IconName } from '../../components/ui/lucide';
+import { GLYPHS, type IconName } from '../../components/ui/glyphs';
 import { STATUS_LABEL, toStatus, type Status } from '../../components/ui/status';
 
 
@@ -21,7 +21,7 @@ export function esc(value: unknown): string {
 }
 
 export function iconSVG(name: IconName, size = 16): string {
-  return `<svg class="icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${LUCIDE[name] ?? ''}</svg>`;
+  return `<svg class="icon" width="${size}" height="${size}" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">${GLYPHS[name] ?? ''}</svg>`;
 }
 
 export function statusBadgeHTML(status: Status | string, label?: string, opts: { pulse?: boolean; size?: 'sm' | 'md' } = {}): string {

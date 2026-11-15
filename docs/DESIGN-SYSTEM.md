@@ -76,7 +76,7 @@ Tableaux sous 640 px : `.dt` passe en cartes (1re cellule = titre, `data-label` 
 | `Segmented` | `options: {value, label, icon?, iconOnly?, count?}[]`, `label`, `selected?`, `attr?` (→ `data-<attr>`), `id?` ; classes globales `.seg`, `.seg__btn` (aria-pressed ou aria-current), `.seg__n` |
 | `PageHeader` | `title`, `description?` ; slot `actions`. Posé par `PanelLayout` : une page ne l'écrit pas elle-même |
 | `ModuleLogo` | `id` (module), `size?` (16) ; logo du module en SVG dans la page (voir « Logos des modules ») |
-| `Card` | `title?`, `description?`, `icon?` (Lucide, monochrome), `flush?`, `interactive?`, `id?` ; slot `actions` |
+| `Card` | `title?`, `description?`, `icon?` (Phosphor, monochrome), `flush?`, `interactive?`, `id?` ; slot `actions` |
 | `SettingsRow` | `title`, `desc?`, `icon?`, `tint?` (jeton de couleur de l'icône), `href?` ; tuile neutre, seules les icônes d'état (`check`, `circleCheck`, `warning`, `circleAlert`, `circleX`) prennent leur couleur |
 | `Button` (+ `title`, `hidden`, `pressed`, `data-*` ; classes `.btn` globales), `Badge`, `Stat`, `Meter`, `Input`, `Select`, `Toggle`, `Skeleton`, `Spinner`, `ActionButton`, `Icon` | inchangés |
 
@@ -152,20 +152,20 @@ Exceptions assumées, dans le même cadre : l'onglet Claude (`bare`, rendu de cl
 
 ## Icônes
 
-Une seule famille : Lucide au trait (`src/components/ui/lucide.ts`, généré par `scripts/lucide-icons.py`), via `Icon.astro`, `Sym.astro` (même icône, tracé partagé par un sprite `<use>` pour les chevrons répétés du menu) ou `iconSVG()` côté client.
+Une seule famille, celle de mistraOS : Phosphor Bold (`src/components/ui/glyphs.ts`, généré par `scripts/phosphor-icons.py`, licence MIT dans `THIRD_PARTY_NOTICES.md`), via `Icon.astro`, `Sym.astro` (même icône, tracé partagé par un sprite `<use>` pour les chevrons répétés) ou `iconSVG()` côté client.
 
-- Épaisseur unique 1,75 ; aucune prop pour la changer.
+- Une seule graisse, Bold, en tracés pleins sur la grille de 256 ; aucune prop pour la changer.
 - Tailles : 16 px dans le menu, les boutons, les tableaux ; 20 px pour une icône isolée (boutons `lg`, zones de dépôt).
 - Monochromes (`currentColor`, gris secondaire au repos). L'élément actif du menu se marque par son fond et son texte, pas par une couleur d'icône.
 - Couleur réservée au sens : succès, avertissement, erreur, information (`StatusBadge`, `Badge`, icônes d'état de `SettingsRow`).
 - Pas d'emoji ni de glyphe Unicode décoratif ; les flèches de données (↑ émis, ↓ reçu) restent du texte.
-- Application ou élément sans logo : une icône Lucide neutre ou ses initiales sur une tuile neutre. Compte : ses initiales sur l'accent, dans un carré arrondi (`.v-avatar`), jamais une couleur tirée du nom.
+- Application ou élément sans logo : une icône Phosphor neutre ou ses initiales sur une tuile neutre. Compte : ses initiales sur l'accent, dans un carré arrondi (`.v-avatar`), jamais une couleur tirée du nom.
 
 ## Logos des modules
 
-`modules/<id>/logo.svg` : logo officiel de Simple Icons pour une marque (viewBox 24×24, couleur officielle en `fill` sur `<svg>`, source et licence CC0 en commentaire), icône Lucide en `currentColor` sinon. `ModuleLogo` insère le fichier dans la page (sans commentaire ni `<title>`), à la taille demandée, proportions conservées :
+`modules/<id>/logo.svg` : logo officiel de Simple Icons pour une marque (viewBox 24×24, couleur officielle en `fill` sur `<svg>`, source et licence CC0 en commentaire), icône Phosphor en `currentColor` sinon. `ModuleLogo` insère le fichier dans la page (sans commentaire ni `<title>`), à la taille demandée, proportions conservées :
 
 - logo de couleur (Docker, Discord, Claude) : couleur officielle dans les deux thèmes ;
 - encre quasi noire (luminance < 0,05 : GitHub `#181717`, Tailscale `#242424`, monochromes par nature) : remplacée par `currentColor`, donc blanche en thème sombre comme le recommande Simple Icons.
 
-Affichage : page `/modules` (20 px dans un carré neutre de 32 px) et section « Modules » du menu (16 px), quand l'onglet ne déclare pas d'`icon` Lucide. Le logo Minecraft de Simple Icons est un logotype illisible à 16 px : l'onglet déclare `"icon": "cube"`, le logotype reste sur `/modules`. Le logo du panel (`PANEL_MARK`, `src/components/ui/icons.ts`) sert au volet, à l'écran de connexion et aux favicons.
+Affichage : page `/modules` (20 px dans un carré neutre de 32 px) et section « Modules » du menu (16 px), quand l'onglet ne déclare pas d'`icon` du panel. Le logo Minecraft de Simple Icons est un logotype illisible à 16 px : l'onglet déclare `"icon": "cube"`, le logotype reste sur `/modules`. Le logo du panel (`PANEL_MARK`, `src/components/ui/icons.ts`) sert au volet, à l'écran de connexion et aux favicons.

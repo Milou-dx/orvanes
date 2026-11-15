@@ -5,7 +5,7 @@ import Sym from '../components/ui/Sym.astro';
 import Kbd from '../components/ui/Kbd.astro';
 import ModuleLogo from '../components/ui/ModuleLogo.astro';
 import PageHeader from '../components/ui/PageHeader.astro';
-import { LUCIDE, type IconName } from '../components/ui/lucide';
+import { GLYPHS, type IconName } from '../components/ui/glyphs';
 import { PANEL_MARK } from '../components/ui/icons';
 import { PANEL_NAME } from '../server/core/panel';
 import { SECTIONS, buildNav, currentItem, visibleTabs, type NavItem } from './nav';
@@ -96,7 +96,7 @@ const favicon = faviconProp ?? `/icons/${logoKey}.svg?v=${ICON_V}`;
   <body data-refresh={refreshMs ?? undefined}>
     <a class="skip-link" href="#main">Aller au contenu</a>
     <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
-      {SPRITE.map((n) => <symbol id={`ic-${n}`} viewBox="0 0 24 24" set:html={LUCIDE[n]} />)}
+      {SPRITE.map((n) => <symbol id={`ic-${n}`} viewBox="0 0 256 256" set:html={GLYPHS[n]} />)}
     </svg>
 
     <div class="window">

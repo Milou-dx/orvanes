@@ -1,5 +1,5 @@
 import { esc, iconSVG } from './html';
-import type { IconName } from '../../components/ui/lucide';
+import type { IconName } from '../../components/ui/glyphs';
 
 type MenuItem = { label: string; icon?: IconName; hint?: string; danger?: boolean; disabled?: boolean; checked?: boolean; run: () => void };
 /** head : en-tête de compte (shadcn nav-user) ; choices : rangée de choix exclusifs (radio) sous un libellé. */

@@ -1,6 +1,6 @@
 ---
 import Icon from './Icon.astro';
-import type { IconName } from './lucide';
+import type { IconName } from './glyphs';
 
 interface Props { icon?: IconName; title: string; text?: string; compact?: boolean; class?: string }
 const { icon = 'inbox', title, text, compact = false, class: className = '' } = Astro.props;

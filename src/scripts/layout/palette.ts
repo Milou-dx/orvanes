@@ -1,5 +1,5 @@
 import { navigate } from 'astro:transitions/client';
-import type { IconName } from '../../components/ui/lucide';
+import type { IconName } from '../../components/ui/glyphs';
 import { getCommands, formatKeys, type Command } from '../ui/commands';
 import { esc, iconSVG } from '../ui/html';
 import { closeMenu } from '../ui/menu';
