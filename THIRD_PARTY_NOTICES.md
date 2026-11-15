@@ -30,4 +30,4 @@ SOFTWARE.
 
 ## Fonds d'écran
 
-`src/assets/wallpaper-light.webp` et `wallpaper-dark.webp` sont les fonds `3-colonnade` (clair) et `1-stairs` (sombre) de Mistra OS (`rootfs/usr/share/mistra/wallpapers`), réduits à 1920 px. Ils appartiennent au projet Mistra et ne sont pas sous la licence du code.
+`src/assets/wallpaper-light.webp` et `wallpaper-dark.webp` sont les fonds `3-colonnade` (clair) et `1-stairs` (sombre) de Mistra OS (`rootfs/usr/share/mistra/wallpapers`), réduits à 1920 px. Mistra OS ne précise pas leur licence : à confirmer avec son mainteneur avant une diffusion publique.
