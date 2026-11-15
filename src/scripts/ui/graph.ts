@@ -1,3 +1,4 @@
+import { pickScheme } from './html';
 import { bytes } from '../../server/core/format';
 
 export type Res = 'cpu' | 'mem' | 'disk' | 'net';
@@ -20,7 +21,8 @@ export function createGraph(canvas: HTMLCanvasElement, res: Res, series: Series[
 
   function palette() {
     const cs = getComputedStyle(document.documentElement);
-    const v = (n: string) => cs.getPropertyValue(n).trim();
+    const dark = cs.colorScheme === 'dark';
+    const v = (n: string) => pickScheme(cs.getPropertyValue(n).trim(), dark);
     return {
       line: v(`--res-${res}`), fill: v(`--res-${res}-fill`), grid: v(`--res-${res}-grid`),
       text: v('--text-secondary'), bg: v('--bg-surface'), font: v('--font-ui') || 'sans-serif',

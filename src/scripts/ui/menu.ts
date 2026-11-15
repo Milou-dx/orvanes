@@ -1,5 +1,5 @@
 import { esc, iconSVG } from './html';
-import type { IconName } from '../../components/ui/lucide';
+import type { IconName } from '../../components/ui/glyphs';
 
 type MenuItem = { label: string; icon?: IconName; hint?: string; danger?: boolean; disabled?: boolean; checked?: boolean; run: () => void };
 /** head : en-tête de compte (shadcn nav-user) ; choices : rangée de choix exclusifs (radio) sous un libellé. */
@@ -11,9 +11,9 @@ export interface OpenMenuOptions {
   x?: number;
   y?: number;
   label?: string;
-  /** Le menu prend la largeur de l'ancre (pied de la barre latérale). */
-  matchWidth?: boolean;
   returnFocus?: HTMLElement | null;
+  /** Menu né d'une capsule de la barre : noir comme elle. */
+  island?: boolean;
   onClose?: () => void;
 }
 
@@ -39,7 +39,7 @@ export function openMenu(o: OpenMenuOptions): () => void {
   if (toggleOff) return () => {};
   const actions: MenuItem[] = [];
   const el = document.createElement('div');
-  el.className = 'ui-menu';
+  el.className = o.island ? 'ui-menu on-island' : 'ui-menu';
   el.setAttribute('role', 'menu');
   if (o.label) el.setAttribute('aria-label', o.label);
   const item = (it: MenuItem, cls = 'ui-menu__item') => {
@@ -59,7 +59,6 @@ export function openMenu(o: OpenMenuOptions): () => void {
       + `<span class="ui-menu__seg">${it.choices.map((c) => item(c, 'ui-menu__item ui-menu__choice')).join('')}</span></div>`;
     return item(it);
   }).join('');
-  if (o.matchWidth && o.anchor) el.style.width = `${o.anchor.getBoundingClientRect().width}px`;
   document.body.append(el);
 
   const m = 8, w = el.offsetWidth, h = el.offsetHeight;

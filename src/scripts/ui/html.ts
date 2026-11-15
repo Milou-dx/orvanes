@@ -1,14 +1,27 @@
-import { LUCIDE, type IconName } from '../../components/ui/lucide';
+import { GLYPHS, type IconName } from '../../components/ui/glyphs';
 import { STATUS_LABEL, toStatus, type Status } from '../../components/ui/status';
 
 
 const ESC: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+/** Valeur d'un jeton pour un canvas, qui ne sait pas lire light-dark() : la moitié du thème en cours. */
+export function pickScheme(value: string, dark: boolean): string {
+  if (!value.startsWith('light-dark(') || !value.endsWith(')')) return value;
+  const inner = value.slice('light-dark('.length, -1);
+  let depth = 0;
+  for (let i = 0; i < inner.length; i++) {
+    if (inner[i] === '(') depth++;
+    else if (inner[i] === ')') depth--;
+    else if (inner[i] === ',' && depth === 0) return (dark ? inner.slice(i + 1) : inner.slice(0, i)).trim();
+  }
+  return value;
+}
+
 export function esc(value: unknown): string {
   return String(value ?? '').replace(/[&<>"']/g, (c) => ESC[c]);
 }
 
 export function iconSVG(name: IconName, size = 16): string {
-  return `<svg class="icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${LUCIDE[name] ?? ''}</svg>`;
+  return `<svg class="icon" width="${size}" height="${size}" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">${GLYPHS[name] ?? ''}</svg>`;
 }
 
 export function statusBadgeHTML(status: Status | string, label?: string, opts: { pulse?: boolean; size?: 'sm' | 'md' } = {}): string {

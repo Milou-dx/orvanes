@@ -1,3 +1,4 @@
+import { pickScheme } from '../ui/html';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
@@ -39,7 +40,8 @@ document.addEventListener('astro:page-load', () => {
   }
 
   const styles = getComputedStyle(document.documentElement);
-  const token = (name: string, fallback: string) => styles.getPropertyValue(name).trim() || fallback;
+  const dark = styles.colorScheme === 'dark';
+  const token = (name: string, fallback: string) => pickScheme(styles.getPropertyValue(name).trim(), dark) || fallback;
 
   const FONT_MIN = 10;
   const FONT_MAX = 24;
@@ -60,6 +62,9 @@ document.addEventListener('astro:page-load', () => {
       cursor: token('--console-strong', '#f2f2f2'),
       cursorAccent: token('--console-bg', '#0c0c0c'),
       selectionBackground: token('--console-select', '#264f78'),
+      black: token('--console-black', '#3d3d3d'),
+      magenta: token('--console-magenta', '#9e9e9e'),
+      brightMagenta: token('--console-bright-magenta', '#bcbcbc'),
       red: token('--console-red', '#e74856'),
       brightRed: token('--console-bright-red', '#f1707a'),
       green: token('--console-green', '#16c60c'),

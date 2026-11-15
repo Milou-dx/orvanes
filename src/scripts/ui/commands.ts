@@ -1,4 +1,4 @@
-import type { IconName } from '../../components/ui/lucide';
+import type { IconName } from '../../components/ui/glyphs';
 
 export interface Command {
   id: string;

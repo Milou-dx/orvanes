@@ -1,6 +1,6 @@
 import { allowedTabs } from '../server/auth/auth-core.js';
 import { getModule, installedTabs } from '../server/modules/registry.js';
-import { LUCIDE, type IconName } from '../components/ui/lucide';
+import { GLYPHS, type IconName } from '../components/ui/glyphs';
 
 export const SECTIONS = [
   { id: 'apercu', label: 'Vue d’ensemble' },
@@ -45,7 +45,7 @@ export async function buildNav(visible: Set<string> | null): Promise<NavItem[]> 
     .sort((a, b) => byName(a.module).localeCompare(byName(b.module), 'fr', { sensitivity: 'base' }))
     .map((t) => ({
       href: t.href, tab: t.id, label: t.label, sec: t.section === 'systeme' ? 'systeme' as const : 'modules' as const,
-      ...(t.icon && t.icon in LUCIDE ? { icon: t.icon as IconName } : { module: t.module }),
+      ...(t.icon && t.icon in GLYPHS ? { icon: t.icon as IconName } : { module: t.module }),
       ...(t.parent ? { parent: t.parent } : {}),
       ...(NAV_BADGES[`/modules/${t.module}/server/nav.ts`] ? { badgeId: t.module } : {}),
     }));

@@ -4,7 +4,7 @@ import Icon from '../components/ui/Icon.astro';
 import '../styles/vault.css';
 import { adminOverview, googleConfigured } from '../server/auth/auth';
 import { tabs as panelTabs } from '../server/auth/auth-core.js';
-import { ago, tone } from '../server/core/format';
+import { ago } from '../server/core/format';
 import { PANEL_NAME } from '../server/core/panel';
 import { isInstalled } from '../server/modules/registry.js';
 
@@ -83,7 +83,7 @@ const redirectUri = `${Astro.url.origin}/api/auth/google/callback`;
             <ul class="v-list">
               {pendingUsers.map((u) => (
                 <li data-q={`${u.name} ${u.email}`.toLowerCase()}>
-                  <span class="v-avatar" style={`--c:${tone(u.name)}`} aria-hidden="true">{initials(u.name)}{u.picture && <img src={u.picture} alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()" />}</span>
+                  <span class="v-avatar" aria-hidden="true">{initials(u.name)}{u.picture && <img src={u.picture} alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()" />}</span>
                   <span class="v-who"><span class="v-who__name">{u.name}</span><span class="v-who__sub">{u.email} · inscrit il y a {ago(u.createdAt)}</span></span>
                   <button type="button" class="v-btn v-btn--sm" data-edit={u.id}>Approuver…</button>
                   <button type="button" class="v-btn v-btn--sm v-btn--danger" data-block={u.id} data-name={u.name}>Refuser</button>
@@ -102,7 +102,7 @@ const redirectUri = `${Astro.url.origin}/api/auth/google/callback`;
                 const n = access(u);
                 return (
                   <li data-q={`${u.name} ${u.email} ${u.linuxUser ?? ''}`.toLowerCase()}>
-                    <span class:list={['v-avatar', u.sessions > 0 && 'v-avatar--on']} style={`--c:${tone(u.name)}`} aria-hidden="true">{initials(u.name)}{u.picture && <img src={u.picture} alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()" />}</span>
+                    <span class:list={['v-avatar', u.sessions > 0 && 'v-avatar--on']} aria-hidden="true">{initials(u.name)}{u.picture && <img src={u.picture} alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()" />}</span>
                     <span class="v-who">
                       <span class="v-who__name">{u.name}{u.sessions > 0 && <span class="visually-hidden"> (session ouverte)</span>}</span>
                       <span class="v-who__sub">{u.email}{u.hasPassword ? ' · mot de passe' : ''}{linux && u.role !== 'admin' && (u.linuxUser ? ` · Linux ${u.linuxUser}` : ' · sans compte Linux')}</span>
@@ -152,7 +152,7 @@ const redirectUri = `${Astro.url.origin}/api/auth/google/callback`;
                   <th scope="col" class="mx-tab">Onglet</th>
                   {members.map((u) => (
                     <th scope="col" class:list={['mx-user', u.status !== 'active' && 'is-off']}>
-                      <span class="v-avatar" style={`--c:${tone(u.name)}`} aria-hidden="true">{initials(u.name)}{u.picture && <img src={u.picture} alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()" />}</span>
+                      <span class="v-avatar" aria-hidden="true">{initials(u.name)}{u.picture && <img src={u.picture} alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()" />}</span>
                       <span class="mx-user__n">{u.name}</span>
                       <span class="mx-user__c" data-mx-count={u.id}>{access(u)}/{tabs.length}</span>
                       {u.status !== 'active' && <span class="mx-user__c">{statusOf(u.status).label}</span>}
@@ -314,14 +314,14 @@ const redirectUri = `${Astro.url.origin}/api/auth/google/callback`;
   .col--last { width: 9rem; text-align: right; }
   .acts { flex: none; display: flex; gap: 0.25rem; }
   .v-list > li[hidden] { display: none; }
-  .steps { margin: 0; padding-left: 3rem; display: grid; gap: 0.5rem; font-size: 0.875rem; line-height: 1.5; color: var(--text-secondary); }
+  .steps { margin: 0; padding-left: 3rem; display: grid; gap: 0.5rem; font-size: var(--dense-size); line-height: 1.5; color: var(--text-secondary); }
   .steps strong { color: var(--text-primary); font-weight: 500; }
   .steps a { color: var(--accent-text); }
   .foot-end { justify-content: flex-end; flex-wrap: wrap; }
-  .msg { margin: 0 auto 0 0; font-size: 0.875rem; }
+  .msg { margin: 0 auto 0 0; font-size: var(--dense-size); }
 
   .mx-wrap { overflow: auto; max-height: 75dvh; padding-inline: 0 !important; border-top: 1px solid var(--border); }
-  .mx { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 0.875rem; }
+  .mx { border-collapse: separate; border-spacing: 0; width: 100%; font-size: var(--dense-size); }
   .mx th, .mx td { border-bottom: 1px solid var(--border); background: var(--bg-surface); }
   .mx thead th { position: sticky; top: 0; z-index: 2; text-align: center; vertical-align: bottom; padding: 0.75rem 0.5rem; min-width: 6.5rem; font-weight: 500; color: var(--text-primary); }
   .mx .mx-tab { position: sticky; left: 0; z-index: 1; text-align: left; padding: 0.625rem 1.5rem; min-width: 10rem; font-weight: 400; color: var(--text-primary); }
@@ -329,7 +329,7 @@ const redirectUri = `${Astro.url.origin}/api/auth/google/callback`;
   .mx-group th { text-align: left; padding: 1rem 1.5rem 0.5rem; font-weight: 400; background: var(--bg-surface); }
   .mx-user .v-avatar { margin: 0 auto 0.375rem; }
   .mx-user__n { display: block; overflow-wrap: anywhere; }
-  .mx-user__c { display: block; font-size: 0.75rem; font-weight: 400; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .mx-user__c { display: block; font-size: var(--micro-size); font-weight: 400; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
   .mx-user.is-off { opacity: 0.7; }
   .mx-cell { text-align: center; padding: 0.5rem; }
   .mx tbody:last-child tr:last-child > * { border-bottom: 0; }

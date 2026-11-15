@@ -2,7 +2,7 @@ import { confirmDialog, toast } from '../ui/dialog';
 import { IS_MAC, registerCommands, registerShortcuts } from '../ui/commands';
 import { buttonHTML, emptyStateHTML, errorStateHTML, esc, iconSVG } from '../ui/html';
 import { openMenu as openUiMenu, closeMenu } from '../ui/menu';
-import type { IconName } from '../../components/ui/lucide';
+import type { IconName } from '../../components/ui/glyphs';
 import { bytes as fmtBytes, dateTime as fmtDate } from '../../server/core/format';
 
 type Entry = { name: string; isDir: boolean; isSymlink?: boolean; sizeBytes: number; mode: string; mtime: string; path: string };

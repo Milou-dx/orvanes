@@ -9,7 +9,7 @@ if (!cfg.enabled) {
 }
 const sources = listSources(cfg);
 if (cmd === 'liste') {
-  for (const s of sources) console.log(`${s.id.padEnd(20)} ${s.version.padEnd(9)} publié : ${s.published ?? '—'}${s.errors.length ? `  (invalide : ${s.errors.join(' ; ')})` : ''}`);
+  for (const s of sources) console.log(`${s.id.padEnd(20)} ${s.version.padEnd(9)} publié : ${s.published ?? '-'}${s.errors.length ? `  (invalide : ${s.errors.join(' ; ')})` : ''}`);
 } else if (cmd === 'publier') {
   const ids = args.includes('--tous') ? sources.map((s) => s.id) : args;
   if (!ids.length) { console.error('Indiquez une intégration, ou --tous.'); process.exit(1); }

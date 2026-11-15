@@ -60,4 +60,7 @@ const stateWord = { ok: null, warning: 'Élevé', danger: 'Critique' }[level];
   .meter--ok      { --fill: var(--accent); --fill-text: var(--accent-text); }
   .meter--warning { --fill: var(--status-warning); --fill-text: var(--warning); }
   .meter--danger  { --fill: var(--status-error); --fill-text: var(--danger); }
+  /* Sans teinte, le niveau se lit aussi à l'épaisseur de la jauge. */
+  .meter--warning .meter__track { height: 8px; }
+  .meter--danger .meter__track { height: 10px; }
 </style>

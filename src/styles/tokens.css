@@ -273,174 +273,177 @@
   --shadow-md: 0 0 0 1px rgb(255 255 255 / 6%), 0 3px 6px rgb(0 0 0 / 30%), 0 9px 24px rgb(0 0 0 / 45%);
 }
 
+/* Interface de mistraOS (themes/mistra/theme.toml, accent « blue ») : surfaces grises en duotone,
+   une seule déclaration par jeton, light-dark() suit le color-scheme posé plus haut. */
 :root[data-ui='notion'], .window {
+  --m-surface:     light-dark(#ececec, #1a1a1a);
+  --m-sidebar:     light-dark(#d4d4d4, #242424);
+  --m-card:        light-dark(#fafafa, #2a2a2a);
+  --m-popover:     light-dark(#f8f8f8, #2e2e2e);
+  --m-text:        light-dark(#2a2a2a, #dcdcdc);
+  --m-text-dim:    light-dark(#5a5a5a, #a8a8a8);
+  --m-border:      light-dark(#d4d4d4, #333333);
+  --m-accent:      light-dark(#164997, #92b4ff);
+  --m-accent-text: light-dark(#ffffff, #000000);
+  --m-border-active: light-dark(#000000, #ffffff);
+  --m-shade:       light-dark(#00000017, #00000059);
+
+  /* L'îlot et les capsules de la barre restent noirs dans les deux modes. */
+  --island:           #000000;
+  --island-text:      #f2f2f2;
+  --island-text-dim:  #a8a8a8;
+  --island-highlight: #333333;
+  --island-h:   2.125rem;
+  --island-pad: 14px;
+  --island-gap: 10px;
+  --toggle-w: 38px;  --toggle-h: 22px;  --toggle-pad: 3px;
+
+  /* Fenêtre et Dock : [window] et [dock] de theme.toml, dock.toml pour la taille et l'agrandissement. */
+  --window-radius: 30px;  --window-border: 2px;  --window-gap: 12px;  --window-gap-inner: 6px;
+
+  --dock-icon: 48px;  --dock-gap: 6px;  --dock-dot: 4px;  --dock-tile-radius: 26%;
+  /* Écran de connexion : [lock] de theme.toml. L'encre blanche laisse voir le fond à 62 %, le champ est un noir dépoli. */
+  --lock-ink: #ffffff;  --lock-ink-glass: rgb(255 255 255 / 62%);  --lock-field: #0000008c;  --lock-field-w: 300px;  --lock-field-h: 44px;
+  --dur-settle: 220ms;  --dur-shake: 250ms;
+
+  --bg-app:       var(--m-surface);
+  --bg-mica:      var(--m-sidebar);
+  --bg-surface:   var(--m-card);
+  --bg-surface-2: var(--m-popover);
+  --bg-hover:     color-mix(in srgb, var(--m-text) 7%, var(--m-card));
+  --nav-selected: color-mix(in srgb, var(--m-text) 16%, var(--m-sidebar));
+  --border:        var(--m-border);
+  --border-strong: color-mix(in srgb, var(--m-text) 22%, var(--m-card));
+  --text-primary:   var(--m-text);
+  --text-secondary: var(--m-text-dim);
+  --text-tertiary:  var(--m-text-dim);
+  --text-disabled:  color-mix(in srgb, var(--m-text-dim) 55%, var(--m-card));
+
+  --control-fill:          var(--m-card);
+  --control-fill-hover:    var(--bg-hover);
+  --control-fill-subtle:   var(--m-sidebar);
+  --control-stroke:        var(--border-strong);
+  --control-stroke-bottom: var(--border-strong);
+  --field-stroke:          color-mix(in srgb, var(--m-text) 45%, var(--m-card));
+
+  --accent:        var(--m-accent);
+  --accent-hover:  color-mix(in srgb, var(--m-accent) 88%, var(--m-surface));
+  --accent-active: color-mix(in srgb, var(--m-accent) 78%, var(--m-surface));
+  --accent-subtle: color-mix(in srgb, var(--m-accent) 10%, var(--m-card));
+  --accent-border: color-mix(in srgb, var(--m-accent) 30%, var(--m-card));
+  --accent-fg:     var(--m-accent-text);
+  --accent-text:   var(--m-accent);
   --text-on-accent: var(--accent-fg);
+  --focus-ring: var(--m-accent);
+  --scrim: light-dark(rgb(15 15 15 / 30%), rgb(0 0 0 / 50%));
 
-  --success-border: color-mix(in srgb, var(--tone-green-fg) 24%, var(--tone-green-bg));
-  --warning-border: color-mix(in srgb, var(--tone-orange-fg) 24%, var(--tone-orange-bg));
-  --danger-border:  color-mix(in srgb, var(--tone-red-fg) 24%, var(--tone-red-bg));
-  --info-border:    color-mix(in srgb, var(--tone-blue-fg) 24%, var(--tone-blue-bg));
+  /* Duotone strict, comme mistraOS : un état se lit par sa forme et son libellé, jamais par une teinte. */
+  --success: var(--m-text);
+  --warning: var(--m-text);
+  --danger:  var(--m-text);
+  --info:    var(--m-text);
+  --status-online:  var(--m-text);
+  --status-warning: var(--m-text);
+  --status-error:   var(--m-text);
+  --status-offline: var(--m-text-dim);
+  --success-subtle: var(--accent-subtle);  --success-border: var(--accent-border);
+  --warning-subtle: var(--accent-subtle);  --warning-border: var(--accent-border);
+  --danger-subtle:  var(--accent-subtle);  --danger-border:  var(--accent-border);
+  --info-subtle:    var(--accent-subtle);  --info-border:    var(--accent-border);
 
-  --bg-mica:      var(--gray-1);
-  --bg-surface:   var(--gray-2);
-  --bg-surface-2: var(--gray-3);
-  --bg-hover:     var(--gray-4);
-  --border:       var(--gray-5);
-  --border-strong: var(--gray-6);
-  --text-primary:   var(--gray-11);
-  --text-secondary: var(--gray-10);
-  --text-tertiary:  var(--gray-9);
-  --text-disabled:  var(--gray-8);
+  --tone-gray-bg: var(--bg-hover);    --tone-gray-fg: var(--m-text-dim);
+  --tone-brown-bg: var(--bg-hover);   --tone-brown-fg: var(--m-text-dim);
+  --tone-orange-bg: var(--bg-hover);  --tone-orange-fg: var(--m-text-dim);
+  --tone-yellow-bg: var(--bg-hover);  --tone-yellow-fg: var(--m-text-dim);
+  --tone-green-bg: var(--bg-hover);   --tone-green-fg: var(--m-text-dim);
+  --tone-blue-bg: var(--bg-hover);    --tone-blue-fg: var(--m-text-dim);
+  --tone-purple-bg: var(--bg-hover);  --tone-purple-fg: var(--m-text-dim);
+  --tone-pink-bg: var(--bg-hover);    --tone-pink-fg: var(--m-text-dim);
+  --tone-red-bg: var(--bg-hover);     --tone-red-fg: var(--m-text-dim);
 
-  --control-fill:          var(--gray-2);
-  --control-fill-hover:    var(--gray-3);
-  --control-fill-subtle:   var(--gray-1);
-  --control-stroke-bottom: var(--control-stroke);
-  --focus-ring: var(--accent-text);
-  --scrim:      rgb(15 15 15 / 30%);
+  /* Graphes : une encre, un fond et une grille. Valeurs directes : un canvas ne sait pas lire color-mix(light-dark()). */
+  --res-fill: light-dark(#eeeeee, #303030);
+  --res-cpu:  var(--m-text);  --res-cpu-fill:  var(--res-fill);  --res-cpu-grid:  var(--m-border);
+  --res-mem:  var(--m-text);  --res-mem-fill:  var(--res-fill);  --res-mem-grid:  var(--m-border);
+  --res-disk: var(--m-text);  --res-disk-fill: var(--res-fill);  --res-disk-grid: var(--m-border);
+  --res-net:  var(--m-text);  --res-net-fill:  var(--res-fill);  --res-net-grid:  var(--m-border);
+  --heat-lo: var(--m-card);
+  --heat-hi: light-dark(#bdbdbd, #5a5a5a);
 
-  --heat-lo: #fbf6e6;
-  --heat-hi: #f2c38b;
+  /* Terminal et journaux, comme le terminal de mistraOS : fond et encre de la fenêtre, gris de sa palette ANSI. */
+  --console-bg:      var(--m-surface);
+  --console-border:  var(--m-border);
+  --console-fg:      var(--m-text);
+  --console-muted:   var(--m-text-dim);
+  --console-strong:  light-dark(#111111, #ffffff);
+  --console-select:  light-dark(#c4c4c4, #4a4a4a);
+  --console-black:   light-dark(#2b2b2b, #3d3d3d);
+  --console-red:     light-dark(#5a5a5a, #8a8a8a);  --console-bright-red:     light-dark(#5a5a5a, #a0a0a0);
+  --console-green:   light-dark(#4e4e4e, #9a9a9a);  --console-bright-green:   light-dark(#4e4e4e, #b0b0b0);
+  --console-yellow:  light-dark(#444444, #aaaaaa);  --console-bright-yellow:  light-dark(#444444, #c0c0c0);
+  --console-blue:    light-dark(#5e5e5e, #909090);  --console-bright-blue:    light-dark(#5e5e5e, #a8a8a8);
+  --console-magenta: light-dark(#525252, #9e9e9e);  --console-bright-magenta: light-dark(#525252, #bcbcbc);
+  --console-cyan:    light-dark(#3e3e3e, #b0b0b0);  --console-bright-cyan:    light-dark(#3e3e3e, #d0d0d0);
 
-  --micro-size: .75rem;    --micro-lh: 1rem;       --micro-ls: 0.01em;
-  --meta-size: .8125rem;   --meta-lh: 1.125rem;    --meta-ls: 0;
-  --dense-size: .875rem;   --dense-lh: 1.25rem;    --dense-ls: 0;
-  --body-size: .9375rem;   --body-lh: 1.5rem;      --body-ls: 0;
-  --card-size: .9375rem;   --card-lh: 1.375rem;    --card-ls: -0.006em;
-  --section-size: 1.125rem; --section-lh: 1.625rem; --section-ls: -0.012em;
+  /* Inter seule : la police de mistraOS, auto-hébergée. */
+  --font-ui: 'Inter Variable', system-ui, sans-serif;
+  --font-display: var(--font-ui);
+  --font-mono: 'JetBrainsMono Nerd Font Mono', 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
+
+  /* Rampe de mistraOS à corps 13 : 26, 17, 15, 13, 12, 11. En rem pour suivre la taille choisie dans le navigateur. */
+  --micro-size: .6875rem;   --micro-lh: .875rem;    --micro-ls: 0.01em;
+  --meta-size: .75rem;      --meta-lh: 1rem;        --meta-ls: 0;
+  --dense-size: .8125rem;   --dense-lh: 1.125rem;   --dense-ls: 0;
+  --body-size: .8125rem;    --body-lh: 1.25rem;     --body-ls: 0;
+  --card-size: .9375rem;    --card-lh: 1.25rem;     --card-ls: -0.006em;
+  --section-size: 1.0625rem; --section-lh: 1.375rem; --section-ls: -0.012em;
+  --page-size: 1.625rem;    --page-lh: 2rem;        --page-ls: -0.022em;
 
   --space-5: 24px;
 
+  /* Rayons de mistraOS : 8 lignes et entrées de menu, 10 contrôles, 14 cartes et menus. */
+  --radius-sm: 8px;  --radius-md: 10px;  --radius-lg: 14px;
+  --radius-control: var(--radius-md);
+  --radius-card: var(--radius-lg);
+  --radius-modal: var(--radius-lg);
+
+  --shadow-xs: 0 0 0 .5px var(--m-shade);
+  --shadow-card: 0 0 0 .5px var(--m-shade), 0 1px 2px var(--m-shade);
+  --shadow-sm: 0 0 0 .5px var(--m-shade), 0 6px 22px var(--m-shade);
+  --shadow-md: 0 0 0 1px var(--m-border), 0 2px 8px var(--m-shade), 0 10px 32px var(--m-shade);
+  --shadow-overlay: var(--shadow-md);
+  --shadow-subtle: var(--shadow-xs);
+
+  /* Mouvements de [animation] : courbes telles quelles, ressorts (durée et rebond de Motion) tracés
+     en linear() depuis shell/Commons/spring.js : morph 500 ms rebond 0,2, toggle 378 ms rebond 0,033. */
+  --ease-out:    cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.455, 0.03, 0.515, 0.955);
+  --ease-fade:   cubic-bezier(0.2, 0, 0, 1);
+  --ease-hover:  cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-spring-morph: linear(0, 0.062, 0.2, 0.363, 0.522, 0.661, 0.773, 0.858, 0.92, 0.962, 0.989, 1.004, 1.012, 1.015, 1.015, 1.013, 1.011, 1.008, 1.006, 1.004, 1.003, 1.002, 1.001, 1, 1);
+  --ease-spring-toggle: linear(0, 0.056, 0.177, 0.318, 0.454, 0.574, 0.675, 0.756, 0.819, 0.868, 0.904, 0.932, 0.952, 0.966, 0.976, 0.984, 0.989, 0.993, 0.995, 0.997, 0.998, 0.999, 0.999, 0.999, 1);
+  --dur-spring-morph: 521ms;
+  --dur-spring-toggle: 402ms;
+  --dur-fade: 160ms;
+  --dur-hover-move: 200ms;
+  --dur-hover-fade: 150ms;
+  --dur-fast: 160ms;  --dur-base: 200ms;  --dur-enter: 220ms;  --stagger-step: 15ms;
+  --press-scale: 0.97;
   --ease: var(--ease-out);
   --duration-micro: var(--dur-fast);
   --duration-ui:    var(--dur-base);
   --duration-page:  var(--dur-base);
 
-  --titlebar-height:         48px;
-  --sidebar-width:           248px;
-  --sidebar-width-collapsed: 56px;
+  --titlebar-height:         calc(var(--island-h) + 2 * var(--window-gap));
   --content-max:             1280px;
-
-  color-scheme: light;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root[data-ui='notion']:not([data-theme='light']), :root:not([data-theme='light']) .window {
-    --scrim: rgb(0 0 0 / 50%);
-    --heat-lo: #33301f;  --heat-hi: #6e4519;
-  }
-}
-:root[data-ui='notion'][data-theme='dark'], :root[data-theme='dark'] .window {
-  --scrim: rgb(0 0 0 / 50%);
-  --heat-lo: #33301f;  --heat-hi: #6e4519;
 }
 
 :root { --page-gutter: var(--space-8); }
 @media (max-width: 1000px) { :root { --page-gutter: var(--space-6); } }
 @media (max-width: 640px) { :root { --page-gutter: var(--space-4); } }
 
-:root[data-ui='notion'], .window {
-  --mac-blue: #007aff;  --mac-green: #34c759;  --mac-orange: #ff9500;  --mac-red: #ff3b30;
-  --mac-pink: #ff2d55;  --mac-indigo: #5856d6; --mac-teal: #30b0c7;   --mac-purple: #af52de;
-  --mac-gray: #8e8e93;  --mac-brown: #a2845e;
-
-  --gray-1:  #ececf0;
-  --gray-2:  #ffffff;
-  --gray-3:  #f2f2f5;
-  --gray-4:  #e8e8ed;
-  --gray-5:  #e0e0e5;
-  --gray-6:  #c7c7cc;
-  --gray-7:  #aeaeb2;
-  --gray-8:  #8e8e93;
-  --gray-9:  #6e6e73;
-  --gray-10: #5c5c61;
-  --gray-11: #1d1d1f;
-
-  /* blanc sur accent/hover/active >= 4.7:1 ; --accent-text >= 4.5:1 sur app, surface, subtle, hover */
-  --accent: #0071e3;  --accent-hover: #0068d9;  --accent-active: #0062c4;
-  --accent-subtle: #e5f0fd;  --accent-border: #b3d4fb;  --accent-fg: #ffffff;  --accent-text: #0066cc;
-
-  --success: #1f7a37;  --warning: #b25000;  --danger: #d70015;  --info: var(--accent);
-  --success-subtle: color-mix(in srgb, var(--mac-green) 14%, var(--bg-surface));
-  --warning-subtle: color-mix(in srgb, var(--mac-orange) 16%, var(--bg-surface));
-  --danger-subtle:  color-mix(in srgb, var(--mac-red) 12%, var(--bg-surface));
-  --info-subtle:    var(--accent-subtle);
-  --status-online: #34c759;  --status-warning: #ff9500;  --status-error: #ff3b30;  --status-offline: #aeaeb2;
-
-  --bg-app: #f5f5f7;
-  --control-stroke: #d2d2d7;
-  --field-stroke: #8e8e93;
-  --nav-hover: #dedee3;
-  --nav-selected: #d4d4d9;
-
-  --res-cpu:  #5856d6;  --res-cpu-fill:  #eeeefb;  --res-cpu-grid:  #d9d8f4;
-  --res-mem:  #d1306b;  --res-mem-fill:  #fbecf1;  --res-mem-grid:  #f3d3df;
-  --res-disk: #c26400;  --res-disk-fill: #fbf0e3;  --res-disk-grid: #f0dcc2;
-  --res-net:  #1b8aa0;  --res-net-fill:  #e6f4f7;  --res-net-grid:  #c9e6ec;
-
-  --font-ui: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter Variable', system-ui, 'Helvetica Neue', Arial, sans-serif;
-  --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter Variable', system-ui, 'Helvetica Neue', Arial, sans-serif;
-  --font-mono: 'SF Mono', ui-monospace, Menlo, 'Cascadia Mono', Consolas, monospace;
-  --page-size: 1.75rem;  --page-lh: 2.125rem;  --page-ls: -0.024em;
-
-  --radius-sm: 7px;  --radius-md: 10px;  --radius-lg: 12px;
-  --radius-control: var(--radius-sm);
-  --radius-card: 12px;
-  --radius-modal: 12px;
-
-  --shadow-xs: 0 0 0 .5px rgb(0 0 0 / 7%), 0 1px 2px rgb(0 0 0 / 5%);
-  --shadow-card: 0 0 0 .5px rgb(0 0 0 / 7%), 0 1px 2px rgb(0 0 0 / 5%), 0 4px 14px rgb(0 0 0 / 4%);
-  --shadow-sm: 0 0 0 .5px rgb(0 0 0 / 8%), 0 6px 22px rgb(0 0 0 / 9%);
-  --shadow-md: 0 0 0 .5px rgb(0 0 0 / 12%), 0 10px 32px rgb(0 0 0 / 18%);
-  --shadow-overlay: var(--shadow-md);
-  --shadow-subtle: var(--shadow-xs);
-
-  --ease-out: cubic-bezier(0.32, 0.72, 0, 1);
-  --dur-base: 160ms;  --dur-enter: 220ms;  --stagger-step: 15ms;
-  --press-scale: 0.96;
-}
-@media (prefers-color-scheme: dark) {
-  :root[data-ui='notion']:not([data-theme='light']), :root:not([data-theme='light']) .window {
-    --mac-blue: #0a84ff;  --mac-green: #30d158;  --mac-orange: #ff9f0a;  --mac-red: #ff453a;
-    --mac-pink: #ff375f;  --mac-indigo: #5e5ce6; --mac-teal: #40c8e0;   --mac-purple: #bf5af2;  --mac-gray: #98989d;
-    --gray-1: #232326;  --gray-2: #2c2c2e;  --gray-3: #1c1c1e;  --gray-4: #3a3a3c;  --gray-5: #38383a;  --gray-6: #48484a;
-    --gray-7: #636366;  --gray-8: #7c7c80;  --gray-9: #98989d;  --gray-10: #aeaeb2;  --gray-11: #f5f5f7;
-    --accent: #0071e3;  --accent-hover: #0068d9;  --accent-active: #0062c4;  --accent-subtle: #10263f;  --accent-border: #1d4b7d;  --accent-fg: #ffffff;  --accent-text: #5aa9ff;
-    --success: #30d158;  --warning: #ff9f0a;  --danger: #ff6961;
-    --status-online: #30d158;  --status-warning: #ff9f0a;  --status-error: #ff453a;  --status-offline: #636366;
-    --bg-app: #1c1c1e;  --control-stroke: #48484a;  --field-stroke: #7c7c80;
-    --nav-hover: #2f2f33;  --nav-selected: #3a3a3e;
-    --res-cpu: #7d7aff;  --res-cpu-fill: #1f1f33;  --res-cpu-grid: #2e2d55;
-    --res-mem: #ff6482;  --res-mem-fill: #331d24;  --res-mem-grid: #4f2733;
-    --res-disk: #ffb340; --res-disk-fill: #33281a; --res-disk-grid: #4d3a1f;
-    --res-net: #5ac8de;  --res-net-fill: #16292d;  --res-net-grid: #1f4048;
-    --shadow-xs: 0 0 0 .5px rgb(255 255 255 / 7%);
-    --shadow-card: 0 0 0 .5px rgb(255 255 255 / 7%), 0 1px 2px rgb(0 0 0 / 30%);
-    --shadow-sm: 0 0 0 .5px rgb(255 255 255 / 12%), 0 8px 24px rgb(0 0 0 / 40%);
-    --shadow-md: 0 0 0 .5px rgb(255 255 255 / 12%), 0 12px 36px rgb(0 0 0 / 55%);
-    color-scheme: dark;
-  }
-}
-:root[data-ui='notion'][data-theme='dark'], :root[data-theme='dark'] .window {
-  --mac-blue: #0a84ff;  --mac-green: #30d158;  --mac-orange: #ff9f0a;  --mac-red: #ff453a;
-  --mac-pink: #ff375f;  --mac-indigo: #5e5ce6; --mac-teal: #40c8e0;   --mac-purple: #bf5af2;  --mac-gray: #98989d;
-  --gray-1: #232326;  --gray-2: #2c2c2e;  --gray-3: #1c1c1e;  --gray-4: #3a3a3c;  --gray-5: #38383a;  --gray-6: #48484a;
-  --gray-7: #636366;  --gray-8: #7c7c80;  --gray-9: #98989d;  --gray-10: #aeaeb2;  --gray-11: #f5f5f7;
-  --accent: #0071e3;  --accent-hover: #0068d9;  --accent-active: #0062c4;  --accent-subtle: #10263f;  --accent-border: #1d4b7d;  --accent-fg: #ffffff;  --accent-text: #5aa9ff;
-  --success: #30d158;  --warning: #ff9f0a;  --danger: #ff6961;
-  --status-online: #30d158;  --status-warning: #ff9f0a;  --status-error: #ff453a;  --status-offline: #636366;
-  --bg-app: #1c1c1e;  --control-stroke: #48484a;  --field-stroke: #7c7c80;
-  --nav-hover: #2f2f33;  --nav-selected: #3a3a3e;
-  --res-cpu: #7d7aff;  --res-cpu-fill: #1f1f33;  --res-cpu-grid: #2e2d55;
-  --res-mem: #ff6482;  --res-mem-fill: #331d24;  --res-mem-grid: #4f2733;
-  --res-disk: #ffb340; --res-disk-fill: #33281a; --res-disk-grid: #4d3a1f;
-  --res-net: #5ac8de;  --res-net-fill: #16292d;  --res-net-grid: #1f4048;
-  --shadow-xs: 0 0 0 .5px rgb(255 255 255 / 7%);
-  --shadow-card: 0 0 0 .5px rgb(255 255 255 / 7%), 0 1px 2px rgb(0 0 0 / 30%);
-  --shadow-sm: 0 0 0 .5px rgb(255 255 255 / 12%), 0 8px 24px rgb(0 0 0 / 40%);
-  --shadow-md: 0 0 0 .5px rgb(255 255 255 / 12%), 0 12px 36px rgb(0 0 0 / 55%);
-  color-scheme: dark;
-}
+/* Au doigt, la barre et ses capsules prennent la hauteur d'une cible tactile. */
+@media (pointer: coarse) { .window { --island-h: var(--touch-target); } }
 
 /* Préférences système : !important pour passer devant les blocs de thème, quelle que soit leur spécificité. */
 @media (prefers-contrast: more) {

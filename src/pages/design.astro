@@ -31,8 +31,8 @@ const COLORS = [
   ['--text-primary', 'Texte'], ['--text-secondary', 'Texte secondaire'], ['--text-tertiary', 'Texte tertiaire'],
   ['--accent', 'Accent'], ['--accent-subtle', 'Accent pâle'], ['--success', 'Succès'],
   ['--warning', 'Avertissement'], ['--danger', 'Danger'], ['--info', 'Information'],
+  ['--bg-mica', 'Panneau latéral d’une page'], ['--island', 'Îlot et capsules'], ['--island-highlight', 'Survol sur l’îlot'],
 ];
-const TONES = ['gray', 'brown', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'red'];
 const RADII = ['--radius-xs', '--radius-sm', '--radius-md', '--radius-lg'];
 const SHADOWS = ['--shadow-xs', '--shadow-sm', '--shadow-md'];
 const TYPE = ['page', 'section', 'card', 'body', 'dense', 'meta', 'micro'];
@@ -135,11 +135,6 @@ document.addEventListener('astro:page-load', () => {
         {COLORS.map(([v, l]) => (
           <div class="swatch"><span class="swatch__chip" style={`background:var(${v})`}></span><span class="swatch__name">{l}</span><code>{v}</code></div>
         ))}
-      </div>
-    </Card>
-    <Card title="Teintes" description="--tone-<teinte>-bg / -fg : palette de base des couleurs d’état (succès, avertissement, erreur, information) et des graphes. Ne l’utilisez pas pour décorer une icône.">
-      <div class="tones">
-        {TONES.map((t) => <span class="tone" style={`background:var(--tone-${t}-bg);color:var(--tone-${t}-fg)`}>{t}</span>)}
       </div>
     </Card>
     <div class="grid2">
@@ -413,8 +408,6 @@ document.addEventListener('astro:page-load', () => {
   .swatch { display: grid; grid-template-columns: auto 1fr; column-gap: var(--space-2); align-items: center; }
   .swatch__chip { grid-row: span 2; width: var(--control-h); height: var(--control-h); border-radius: var(--radius-sm); box-shadow: inset 0 0 0 1px var(--border-strong); }
   .swatch__name { font-size: var(--dense-size); }
-  .tones { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-  .tone { padding: var(--space-1) var(--space-3); border-radius: var(--radius-xs); font-size: var(--meta-size); font-weight: var(--weight-medium); }
   .shapes { display: flex; flex-wrap: wrap; gap: var(--space-3); }
   .shape {
     display: grid; place-items: center; width: 112px; height: 64px;

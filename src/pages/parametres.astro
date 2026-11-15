@@ -22,7 +22,6 @@ let feedback: { at: string; kind?: string; user: string | null; page: string; ti
 try { feedback = readFileSync(FEEDBACK_FILE, 'utf8').trim().split('\n').filter(Boolean).map((l) => JSON.parse(l)).reverse().slice(0, 50); } catch {}
 const when = (iso: string) => new Date(iso).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
 const THEMES = [['light', 'Clair', 'sun'], ['dark', 'Sombre', 'moon'], ['system', 'Système', 'monitor']] as const;
-const NAVS = [['expanded', 'Complet'], ['compact', 'Compact'], ['auto', 'Automatique']] as const;
 const LINKS = [
   { href: '/modules', label: 'Magasin', desc: 'Installer, mettre à jour ou retirer les intégrations du panel.' },
   { href: '/acces', label: 'Utilisateurs', desc: 'Comptes, droits par onglet, connexion Google et protection.' },
@@ -44,12 +43,6 @@ const LINKS = [
             {THEMES.map(([v, label, icon]) => <button type="button" class="v-tab" data-theme-set={v} aria-pressed={v === 'system'}><Icon name={icon} size={16} />{label}</button>)}
           </div>
         </div>
-        <div class="v-row">
-          <div class="v-row__txt"><span class="v-row__label">Menu</span><span class="v-row__desc">Automatique le réduit aux icônes quand la fenêtre est étroite.</span></div>
-          <div class="v-tabs" role="group" aria-label="Largeur du menu">
-            {NAVS.map(([v, label]) => <button type="button" class="v-tab" data-nav-set={v} aria-pressed={v === 'auto'}>{label}</button>)}
-          </div>
-        </div>
       </div>
     </section>
 
@@ -57,13 +50,13 @@ const LINKS = [
       <header class="v-card__head">
         <div class="v-card__titles">
           <h2 class="v-card__title">Instance</h2>
-          <p class="v-card__desc">Ce qui identifie ce panel. Ces valeurs viennent de la configuration du serveur.</p>
+          <p class="v-card__desc">Ces valeurs viennent de la configuration du serveur.</p>
         </div>
         <span class="v-status v-status--good">En ligne</span>
       </header>
       <div>
         <div class="v-row">
-          <div class="v-row__txt"><span class="v-row__label">Nom du panel</span><span class="v-row__desc">Affiché en haut du menu.</span></div>
+          <div class="v-row__txt"><span class="v-row__label">Nom du panel</span><span class="v-row__desc">Affiché dans le titre de l’onglet et sur l’écran de connexion.</span></div>
           <span class="v-row__ctl v-label">{PANEL_NAME}</span>
         </div>
         <div class="v-row">
@@ -123,11 +116,9 @@ const LINKS = [
   <script is:inline>
     (function () {
       var v = function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } };
-      var t = v('panel-theme'), n = v('panel-nav');
+      var t = v('panel-theme');
       t = t === 'light' || t === 'dark' ? t : 'system';
-      n = n === 'compact' || n === 'expanded' ? n : 'auto';
       document.querySelectorAll('[data-theme-set]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.themeSet === t)); });
-      document.querySelectorAll('[data-nav-set]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.navSet === n)); });
     })();
   </script>
 </PanelLayout>

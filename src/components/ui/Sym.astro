@@ -1,10 +1,9 @@
 ---
-import type { IconName } from './lucide';
+import type { IconName } from './glyphs';
 interface Props { name: IconName; size?: number; class?: string; }
 const { name, size = 16, class: className = '' } = Astro.props;
 ---
-<svg class:list={['icon', className]} width={size} height={size} fill="none" stroke="currentColor" stroke-width="1.75"
-     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href={`#ic-${name}`} /></svg>
+<svg class:list={['icon', className]} width={size} height={size} fill="currentColor" aria-hidden="true"><use href={`#ic-${name}`} /></svg>
 
 <style>
   .icon { flex-shrink: 0; }
