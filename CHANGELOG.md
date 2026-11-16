@@ -2,6 +2,7 @@
 
 ## Non publié
 
+- Dock : barre en verre dépoli, tuiles claires à icônes Phosphor Duotone bleues, onglet ouvert plein bleu.
 - L'intérieur des onglets suit l'app Réglages de mistraOS : barre d'en-tête avec le titre au centre et les actions au bout, groupes titrés au-dessus de listes arrondies, lignes de 50 px, boutons secondaires gris sans bord. Vue d'ensemble, Services, Processus, Réseau, Performances, Utilisateurs, Paramètres, Magasin et Aide.
 - Pour les modules : `.v-card` met désormais son en-tête (`.v-card__head`) et sa `.v-toolbar` hors de la liste ; un enfant de `.v-card` qui posait son propre fond ou sa propre marge est à revoir. Le bandeau de chiffres partagé s'écrit `.v-stats` > `.v-stat`.
 
@@ -17,7 +18,6 @@
 
 ## 0.4.0 (2026-11-15)
 
-- Dock : barre en verre dépoli, tuiles claires à icônes Phosphor Duotone bleues, onglet ouvert plein bleu.
 - Bureau de mistraOS : fond d'écran, page dans une fenêtre de rayon 30, Dock toujours affiché en bas à la place du menu latéral. Le réglage « Menu » disparaît.
 - Barre du haut comme celle du bureau, texte à chasse fixe : fil d'Ariane à gauche, recherche au centre, date et heure à droite.
 - Accent bleu de mistraOS pour les contrôles, les liens et le focus.
