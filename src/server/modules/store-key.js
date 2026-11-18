@@ -1,4 +1,4 @@
 export const STORE_PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
-MCowBQYDK2VwAyEAwojcAiQ2bU6FIZieVGY0zzhQchanEQ+aJ0baQip9DGo=
+MCowBQYDK2VwAyEAGatnCrEP3Z3DklRWRk3jtIXr/r5r9l0qCeYF2ztOOKM=
 -----END PUBLIC KEY-----
 `;

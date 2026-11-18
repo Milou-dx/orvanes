@@ -8,7 +8,7 @@ import { STORE_PUBLIC_KEY } from './store-key.js';
 import { validateManifest } from './registry.js';
 
 const run = promisify(execFile);
-export const STORE_URL = (process.env.ORVANE_MAGASIN_URL || 'https://magasin.orvanes.tech').replace(/\/+$/, '');
+export const STORE_URL = (process.env.ORVANE_MAGASIN_URL || 'https://msg.orvanes.tech').replace(/\/+$/, '');
 const MAX_INDEX = 1024 * 1024;
 const MAX_PACKAGE = 64 * 1024 * 1024;
 const ID = /^[a-z0-9][a-z0-9-]{0,39}$/;
